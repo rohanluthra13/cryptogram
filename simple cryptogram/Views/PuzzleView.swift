@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PuzzleView: View {
     @StateObject private var viewModel: PuzzleViewModel
+    @State private var showSettings = false
     
     init(puzzle: Puzzle? = nil) {
         _viewModel = StateObject(wrappedValue: PuzzleViewModel(initialPuzzle: puzzle))
@@ -80,7 +81,7 @@ struct PuzzleView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(CryptogramTheme.Colors.background)
                 .overlay(
-                    // Overlay for paused state
+                    // Overlay for paused state or game over
                     Group {
                         if viewModel.isPaused {
                             ZStack {
@@ -128,9 +129,56 @@ struct PuzzleView: View {
                                         }
                                     }
                                 )
+                        } else if showSettings {
+                            // Settings overlay with dismissible background
+                            GeometryReader { geometry in
+                                VStack(spacing: 0) {
+                                    // Empty space at the top to keep settings button accessible
+                                    Color.clear
+                                        .frame(height: 50)
+                                        .allowsHitTesting(false)
+                                    
+                                    // Semi-transparent overlay below the top area
+                                    ZStack {
+                                        // Background that can be tapped to dismiss - less transparent
+                                        Color(hex: "#f8f8f8").opacity(0.85)
+                                            .onTapGesture {
+                                                showSettings = false
+                                            }
+                                        
+                                        // Settings panel - no background, outline or shadows
+                                        SettingsContentView()
+                                            .padding(.horizontal, 24)
+                                            .padding(.vertical, 20)
+                                            .contentShape(Rectangle())
+                                            .onTapGesture { } // Prevent dismissal when tapping content
+                                    }
+                                    .frame(height: geometry.size.height - 50)
+                                }
+                            }
+                            .edgesIgnoringSafeArea(.bottom)
                         }
                     }
                 )
+                
+                // Always place settings button on the very top layer of the ZStack
+                VStack {
+                    HStack {
+                        Spacer()
+                        
+                        // Settings button
+                        Button(action: { showSettings.toggle() }) {
+                            Image(systemName: "gearshape")
+                                .font(.title3)
+                                .foregroundColor(CryptogramTheme.Colors.text)
+                                .padding(.trailing, 16)
+                                .padding(.top, 8)
+                                .accessibilityLabel("Settings")
+                        }
+                    }
+                    Spacer()
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
             } else {
                 LoadingView(message: "Loading your puzzle...")
             }
