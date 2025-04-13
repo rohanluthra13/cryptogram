@@ -12,14 +12,16 @@ struct PuzzleView: View {
             if let puzzle = viewModel.currentPuzzle {
                 VStack(spacing: 0) {
                     // Timer and Mistakes on the same horizontal level
-                    HStack {
-                        MistakesView(mistakeCount: viewModel.state.mistakeCount)
-                            .padding(.leading, 16)
-                        
-                        Spacer()
+                    ZStack {
+                        HStack {
+                            MistakesView(mistakeCount: viewModel.state.mistakeCount)
+                                .padding(.leading, 16)
+                            
+                            Spacer()
+                        }
                         
                         TimerView(startTime: viewModel.state.startTime, isPaused: viewModel.isPaused)
-                            .padding(.trailing, 16)
+                            .frame(maxWidth: .infinity, alignment: .center)
                     }
                     .padding(.top, 8)
                     
@@ -97,30 +99,34 @@ struct PuzzleView: View {
                                 .padding(.bottom, 240)
                             }
                         } else if viewModel.state.isFailed {
-                            Color.black.opacity(0.5)
+                            Color(hex: "#f8f8f8").opacity(0.7)
                                 .edgesIgnoringSafeArea(.all)
                                 .overlay(
                                     VStack(spacing: 16) {
                                         Text("Game Over")
-                                            .font(.title)
-                                            .foregroundColor(.white)
+                                            .font(.headline)
+                                            .foregroundColor(CryptogramTheme.Colors.text)
                                         
-                                        Text("You made 3 mistakes")
-                                            .font(.body)
-                                            .foregroundColor(.white)
-                                        
-                                        Button(action: { viewModel.loadNextPuzzle() }) {
-                                            Text("Try Another Puzzle")
-                                                .font(.headline)
-                                                .foregroundColor(.white)
-                                                .padding()
-                                                .background(CryptogramTheme.Colors.primary)
-                                                .cornerRadius(10)
+                                        HStack(spacing: 24) {
+                                            // Try again icon - retry the current puzzle
+                                            Button(action: { viewModel.resetCurrentPuzzle() }) {
+                                                Image(systemName: "arrow.counterclockwise")
+                                                    .font(.title3)
+                                                    .frame(width: 44, height: 44)
+                                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                                    .accessibilityLabel("Try Again")
+                                            }
+                                            
+                                            // New puzzle icon - existing functionality
+                                            Button(action: { viewModel.loadNextPuzzle() }) {
+                                                Image(systemName: "arrow.2.circlepath")
+                                                    .font(.title3)
+                                                    .frame(width: 44, height: 44)
+                                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                                    .accessibilityLabel("New Puzzle")
+                                            }
                                         }
                                     }
-                                    .padding()
-                                    .background(Color.black.opacity(0.7))
-                                    .cornerRadius(10)
                                 )
                         }
                     }
@@ -137,5 +143,4 @@ struct PuzzleView: View {
     NavigationView {
         PuzzleView()
     }
-    .previewDevice(PreviewDevice(rawValue: "iPhone 16 Pro"))
 }

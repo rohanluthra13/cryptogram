@@ -206,7 +206,7 @@ class PuzzleViewModel: ObservableObject {
         guard let puzzle = currentPuzzle else { return }
         
         // Save previous error count to determine if we need to increment mistake count
-        let previousErrorCount = errorIndices.count
+        let _ = errorIndices.count
         
         var newErrorIndices = Set<Int>()
         for (index, (_, user)) in zip(puzzle.encodedText, state.userInput).enumerated() {
@@ -289,13 +289,18 @@ class PuzzleViewModel: ObservableObject {
         }
     }
     
+    func resetCurrentPuzzle() {
+        if let puzzle = currentPuzzle {
+            startNewPuzzle(puzzle: puzzle)
+        }
+    }
+    
     // Add this new method for handling game over
     private func handleGameOver() {
         // Set game state to failed
         state.markFailed()
         
-        // Optional: Show some visual indication or alert that game is over
-        isPaused = true
+        // No longer setting isPaused to true
     }
 }
 
