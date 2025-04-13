@@ -64,7 +64,7 @@ class DatabaseService {
         }
     }
     
-    func fetchRandomPuzzle(excludingCurrent current: Puzzle? = nil) -> Puzzle? {
+    func fetchRandomPuzzle(current: Puzzle? = nil, encodingType: String = "Letters") -> Puzzle? {
         guard let db = db else {
             print("Error: Database not initialized")
             return nil
@@ -82,7 +82,9 @@ class DatabaseService {
             let createdAt = Expression<String>("created_at")
             let quoteId = Expression<Int>("quote_id")
             let letterEncoded = Expression<String>("letter_encoded")
-            let _ = Expression<String>("letter_key")
+            let letterKey = Expression<String>("letter_key")
+            let numberEncoded = Expression<String>("number_encoded")
+            let numberKey = Expression<String>("number_key")
             
             // Start with a random query
             var randomQuery = quotesTable.select(id, quoteText, author, length, difficulty, createdAt)
@@ -104,9 +106,12 @@ class DatabaseService {
                 dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
                 _ = dateFormatter.date(from: quoteRow[createdAt])
                 
+                // Select the encoded text based on encoding type
+                let encodedText = encodingType == "Numbers" ? encodedRow[numberEncoded] : encodedRow[letterEncoded]
+                
                 return Puzzle(
                     id: UUID(uuidString: String(quoteRow[id])) ?? UUID(),
-                    encodedText: encodedRow[letterEncoded],
+                    encodedText: encodedText,
                     solution: quoteRow[quoteText],
                     hint: "Author: \(quoteRow[author])",
                     author: quoteRow[author],
@@ -120,7 +125,7 @@ class DatabaseService {
         return nil
     }
     
-    func fetchPuzzleById(_ id: Int) -> Puzzle? {
+    func fetchPuzzleById(_ id: Int, encodingType: String = "Letters") -> Puzzle? {
         guard let db = db else {
             print("Error: Database not initialized")
             return nil
@@ -138,7 +143,9 @@ class DatabaseService {
             let createdAt = Expression<String>("created_at")
             let encodedQuoteId = Expression<Int>("quote_id")
             let letterEncoded = Expression<String>("letter_encoded")
-            let _ = Expression<String>("letter_key")
+            let letterKey = Expression<String>("letter_key")
+            let numberEncoded = Expression<String>("number_encoded")
+            let numberKey = Expression<String>("number_key")
             
             if let quoteRow = try db.pluck(quotesTable.filter(quoteId == id)),
                let encodedRow = try db.pluck(encodedQuotesTable.filter(encodedQuoteId == id)) {
@@ -147,9 +154,12 @@ class DatabaseService {
                 dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
                 _ = dateFormatter.date(from: quoteRow[createdAt])
                 
+                // Select the encoded text based on encoding type
+                let encodedText = encodingType == "Numbers" ? encodedRow[numberEncoded] : encodedRow[letterEncoded]
+                
                 return Puzzle(
                     id: UUID(uuidString: String(quoteRow[quoteId])) ?? UUID(),
-                    encodedText: encodedRow[letterEncoded],
+                    encodedText: encodedText,
                     solution: quoteRow[quoteText],
                     hint: "Author: \(quoteRow[author])",
                     author: quoteRow[author],

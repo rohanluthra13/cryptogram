@@ -8,10 +8,12 @@ struct PuzzleCell: View {
     let isError: Bool
     let onTap: () -> Void
     
+    @AppStorage("encodingType") private var encodingType = "Letters"
+    
     var body: some View {
         Button(action: onTap) {
             VStack(spacing: 4) {
-                if letter.isLetter {
+                if letter.isLetter || letter.isNumber {
                     // Input cell
                     ZStack(alignment: .center) {
                         if isRevealed {
@@ -34,7 +36,7 @@ struct PuzzleCell: View {
                     }
                 }
                 
-                // Encoded letter
+                // Encoded letter/number
                 Text(String(letter))
                     .font(.system(size: 11, weight: .medium, design: .monospaced))
                     .foregroundColor(textColor)
@@ -53,12 +55,12 @@ struct PuzzleCell: View {
     }
     
     private var borderColor: Color {
-        if isError {
+        if isSelected {
+            return CryptogramTheme.Colors.selectedBorder
+        } else if isError {
             return CryptogramTheme.Colors.error
-        } else if isSelected {
-            return CryptogramTheme.Colors.primary
         } else {
-            return CryptogramTheme.Colors.secondary.opacity(0.3)
+            return CryptogramTheme.Colors.border
         }
     }
 }

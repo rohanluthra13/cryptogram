@@ -64,6 +64,10 @@ struct PuzzleState: Equatable {
         revealedLetters.insert(letter)
         revealedIndices.insert(index)
         hintCount += 1
+        
+        print("Letter revealed: \(letter) at index: \(index)")
+        print("Total revealed letters: \(revealedLetters)")
+        print("Total revealed indices: \(revealedIndices)")
     }
     
     mutating func markComplete() {

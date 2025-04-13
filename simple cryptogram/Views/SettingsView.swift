@@ -3,6 +3,7 @@ import SwiftUI
 struct SettingsView: View {
     @AppStorage("difficulty") private var selectedDifficulty = "Medium"
     @AppStorage("encodingType") private var selectedEncodingType = "Letters"
+    @EnvironmentObject private var puzzleViewModel: PuzzleViewModel
     
     let difficulties = ["Easy", "Medium", "Hard"]
     let encodingTypes = ["Letters", "Numbers"]
@@ -22,6 +23,9 @@ struct SettingsView: View {
                             Text($0)
                         }
                     }
+                    .onChange(of: selectedEncodingType) { newValue in
+                        puzzleViewModel.refreshPuzzleWithCurrentSettings()
+                    }
                 }
                 
                 Section(header: Text("About")) {
@@ -40,4 +44,5 @@ struct SettingsView: View {
 
 #Preview {
     SettingsView()
+        .environmentObject(PuzzleViewModel())
 } 

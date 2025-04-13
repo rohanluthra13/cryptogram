@@ -14,6 +14,10 @@ struct CryptogramTheme {
         static let error = Color(.systemRed)
         static let success = Color(.systemGreen)
         static let hint = Color(.systemOrange)
+        
+        // Border colors
+        static let selectedBorder = Color.blue
+        static let border = Color(.systemGray4)
     }
     
     struct Layout {

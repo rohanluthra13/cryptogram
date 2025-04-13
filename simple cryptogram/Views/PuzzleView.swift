@@ -152,6 +152,7 @@ struct PuzzleView: View {
                                             .padding(.vertical, 20)
                                             .contentShape(Rectangle())
                                             .onTapGesture { } // Prevent dismissal when tapping content
+                                            .environmentObject(viewModel)
                                     }
                                     .frame(height: geometry.size.height - 50)
                                 }
@@ -190,5 +191,6 @@ struct PuzzleView: View {
 #Preview {
     NavigationView {
         PuzzleView()
+            .environmentObject(PuzzleViewModel())
     }
 }

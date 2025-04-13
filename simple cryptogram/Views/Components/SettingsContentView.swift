@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsContentView: View {
     @AppStorage("encodingType") private var selectedEncodingType = "Letters"
+    @EnvironmentObject private var puzzleViewModel: PuzzleViewModel
     
     let encodingTypes = ["Letters", "Numbers"]
     
@@ -32,7 +33,10 @@ struct SettingsContentView: View {
                               Color.gray.opacity(0.1))
                 )
                 .onTapGesture {
-                    selectedEncodingType = "Letters"
+                    if selectedEncodingType != "Letters" {
+                        selectedEncodingType = "Letters"
+                        puzzleViewModel.refreshPuzzleWithCurrentSettings()
+                    }
                 }
                 
                 Spacer().frame(width: 12)
@@ -60,7 +64,10 @@ struct SettingsContentView: View {
                               Color.gray.opacity(0.1))
                 )
                 .onTapGesture {
-                    selectedEncodingType = "Numbers"
+                    if selectedEncodingType != "Numbers" {
+                        selectedEncodingType = "Numbers"
+                        puzzleViewModel.refreshPuzzleWithCurrentSettings()
+                    }
                 }
             }
         }
@@ -72,4 +79,5 @@ struct SettingsContentView: View {
         .padding()
         .background(Color(hex: "#f8f8f8"))
         .previewLayout(.sizeThatFits)
+        .environmentObject(PuzzleViewModel())
 } 

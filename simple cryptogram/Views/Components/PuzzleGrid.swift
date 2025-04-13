@@ -14,7 +14,7 @@ struct PuzzleGrid: View {
     var body: some View {
         LazyVGrid(
             columns: Array(repeating: GridItem(.flexible(minimum: 20, maximum: 45), spacing: CryptogramTheme.Layout.cellSpacing), count: columns),
-            spacing: CryptogramTheme.Layout.cellSpacing
+            spacing: CryptogramTheme.Layout.cellSpacing * 3 // Increased vertical spacing between rows
         ) {
             ForEach(Array(encodedText.enumerated()), id: \.offset) { index, letter in
                 PuzzleCell(

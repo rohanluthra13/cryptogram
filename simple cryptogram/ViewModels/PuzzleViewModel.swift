@@ -8,6 +8,7 @@ class PuzzleViewModel: ObservableObject {
     @Published private(set) var currentPuzzle: Puzzle?
     @Published private(set) var errorIndices: Set<Int> = []
     @Published private(set) var isPaused: Bool = false
+    @AppStorage("encodingType") private var encodingType = "Letters"
     private let databaseService: DatabaseService
     private var cancellables = Set<AnyCancellable>()
     private var pauseStartTime: Date?
@@ -25,7 +26,7 @@ class PuzzleViewModel: ObservableObject {
         } else {
             print("Attempting to load random puzzle from database")
             // Try to load a random puzzle from the database
-            if let puzzle = databaseService.fetchRandomPuzzle() {
+            if let puzzle = databaseService.fetchRandomPuzzle(encodingType: encodingType) {
                 print("Successfully loaded puzzle from database")
                 self.currentPuzzle = puzzle
                 startNewPuzzle(puzzle: puzzle)
@@ -53,6 +54,22 @@ class PuzzleViewModel: ObservableObject {
     }
     
     // MARK: - Public Interface
+    
+    func refreshPuzzleWithCurrentSettings() {
+        guard let currentPuzzle = currentPuzzle,
+              let id = Int(currentPuzzle.id.uuidString) else {
+            // If current puzzle is not valid, fetch a new random one
+            if let puzzle = databaseService.fetchRandomPuzzle(encodingType: encodingType) {
+                startNewPuzzle(puzzle: puzzle)
+            }
+            return
+        }
+        
+        // Reload the same puzzle with new encoding
+        if let puzzle = databaseService.fetchPuzzleById(id, encodingType: encodingType) {
+            startNewPuzzle(puzzle: puzzle)
+        }
+    }
     
     func startNewPuzzle(puzzle: Puzzle) {
         currentPuzzle = puzzle
@@ -86,22 +103,54 @@ class PuzzleViewModel: ObservableObject {
             state.startTime = Date()
         }
         
-        // Ensure letter is uppercase
-        let uppercaseLetter = Character(String(letter).uppercased())
+        // Always ensure we're using uppercase for all letter comparisons
+        let inputChar = letter.isLetter ? Character(String(letter).uppercased()) : letter
         
-        // Get the correct letter for this position
-        let correctLetter = puzzle.solution[puzzle.solution.index(puzzle.solution.startIndex, offsetBy: index)]
-        
-        // Check if the letter is already revealed by hints (should always be accepted)
+        // Get the encoded character at this position
         let encodedChar = puzzle.encodedText[puzzle.encodedText.index(puzzle.encodedText.startIndex, offsetBy: index)]
+        
+        // Get the correct character for this position - ensure it's uppercase for consistent comparison
+        let correctCharString = String(puzzle.solution[puzzle.solution.index(puzzle.solution.startIndex, offsetBy: index)])
+        let correctChar = Character(correctCharString.uppercased())
+        
+        // Debug logging to help diagnose the issue
+        print("Input validation - Index: \(index), Input: \(inputChar), Encoded: \(encodedChar), Correct: \(correctChar)")
+        print("Revealed letters: \(state.revealedLetters)")
+        print("Letter mapping: \(state.letterMapping)")
+        
+        // Check if the character is already revealed by hints
         let isRevealed = state.revealedLetters.contains(encodedChar)
         
-        if uppercaseLetter == correctLetter || isRevealed {
-            // Accept correct input (ensuring uppercase)
-            state.inputLetter(uppercaseLetter, at: index)
+        // Check if we already have a mapping for this encoded character
+        let existingMapping = state.letterMapping[encodedChar]
+        
+        // For proper comparison, ensure the existing mapping is also uppercase
+        let normalizedMapping = existingMapping?.isLetter ?? false ? Character(String(existingMapping!).uppercased()) : existingMapping
+        
+        // Check if this letter is the correct solution 
+        let isCorrectLetter = inputChar == correctChar
+        
+        // Check if input matches existing mapping (using normalized mapping)
+        let matchesExistingMapping = normalizedMapping == inputChar
+        
+        // Debug validation conditions
+        print("isRevealed: \(isRevealed), isCorrectLetter: \(isCorrectLetter), matchesExistingMapping: \(matchesExistingMapping), normalizedMapping: \(String(describing: normalizedMapping))")
+        
+        // Accept the input if:
+        // 1. It matches the correct character for this position, OR
+        // 2. The position is revealed by a hint, OR
+        // 3. The encoded character has a mapping and the input matches that mapping
+        if isCorrectLetter || isRevealed || (normalizedMapping != nil && matchesExistingMapping) {
+            print("✅ Input accepted")
             
-            // Update letter mapping
-            state.letterMapping[encodedChar] = uppercaseLetter
+            // Accept input
+            state.inputLetter(inputChar, at: index)
+            
+            // If this mapping doesn't exist yet, create it
+            if state.letterMapping[encodedChar] == nil {
+                state.letterMapping[encodedChar] = inputChar
+                print("Creating new mapping: \(encodedChar) -> \(inputChar)")
+            }
             
             // Move to next cell automatically
             moveToNextCell()
@@ -109,6 +158,8 @@ class PuzzleViewModel: ObservableObject {
             // Check for completion
             checkCompletion()
         } else {
+            print("❌ Input rejected")
+            
             // Reject incorrect input and count as mistake
             state.incrementMistakeCount()
             
@@ -134,45 +185,50 @@ class PuzzleViewModel: ObservableObject {
             state.startTime = Date()
         }
         
-        // Get all unrevealed letters from the puzzle
-        var unrevealedLetters: [Character: [Int]] = [:]
+        // Get all unrevealed letters/numbers from the puzzle
+        var unrevealedCharacters: [Character: [Int]] = [:]
         
         for (index, char) in puzzle.encodedText.enumerated() {
-            // Only consider alphabetic characters that haven't been revealed yet
-            if char.isLetter && !state.revealedLetters.contains(char) {
-                // Store all occurrences of each unrevealed letter
-                if unrevealedLetters[char] == nil {
-                    unrevealedLetters[char] = [index]
+            // Consider both alphabetic characters and numbers that haven't been revealed yet
+            if (char.isLetter || char.isNumber) && !state.revealedLetters.contains(char) {
+                // Store all occurrences of each unrevealed character
+                if unrevealedCharacters[char] == nil {
+                    unrevealedCharacters[char] = [index]
                 } else {
-                    unrevealedLetters[char]?.append(index)
+                    unrevealedCharacters[char]?.append(index)
                 }
             }
         }
         
-        // If no unrevealed letters, return
-        if unrevealedLetters.isEmpty {
+        // If no unrevealed characters, return
+        if unrevealedCharacters.isEmpty {
             return
         }
         
-        // Pick a random unrevealed letter
-        let randomIndex = Int.random(in: 0..<unrevealedLetters.count)
-        let randomLetter = Array(unrevealedLetters.keys)[randomIndex]
+        // Pick a random unrevealed character
+        let randomIndex = Int.random(in: 0..<unrevealedCharacters.count)
+        let randomChar = Array(unrevealedCharacters.keys)[randomIndex]
         
-        // Get a random occurrence of this letter
-        let occurrences = unrevealedLetters[randomLetter]!
+        // Get all occurrences of this character
+        let occurrences = unrevealedCharacters[randomChar]!
         let randomOccurrenceIndex = occurrences[Int.random(in: 0..<occurrences.count)]
         
-        // Get the correct solution letter for this position
-        let correctLetter = puzzle.solution[puzzle.solution.index(puzzle.solution.startIndex, offsetBy: randomOccurrenceIndex)]
+        // Get the correct solution letter for this position and ensure it's uppercase
+        let correctLetterStr = String(puzzle.solution[puzzle.solution.index(puzzle.solution.startIndex, offsetBy: randomOccurrenceIndex)])
+        let correctLetter = Character(correctLetterStr.uppercased())
         
-        // Mark this letter as revealed with its specific index
-        state.revealLetter(randomLetter, at: randomOccurrenceIndex)
+        // Mark this character as revealed with its specific index
+        state.revealLetter(randomChar, at: randomOccurrenceIndex)
         
-        // Fill in ONLY the randomly selected occurrence, ensuring uppercase
-        state.userInput[randomOccurrenceIndex] = String(correctLetter).uppercased()
+        // Fill in ONLY the randomly selected occurrence
+        state.userInput[randomOccurrenceIndex] = String(correctLetter)
         
-        // Update the letter mapping
-        state.letterMapping[randomLetter] = correctLetter
+        // Update the letter mapping - this is crucial for consistent validation
+        state.letterMapping[randomChar] = correctLetter
+        
+        // Debug logging
+        print("Hint revealed: \(randomChar) -> \(correctLetter) at position \(randomOccurrenceIndex)")
+        print("Updated letter mapping: \(state.letterMapping)")
         
         // If there's a selected cell, move to the next one
         if state.selectedCellIndex != nil {
@@ -181,16 +237,20 @@ class PuzzleViewModel: ObservableObject {
         
         // Check for completion
         checkCompletion()
-        
-        // Print for debugging
-        print("Hint revealed: \(randomLetter) -> \(correctLetter) at position \(randomOccurrenceIndex), hint count: \(state.hintCount)")
     }
     
     func checkCompletion() {
         guard let puzzle = currentPuzzle else { return }
         
-        let userSolution = state.userInput.joined()
-        if userSolution == puzzle.solution {
+        // Convert both to uppercase for comparison
+        let userSolution = state.userInput.joined().uppercased()
+        let correctSolution = puzzle.solution.uppercased()
+        
+        print("Checking completion - User solution: \(userSolution)")
+        print("Correct solution: \(correctSolution)")
+        
+        if userSolution == correctSolution {
+            print("✅ Puzzle completed!")
             state.markComplete()
         }
     }
@@ -240,7 +300,7 @@ class PuzzleViewModel: ObservableObject {
         var nextIndex = currentIndex - 1
         while nextIndex >= 0 {
             let char = puzzle.encodedText[puzzle.encodedText.index(puzzle.encodedText.startIndex, offsetBy: nextIndex)]
-            if char.isLetter {
+            if char.isLetter || char.isNumber {
                 state.selectCell(at: nextIndex)
                 break
             }
@@ -256,7 +316,7 @@ class PuzzleViewModel: ObservableObject {
         var nextIndex = currentIndex + 1
         while nextIndex < puzzle.encodedText.count {
             let char = puzzle.encodedText[puzzle.encodedText.index(puzzle.encodedText.startIndex, offsetBy: nextIndex)]
-            if char.isLetter {
+            if char.isLetter || char.isNumber {
                 state.selectCell(at: nextIndex)
                 break
             }
@@ -284,8 +344,10 @@ class PuzzleViewModel: ObservableObject {
     }
     
     func loadNextPuzzle() {
-        if let puzzle = databaseService.fetchRandomPuzzle(excludingCurrent: currentPuzzle) {
-            startNewPuzzle(puzzle: puzzle)
+        guard let currPuzzle = currentPuzzle else { return }
+        
+        if let newPuzzle = databaseService.fetchRandomPuzzle(current: currPuzzle, encodingType: encodingType) {
+            startNewPuzzle(puzzle: newPuzzle)
         }
     }
     
