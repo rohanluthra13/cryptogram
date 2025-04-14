@@ -4,6 +4,7 @@ struct PuzzleView: View {
     @StateObject private var viewModel: PuzzleViewModel
     @StateObject private var themeManager = ThemeManager()
     @State private var showSettings = false
+    @State private var showCompletionView = false
     @AppStorage("isDarkMode") private var isDarkMode = false
     
     init(puzzle: Puzzle? = nil) {
@@ -12,7 +13,7 @@ struct PuzzleView: View {
     
     var body: some View {
         ZStack {
-            if let puzzle = viewModel.currentPuzzle {
+            if viewModel.currentPuzzle != nil {
                 VStack(spacing: 0) {
                     // Timer and Mistakes on the same horizontal level
                     ZStack {
@@ -84,8 +85,9 @@ struct PuzzleView: View {
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(CryptogramTheme.Colors.background)
+                .opacity(showCompletionView ? 0 : 1)
                 .overlay(
-                    // Overlay for paused state or game over
+                    // Overlay for paused state (not completion which is handled separately)
                     Group {
                         if viewModel.isPaused {
                             ZStack {
@@ -103,48 +105,6 @@ struct PuzzleView: View {
                                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                                 .padding(.bottom, 240)
                             }
-                        } else if viewModel.isComplete {
-                            Color(hex: "#f8f8f8").opacity(0.7)
-                                .edgesIgnoringSafeArea(.all)
-                                .overlay(
-                                    VStack(spacing: 16) {
-                                        Text(viewModel.mistakeCount > 0 ? "Completed!" : "Perfect Solve!")
-                                            .font(.headline)
-                                            .foregroundColor(CryptogramTheme.Colors.text)
-                                        
-                                        if let completionTime = viewModel.completionTime {
-                                            Text("Time: \(formatTime(completionTime))")
-                                                .font(.subheadline)
-                                                .foregroundColor(CryptogramTheme.Colors.text)
-                                        }
-                                        
-                                        if viewModel.mistakeCount > 0 {
-                                            Text("Mistakes: \(viewModel.mistakeCount)")
-                                                .font(.subheadline)
-                                                .foregroundColor(CryptogramTheme.Colors.text)
-                                        }
-                                        
-                                        HStack(spacing: 24) {
-                                            // Try again icon - retry the current puzzle
-                                            Button(action: { viewModel.reset() }) {
-                                                Image(systemName: "arrow.counterclockwise")
-                                                    .font(.title3)
-                                                    .frame(width: 44, height: 44)
-                                                    .foregroundColor(CryptogramTheme.Colors.text)
-                                                    .accessibilityLabel("Try Again")
-                                            }
-                                            
-                                            // New puzzle icon - existing functionality
-                                            Button(action: { viewModel.refreshPuzzleWithCurrentSettings() }) {
-                                                Image(systemName: "arrow.2.circlepath")
-                                                    .font(.title3)
-                                                    .frame(width: 44, height: 44)
-                                                    .foregroundColor(CryptogramTheme.Colors.text)
-                                                    .accessibilityLabel("New Puzzle")
-                                            }
-                                        }
-                                    }
-                                )
                         } else if showSettings {
                             // Full-screen settings overlay
                             ZStack {
@@ -165,12 +125,21 @@ struct PuzzleView: View {
                                     .environmentObject(viewModel)
                                     .environmentObject(themeManager)
                             }
-                            // Removed GeometryReader and VStack with 50pt gap
                         }
                     }
                 )
-                
-                // Always place settings button on the very top layer of the ZStack
+            } else {
+                LoadingView(message: "Loading your puzzle...")
+            }
+            
+            // Completion overlay - conditionally shown
+            if showCompletionView {
+                PuzzleCompletionView(viewModel: viewModel, showCompletionView: $showCompletionView)
+                    .transition(.opacity)
+            }
+            
+            // Always place settings button on the very top layer of the ZStack
+            if !showCompletionView {
                 VStack {
                     HStack {
                         Spacer()
@@ -188,8 +157,21 @@ struct PuzzleView: View {
                     Spacer()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-            } else {
-                LoadingView(message: "Loading your puzzle...")
+            }
+        }
+        .onChange(of: viewModel.isComplete) { oldValue, isComplete in
+            if isComplete {
+                // Add haptic feedback for completion
+                let generator = UINotificationFeedbackGenerator()
+                generator.notificationOccurred(.success)
+                
+                // First trigger wiggle animation
+                viewModel.triggerCompletionWiggle()
+                
+                // Then transition to completion view with a slight delay
+                withAnimation(.easeOut(duration: 0.5).delay(0.7)) {
+                    showCompletionView = true
+                }
             }
         }
         .navigationBarHidden(true)

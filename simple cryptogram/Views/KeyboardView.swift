@@ -75,5 +75,4 @@ struct KeyboardView: View {
 #Preview {
     KeyboardView(onLetterPress: { _ in }, onBackspacePress: { })
         .padding(8)
-        .previewLayout(.sizeThatFits)
 } 

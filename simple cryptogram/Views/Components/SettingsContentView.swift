@@ -210,7 +210,6 @@ struct SettingsContentView: View {
     SettingsContentView()
         .padding()
         .background(Color(hex: "#f8f8f8"))
-        .previewLayout(.sizeThatFits)
         .environmentObject(PuzzleViewModel())
         .environmentObject(ThemeManager())
         .environmentObject(SettingsViewModel())

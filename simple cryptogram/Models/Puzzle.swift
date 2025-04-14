@@ -32,7 +32,7 @@ struct Puzzle: Identifiable {
     
     // Creates a list of CryptogramCells from the puzzle
     func createCells(encodingType: String = "Letters") -> [CryptogramCell] {
-        var cells: [CryptogramCell] = []
+        var _ = [CryptogramCell]()
         
         if encodingType == "Letters" {
             return createLetterEncodedCells()
@@ -53,7 +53,7 @@ struct Puzzle: Identifiable {
     // - Letters are properly aligned between encoded and solution text
     // - No extra cells are created for spaces/punctuation in the encoded text
     private func createLetterEncodedCells() -> [CryptogramCell] {
-        var cells: [CryptogramCell] = []
+        var _ = [CryptogramCell]()
         
         // Ensure solution and encodedText are properly aligned
         let solutionArray = Array(solution.uppercased())
@@ -74,7 +74,7 @@ struct Puzzle: Identifiable {
         }
         
         var solutionIndex = 0
-        var solutionCharPosition = 0
+        var _ = 0
         var processedCells: [CryptogramCell] = []
         
         for i in 0..<encodedArray.count {

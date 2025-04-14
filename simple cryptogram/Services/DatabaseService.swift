@@ -82,9 +82,9 @@ class DatabaseService {
             let createdAt = Expression<String>("created_at")
             let quoteId = Expression<Int>("quote_id")
             let letterEncoded = Expression<String>("letter_encoded")
-            let letterKey = Expression<String>("letter_key")
+            let _ = Expression<String>("letter_key")
             let numberEncoded = Expression<String>("number_encoded")
-            let numberKey = Expression<String>("number_key")
+            let _ = Expression<String>("number_key")
             
             // Start with a random query
             var randomQuery = quotesTable.select(id, quoteText, author, length, difficulty, createdAt)
@@ -143,9 +143,9 @@ class DatabaseService {
             let createdAt = Expression<String>("created_at")
             let encodedQuoteId = Expression<Int>("quote_id")
             let letterEncoded = Expression<String>("letter_encoded")
-            let letterKey = Expression<String>("letter_key")
+            let _ = Expression<String>("letter_key")
             let numberEncoded = Expression<String>("number_encoded")
-            let numberKey = Expression<String>("number_key")
+            let _ = Expression<String>("number_key")
             
             if let quoteRow = try db.pluck(quotesTable.filter(quoteId == id)),
                let encodedRow = try db.pluck(encodedQuotesTable.filter(encodedQuoteId == id)) {

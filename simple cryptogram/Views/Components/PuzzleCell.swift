@@ -7,6 +7,8 @@ struct PuzzleCell: View {
     
     @AppStorage("encodingType") private var encodingType = "Letters"
     @State private var cellHighlightAmount: CGFloat = 0.0
+    @State private var wiggleOffset: CGFloat = 0
+    @EnvironmentObject private var viewModel: PuzzleViewModel
     
     var body: some View {
         Button(action: onTap) {
@@ -53,10 +55,11 @@ struct PuzzleCell: View {
                     .foregroundColor(textColor)
             }
             .padding(.horizontal, 0)
+            .offset(x: wiggleOffset)
         }
         .buttonStyle(PlainButtonStyle())
         .disabled(cell.isRevealed)
-        .onChange(of: cell.wasJustFilled) { newValue in
+        .onChange(of: cell.wasJustFilled) { oldValue, newValue in
             if newValue {
                 withAnimation(.easeInOut(duration: 0.3)) {
                     cellHighlightAmount = 1.0
@@ -68,6 +71,24 @@ struct PuzzleCell: View {
                         cellHighlightAmount = 0.0
                     }
                 }
+            }
+        }
+        .onChange(of: viewModel.isWiggling) { oldValue, wiggling in
+            if wiggling {
+                // Randomize wiggle direction slightly for natural effect
+                // Add slight delay based on cell position for wave effect
+                let randomOffset = CGFloat.random(in: -3...3)
+                let staggerDelay = Double(cell.position % 5) * 0.05
+                
+                withAnimation(
+                    .spring(response: 0.15, dampingFraction: 0.2)
+                    .delay(staggerDelay)
+                    .repeatCount(3, autoreverses: true)
+                ) {
+                    wiggleOffset = randomOffset
+                }
+            } else {
+                wiggleOffset = 0
             }
         }
     }

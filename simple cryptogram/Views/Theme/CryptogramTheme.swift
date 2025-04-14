@@ -3,8 +3,8 @@ import SwiftUI
 struct CryptogramTheme {
     struct Colors {
         // Main colors
-        static let primary = Color("Primary")
-        static let secondary = Color("Secondary")
+        static let primary = Color("PrimaryApp")
+        static let secondary = Color("SecondaryApp")
         
         // Theme colors
         static let background = Color("Background")

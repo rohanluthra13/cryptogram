@@ -75,5 +75,4 @@ struct NavigationBarView: View {
         onNextPuzzle: {},
         isPaused: false
     )
-    .previewLayout(.sizeThatFits)
 } 

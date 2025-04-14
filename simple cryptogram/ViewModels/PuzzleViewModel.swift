@@ -14,6 +14,7 @@ class PuzzleViewModel: ObservableObject {
     @Published private(set) var cells: [CryptogramCell] = []
     @Published private(set) var session: PuzzleSession = PuzzleSession()
     @Published private(set) var currentPuzzle: Puzzle?
+    @Published var isWiggling = false // Animation state for completion celebrations
     
     // Add letter mapping to track and enforce cryptogram rules
     private var letterMapping: [String: String] = [:]
@@ -286,7 +287,7 @@ class PuzzleViewModel: ObservableObject {
     func handleDelete(at index: Int? = nil) {
         let targetIndex = index ?? session.selectedCellIndex ?? -1
         if targetIndex >= 0 {
-            modifyCells(at: targetIndex, operation: .delete)
+            _ = modifyCells(at: targetIndex, operation: .delete)
         }
     }
 
@@ -317,7 +318,7 @@ class PuzzleViewModel: ObservableObject {
             session.startTime = Date() // Start timer on first revealed cell
         }
         
-        modifyCells(at: targetIndex, operation: .reveal)
+        _ = modifyCells(at: targetIndex, operation: .reveal)
         selectNextUnrevealedCell(after: targetIndex)
     }
     
@@ -418,6 +419,18 @@ class PuzzleViewModel: ObservableObject {
             session.markComplete()
             
             // Save score or statistics here if needed
+        }
+    }
+    
+    // MARK: - Completion Animations
+    
+    func triggerCompletionWiggle() {
+        // Trigger wiggle animation in cells
+        isWiggling = true
+        
+        // Reset wiggle after animation completes
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+            self?.isWiggling = false
         }
     }
 }
