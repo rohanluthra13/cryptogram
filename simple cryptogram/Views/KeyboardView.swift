@@ -44,6 +44,7 @@ struct KeyboardView: View {
         .padding(.horizontal, 4)
         .frame(maxWidth: .infinity)  // Use all available width
         .frame(height: keyHeight * 3 + rowSpacing * 2 + 8) // Fixed height based on contents
+        .padding(.bottom, 4)
     }
     
     // Helper method to create a key button

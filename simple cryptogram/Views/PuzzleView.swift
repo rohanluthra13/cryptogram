@@ -54,16 +54,23 @@ struct PuzzleView: View {
                     
                     Spacer(minLength: 16)
                     
-                    // Navigation Bar
+                    // Navigation Bar with all controls in a single layer
                     NavigationBarView(
                         onMoveLeft: { viewModel.moveToAdjacentCell(direction: -1) },
                         onMoveRight: { viewModel.moveToAdjacentCell(direction: 1) },
                         onTogglePause: viewModel.togglePause,
                         onNextPuzzle: { viewModel.refreshPuzzleWithCurrentSettings() },
-                        isPaused: viewModel.isPaused
+                        onTryAgain: { 
+                            viewModel.reset()
+                            // Re-apply difficulty settings to the same puzzle
+                            if let currentPuzzle = viewModel.currentPuzzle {
+                                viewModel.startNewPuzzle(puzzle: currentPuzzle)
+                            }
+                        },
+                        isPaused: viewModel.isPaused,
+                        isFailed: viewModel.isFailed,
+                        showCenterButtons: true // Show all buttons in the nav bar
                     )
-                    
-                    Spacer(minLength: 16)
                     
                     // Keyboard View - fixed at bottom
                     KeyboardView(
@@ -78,7 +85,7 @@ struct PuzzleView: View {
                             }
                         }
                     )
-                    .padding(.bottom, 8)
+                    .padding(.bottom, 4)
                     .padding(.horizontal, 4)
                     .frame(maxWidth: .infinity)
                     .disabled(viewModel.isPaused || viewModel.isComplete) // Disable keyboard when game is paused or complete
@@ -98,12 +105,26 @@ struct PuzzleView: View {
                                 
                                 // Pause text
                                 Button(action: { viewModel.togglePause() }) {
-                                    Text("PAUSED")
+                                    Text("paused")
                                         .font(.headline)
-                                        .foregroundColor(Color(hex: "#555555"))
+                                        .foregroundColor(CryptogramTheme.Colors.text)
                                 }
                                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                                 .padding(.bottom, 240)
+                            }
+                        } else if viewModel.isFailed {
+                            ZStack {
+                                // Semi-transparent overlay for game over
+                                Color.black.opacity(0.5)
+                                    .edgesIgnoringSafeArea(.all)
+                                    .allowsHitTesting(false)  // This lets clicks pass through to navigation bar
+                                
+                                // Game over text - without dedicated icon
+                                Text("game over")
+                                    .font(.headline)
+                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                                    .padding(.bottom, 240)
                             }
                         } else if showSettings {
                             // Full-screen settings overlay
@@ -138,13 +159,13 @@ struct PuzzleView: View {
                     .transition(.opacity)
             }
             
-            // Always place settings button on the very top layer of the ZStack
+            // Settings button on the top layer
             if !showCompletionView {
+                // Settings button at top right
                 VStack {
                     HStack {
                         Spacer()
                         
-                        // Settings button
                         Button(action: { showSettings.toggle() }) {
                             Image(systemName: "gearshape")
                                 .font(.title3)

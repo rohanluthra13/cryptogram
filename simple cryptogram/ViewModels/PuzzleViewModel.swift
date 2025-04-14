@@ -33,6 +33,10 @@ class PuzzleViewModel: ObservableObject {
         session.isComplete
     }
     
+    var isFailed: Bool {
+        session.isFailed
+    }
+    
     var mistakeCount: Int {
         session.mistakeCount
     }
@@ -344,8 +348,7 @@ class PuzzleViewModel: ObservableObject {
     }
     
     func refreshPuzzleWithCurrentSettings() {
-        guard let currentPuzzle = currentPuzzle,
-              let id = Int(currentPuzzle.id.uuidString) else {
+        guard let currentPuzzle = currentPuzzle else {
             // If current puzzle is not valid, fetch a new random one
             if let puzzle = databaseService.fetchRandomPuzzle(encodingType: encodingType) {
                 startNewPuzzle(puzzle: puzzle)
@@ -353,8 +356,9 @@ class PuzzleViewModel: ObservableObject {
             return
         }
         
-        // Reload the same puzzle with new encoding
-        if let puzzle = databaseService.fetchPuzzleById(id, encodingType: encodingType) {
+        // Extract the first part of the UUID string and try to convert to Int
+        // Or just fetch a random puzzle regardless of the current one
+        if let puzzle = databaseService.fetchRandomPuzzle(current: currentPuzzle, encodingType: encodingType) {
             startNewPuzzle(puzzle: puzzle)
         }
     }
@@ -419,6 +423,18 @@ class PuzzleViewModel: ObservableObject {
             session.markComplete()
             
             // Save score or statistics here if needed
+        }
+        
+        // Also check if the game is failed due to mistake count
+        if session.mistakeCount >= 3 && !session.isFailed {
+            print("Game over: Too many mistakes!")
+            session.markFailed()
+            
+            // Add haptic feedback for failure
+            DispatchQueue.main.async {
+                let generator = UINotificationFeedbackGenerator()
+                generator.notificationOccurred(.error)
+            }
         }
     }
     
