@@ -13,7 +13,13 @@ struct PuzzleCell: View {
             VStack(spacing: 2) {
                 // Input cell
                 ZStack(alignment: .center) {
-                    if cell.isRevealed {
+                    // Background for revealed/pre-filled cells
+                    if cell.isPreFilled { // Normal mode pre-filled
+                        Rectangle()
+                            .frame(width: 24, height: 28)
+                            .foregroundColor(CryptogramTheme.Colors.preFilledBackground)
+                            .cornerRadius(2)
+                    } else if cell.isRevealed { // Hinted cell
                         Rectangle()
                             .frame(width: 24, height: 28)
                             .foregroundColor(Color.green.opacity(0.15))

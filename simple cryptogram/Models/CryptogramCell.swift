@@ -16,6 +16,7 @@ struct CryptogramCell: Identifiable {
     var isRevealed: Bool = false // Whether this letter has been revealed
     var isError: Bool = false    // Whether there's an error in this cell
     var wasJustFilled: Bool = false // Flag to track when a cell was just filled for animation
+    var isPreFilled: Bool = false // Whether this cell was pre-filled at the start (Normal mode)
     
     // Computed properties
     var isEmpty: Bool { userInput.isEmpty }
@@ -35,7 +36,8 @@ struct CryptogramCell: Identifiable {
         userInput: String = "",
         isRevealed: Bool = false,
         isError: Bool = false,
-        wasJustFilled: Bool = false
+        wasJustFilled: Bool = false,
+        isPreFilled: Bool = false
     ) {
         self.position = position
         self.encodedChar = encodedChar
@@ -45,5 +47,6 @@ struct CryptogramCell: Identifiable {
         self.isRevealed = isRevealed
         self.isError = isError
         self.wasJustFilled = wasJustFilled
+        self.isPreFilled = isPreFilled
     }
 } 

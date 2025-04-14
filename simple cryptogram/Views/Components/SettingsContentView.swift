@@ -18,6 +18,67 @@ struct SettingsContentView: View {
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.bottom, 5)
             
+            // Difficulty Toggle
+            VStack(spacing: 8) {
+                HStack {
+                    Spacer()
+
+                    // Left side - Normal mode option
+                    Button(action: {
+                        if settingsViewModel.selectedMode != .normal {
+                            settingsViewModel.selectedMode = .normal
+                            // Potentially refresh puzzle or apply settings if needed immediately
+                            // puzzleViewModel.refreshPuzzleWithCurrentSettings()
+                        }
+                    }) {
+                        Text(DifficultyMode.normal.displayName.lowercased())
+                            .font(.footnote)
+                            .fontWeight(settingsViewModel.selectedMode == .normal ? .bold : .regular)
+                            .foregroundColor(settingsViewModel.selectedMode == .normal ?
+                                            CryptogramTheme.Colors.text :
+                                            CryptogramTheme.Colors.text.opacity(0.4))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .accessibilityLabel("Switch to Normal difficulty")
+                    .padding(.trailing, 6)
+
+                    // Center - Toggle switch with arrows
+                    Button(action: {
+                        settingsViewModel.selectedMode = settingsViewModel.selectedMode == .normal ? .expert : .normal
+                        // Potentially refresh puzzle or apply settings if needed immediately
+                        // puzzleViewModel.refreshPuzzleWithCurrentSettings()
+                    }) {
+                        Image(systemName: settingsViewModel.selectedMode == .normal ? "arrow.right" : "arrow.left")
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                    }
+                    .accessibilityLabel("Toggle difficulty mode")
+                    .padding(.horizontal, 6)
+
+                    // Right side - Expert mode option
+                    Button(action: {
+                        if settingsViewModel.selectedMode != .expert {
+                            settingsViewModel.selectedMode = .expert
+                            // Potentially refresh puzzle or apply settings if needed immediately
+                            // puzzleViewModel.refreshPuzzleWithCurrentSettings()
+                        }
+                    }) {
+                        Text(DifficultyMode.expert.displayName.lowercased())
+                            .font(.footnote)
+                            .fontWeight(settingsViewModel.selectedMode == .expert ? .bold : .regular)
+                            .foregroundColor(settingsViewModel.selectedMode == .expert ?
+                                            CryptogramTheme.Colors.text :
+                                            CryptogramTheme.Colors.text.opacity(0.4))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .accessibilityLabel("Switch to Expert difficulty")
+                    .padding(.leading, 6)
+
+                    Spacer()
+                }
+            }
+            .padding(.top, 10) // Add spacing if needed
+
             // Encoding Type toggle
             VStack(spacing: 8) {
                 HStack {
@@ -46,8 +107,8 @@ struct SettingsContentView: View {
                         selectedEncodingType = selectedEncodingType == "Letters" ? "Numbers" : "Letters"
                         puzzleViewModel.refreshPuzzleWithCurrentSettings()
                     }) {
-                        Image(systemName: "arrow.left.arrow.right")
-                            .font(.system(size: 15, weight: .medium))
+                        Image(systemName: selectedEncodingType == "Letters" ? "arrow.right" : "arrow.left")
+                            .font(.system(size: 13, weight: .medium))
                             .foregroundColor(CryptogramTheme.Colors.text)
                     }
                     .accessibilityLabel("Toggle encoding type")
@@ -73,29 +134,7 @@ struct SettingsContentView: View {
                     
                     Spacer()
                 }
-                
-                // Thin line under the toggle
-                Rectangle()
-                    .frame(height: 1)
-                    .foregroundColor(Color.gray.opacity(0.3))
             }
-            
-            // Difficulty Picker
-            VStack(spacing: 8) {
-                Picker("Difficulty", selection: $settingsViewModel.selectedMode) {
-                    ForEach(DifficultyMode.allCases) { mode in
-                        Text(mode.displayName).tag(mode)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .accessibilityLabel("Select difficulty mode")
-                
-                // Thin line under the picker
-                Rectangle()
-                    .frame(height: 1)
-                    .foregroundColor(Color.gray.opacity(0.3))
-            }
-            .padding(.top, 10) // Add some spacing above the difficulty picker
             
             // Appearance Section
             Text("Appearance")
@@ -132,8 +171,8 @@ struct SettingsContentView: View {
                         isDarkMode.toggle()
                         themeManager.applyTheme()
                     }) {
-                        Image(systemName: "arrow.left.arrow.right")
-                            .font(.system(size: 15, weight: .medium))
+                        Image(systemName: !isDarkMode ? "arrow.right" : "arrow.left")
+                            .font(.system(size: 13, weight: .medium))
                             .foregroundColor(CryptogramTheme.Colors.text)
                     }
                     .accessibilityLabel("Toggle dark mode")
@@ -158,11 +197,6 @@ struct SettingsContentView: View {
                     
                     Spacer()
                 }
-                
-                // Thin line under the toggle
-                Rectangle()
-                    .frame(height: 1)
-                    .foregroundColor(Color.gray.opacity(0.3))
             }
         }
     }

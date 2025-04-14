@@ -153,6 +153,7 @@ class PuzzleViewModel: ObservableObject {
                         cells[indexToReveal].userInput = letterString
                         cells[indexToReveal].isRevealed = true
                         cells[indexToReveal].isError = false // Ensure no error state
+                        cells[indexToReveal].isPreFilled = true // Mark as pre-filled for Normal mode
                         
                         // Track the index to prevent revealing the same cell for another letter if counts overlap
                         revealedIndices.insert(indexToReveal)
@@ -257,6 +258,7 @@ class PuzzleViewModel: ObservableObject {
             cells[index].userInput = solutionString
             cells[index].isError = false
             cells[index].isRevealed = true
+            cells[index].isPreFilled = false // Hints are not pre-filled
             
             // Record this reveal in the session
             session.revealCell(at: index)
@@ -325,6 +327,7 @@ class PuzzleViewModel: ObservableObject {
             cells[i].userInput = ""
             cells[i].isRevealed = false
             cells[i].isError = false
+            cells[i].isPreFilled = false // Ensure pre-filled is also reset
         }
         
         // Reset letter mappings

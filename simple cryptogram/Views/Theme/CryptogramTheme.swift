@@ -15,6 +15,7 @@ struct CryptogramTheme {
         static let error = Color(.systemRed)
         static let success = Color(.systemGreen)
         static let hint = Color(.systemOrange)
+        static let preFilledBackground = Color(.systemBlue).opacity(0.15) // Muted blue-grey for pre-filled cells
         
         // Border colors
         static let selectedBorder = Color("SelectedBorder")
