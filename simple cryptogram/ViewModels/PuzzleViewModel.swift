@@ -111,11 +111,12 @@ class PuzzleViewModel: ObservableObject {
     }
     
     // Unified cell modification system that only updates the specific cell
-    private func modifyCells(at index: Int, operation: CellOperation) {
-        guard index >= 0 && index < cells.count, !cells[index].isSymbol else { return }
+    private func modifyCells(at index: Int, operation: CellOperation) -> Bool {
+        guard index >= 0 && index < cells.count, !cells[index].isSymbol else { return false }
         
         let targetCell = cells[index]
         let encodedChar = targetCell.encodedChar
+        var inputWasCorrect = false
         
         switch operation {
         case .input(let letter):
@@ -145,7 +146,20 @@ class PuzzleViewModel: ObservableObject {
                     endTime = Date()
                     isComplete = true
                 }
+                
+                // For incorrect letters, remove them after a brief delay
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+                    guard let self = self else { return }
+                    
+                    // Clear the cell after showing the error briefly
+                    if index < self.cells.count {
+                        self.cells[index].userInput = ""
+                        self.cells[index].isError = false
+                    }
+                }
             }
+            
+            inputWasCorrect = isCorrect
             
         case .delete:
             // Clear only the target cell
@@ -155,7 +169,7 @@ class PuzzleViewModel: ObservableObject {
         case .reveal:
             guard let solutionChar = targetCell.solutionChar else { 
                 print("DEBUG: Tried to reveal a cell without a solution character at index \(index)")
-                return 
+                return false 
             }
             let solutionString = String(solutionChar)
             
@@ -165,10 +179,14 @@ class PuzzleViewModel: ObservableObject {
             cells[index].userInput = solutionString
             cells[index].isError = false
             cells[index].isRevealed = true
+            
+            inputWasCorrect = true
         }
         
         // Check for puzzle completion after any modification
         checkPuzzleCompletion()
+        
+        return inputWasCorrect
     }
     
     // Refactor existing methods to use the unified cell modification approach
@@ -177,8 +195,9 @@ class PuzzleViewModel: ObservableObject {
             startTime = Date() // Start timer on first input
         }
         
-        modifyCells(at: index, operation: .input(letter))
-        moveToNextCell()
+        if modifyCells(at: index, operation: .input(letter)) {
+            moveToNextCell()
+        }
     }
 
     func handleDelete(at index: Int? = nil) {

@@ -37,11 +37,6 @@ struct PuzzleView: View {
                     .padding(.horizontal, 16)
                     .padding(.top, 4)
                     
-                    // Progress indicator
-                    ProgressView(value: viewModel.progressPercentage)
-                        .padding(.horizontal, 16)
-                        .padding(.top, 8)
-                    
                     // Puzzle Grid in ScrollView with flexible height
                     ScrollView {
                         PuzzleGrid()

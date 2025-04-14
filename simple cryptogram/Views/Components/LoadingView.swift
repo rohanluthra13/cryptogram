@@ -5,10 +5,6 @@ struct LoadingView: View {
     
     var body: some View {
         VStack(spacing: 20) {
-            ProgressView()
-                .scaleEffect(1.5)
-                .progressViewStyle(CircularProgressViewStyle(tint: CryptogramTheme.Colors.primary))
-            
             Text(message)
                 .font(CryptogramTheme.Typography.body)
                 .foregroundColor(CryptogramTheme.Colors.text)
