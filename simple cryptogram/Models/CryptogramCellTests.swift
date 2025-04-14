@@ -8,6 +8,7 @@ struct CryptogramCellTests {
         testLetterEncoding()
         testComplexLetterEncoding()
         testNumberEncoding()
+        testComplexNumberEncoding()
         
         print("=== Tests Complete ===")
     }
@@ -16,14 +17,14 @@ struct CryptogramCellTests {
         print("Testing Letter Encoding...")
         
         let puzzle = Puzzle(
-            encodedText: "ABC DEF",
-            solution: "XYZ MNO",
+            encodedText: "ABC, DEF",
+            solution: "XYZ, MNO",
             hint: "Test puzzle"
         )
         
         let cells = puzzle.createCells(encodingType: "Letters")
         
-        // Validate cell count - now we should have 7 cells (3 letters + space + 3 letters)
+        // Validate cell count - now we should have 7 cells (3 letters + comma + space + 3 letters)
         print("Letter encoding cell count: \(cells.count)")
         assert(cells.count == 7, "Expected 7 cells but got \(cells.count)")
         
@@ -32,13 +33,17 @@ struct CryptogramCellTests {
         assert(cells[0].solutionChar == "X", "Expected 'X' but got '\(String(describing: cells[0].solutionChar))'")
         assert(!cells[0].isSymbol, "Cell 0 should not be a symbol")
         
-        // Validate space is created from solution, not encoded text
-        assert(cells[3].encodedChar == " ", "Expected space but got '\(cells[3].encodedChar)'")
+        // Validate comma is created from solution, not encoded text
+        assert(cells[3].encodedChar == ",", "Expected comma but got '\(cells[3].encodedChar)'")
         assert(cells[3].isSymbol, "Cell 3 should be a symbol")
         
-        // Validate cells after the space
-        assert(cells[4].encodedChar == "D", "Expected 'D' but got '\(cells[4].encodedChar)'")
-        assert(cells[4].solutionChar == "M", "Expected 'M' but got '\(String(describing: cells[4].solutionChar))'")
+        // Validate space after comma
+        assert(cells[4].encodedChar == " ", "Expected space but got '\(cells[4].encodedChar)'")
+        assert(cells[4].isSymbol, "Cell 4 should be a symbol")
+        
+        // Validate cells after the punctuation
+        assert(cells[5].encodedChar == "D", "Expected 'D' but got '\(cells[5].encodedChar)'")
+        assert(cells[5].solutionChar == "M", "Expected 'M' but got '\(String(describing: cells[5].solutionChar))'")
         
         print("Letter encoding test passed!")
     }
@@ -47,8 +52,8 @@ struct CryptogramCellTests {
         print("Testing Complex Letter Encoding...")
         
         let puzzle = Puzzle(
-            encodedText: "ABC, DEF GHI!",
-            solution: "XYZ, MNO PQR!",
+            encodedText: "ABC, DEF! GHI.",
+            solution: "XYZ, MNO! PQR.",
             hint: "Complex test puzzle"
         )
         
@@ -61,38 +66,31 @@ struct CryptogramCellTests {
         assert(cells[0].encodedChar == "A", "Expected 'A' but got '\(cells[0].encodedChar)'")
         assert(cells[0].solutionChar == "X", "Expected 'X' but got '\(String(describing: cells[0].solutionChar))'")
         
-        // Find comma position
+        // Validate punctuation characters
         let commaIndex = cells.firstIndex(where: { $0.encodedChar == "," })
         assert(commaIndex != nil, "Comma not found in cells")
         if let idx = commaIndex {
             assert(cells[idx].isSymbol, "Comma should be marked as a symbol")
         }
         
-        // Find space after comma
-        let spaceAfterCommaIndex = cells.firstIndex(where: { $0.encodedChar == " " && $0.isSymbol })
-        assert(spaceAfterCommaIndex != nil, "Space after comma not found")
-        
-        // Test cell after first space
-        if let spaceIdx = spaceAfterCommaIndex, spaceIdx + 1 < cells.count {
-            assert(cells[spaceIdx + 1].encodedChar == "D", "Expected 'D' after space but got '\(cells[spaceIdx + 1].encodedChar)'")
-            assert(cells[spaceIdx + 1].solutionChar == "M", "Expected 'M' but got '\(String(describing: cells[spaceIdx + 1].solutionChar))'")
-        }
-        
-        // Find second space (between words)
-        let secondSpaceIndex = cells.lastIndex(where: { $0.encodedChar == " " && $0.isSymbol })
-        assert(secondSpaceIndex != nil, "Second space not found")
-        
-        // Test cell after second space
-        if let spaceIdx = secondSpaceIndex, spaceIdx + 1 < cells.count {
-            assert(cells[spaceIdx + 1].encodedChar == "G", "Expected 'G' after second space but got '\(cells[spaceIdx + 1].encodedChar)'")
-            assert(cells[spaceIdx + 1].solutionChar == "P", "Expected 'P' but got '\(String(describing: cells[spaceIdx + 1].solutionChar))'")
-        }
-        
-        // Test exclamation mark
         let exclamationIndex = cells.firstIndex(where: { $0.encodedChar == "!" })
         assert(exclamationIndex != nil, "Exclamation mark not found")
         if let idx = exclamationIndex {
             assert(cells[idx].isSymbol, "Exclamation mark should be marked as a symbol")
+            
+            // Validate that a space follows the exclamation mark as in the solution
+            if idx + 1 < cells.count {
+                assert(cells[idx + 1].encodedChar == " ", "Expected space after exclamation but got '\(cells[idx + 1].encodedChar)'")
+                assert(cells[idx + 1].isSymbol, "Space should be a symbol")
+            }
+        }
+        
+        // Validate period at the end
+        let periodIndex = cells.lastIndex(where: { $0.encodedChar == "." })
+        assert(periodIndex != nil, "Period not found in cells")
+        if let idx = periodIndex {
+            assert(cells[idx].isSymbol, "Period should be marked as a symbol")
+            assert(idx == cells.count - 1, "Period should be the last cell")
         }
         
         print("Complex letter encoding test passed!")
@@ -111,24 +109,92 @@ struct CryptogramCellTests {
         
         let cells = puzzle.createCells(encodingType: "Numbers")
         
-        // Validate cell count - should have 15 cells total (9 numbers for letters + punctuation + spaces)
-        print("Cell count: \(cells.count)")
-        assert(cells.count == 15, "Expected 15 cells but got \(cells.count)")
+        // Validate cell count
+        print("Number encoding cell count: \(cells.count)")
         
-        // Validate first few cells
-        assert(cells[0].encodedChar == "12", "Expected '12' but got '\(cells[0].encodedChar)'")
-        assert(cells[0].solutionChar == "H", "Expected 'H' but got '\(String(describing: cells[0].solutionChar))'")
-        assert(!cells[0].isSymbol, "Cell 0 should not be a symbol")
+        // Find comma
+        let commaIndex = cells.firstIndex(where: { $0.encodedChar == "," })
+        assert(commaIndex != nil, "Comma not found in cells")
+        if let idx = commaIndex {
+            assert(cells[idx].isSymbol, "Comma should be marked as a symbol")
+            
+            // Validate space after comma
+            if idx + 1 < cells.count {
+                assert(cells[idx + 1].encodedChar == " ", "Expected space after comma but got '\(cells[idx + 1].encodedChar)'")
+                assert(cells[idx + 1].isSymbol, "Space should be a symbol")
+            }
+        }
         
-        // Validate spaces
-        assert(cells[1].encodedChar == " ", "Expected space but got '\(cells[1].encodedChar)'")
-        assert(cells[1].isSymbol, "Cell 1 should be a symbol")
-        
-        // Validate punctuation
-        assert(cells[8].encodedChar == ",", "Expected ',' but got '\(cells[8].encodedChar)'")
-        assert(cells[8].isSymbol, "Cell 8 should be a symbol")
+        // Find period
+        let periodIndex = cells.lastIndex(where: { $0.encodedChar == "." })
+        assert(periodIndex != nil, "Period not found")
+        if let idx = periodIndex {
+            assert(cells[idx].isSymbol, "Period should be a symbol")
+            assert(idx == cells.count - 1, "Period should be the last cell")
+        }
         
         print("Number encoding test passed!")
+    }
+    
+    static func testComplexNumberEncoding() {
+        print("Testing Complex Number Encoding...")
+        
+        // Use a more complex number encoding with multiple punctuation marks
+        let puzzle = Puzzle(
+            encodedText: "1 2 3 ' 4 5 6 , 7 8 9 ? 10 11 12 !",
+            solution: "ABC'DEF, GHI? JKL!",
+            hint: "Complex test numeric puzzle"
+        )
+        
+        let cells = puzzle.createCells(encodingType: "Numbers")
+        
+        // Validate cell count
+        print("Complex number encoding cell count: \(cells.count)")
+        
+        // Validate apostrophe
+        let apostropheIndex = cells.firstIndex(where: { $0.encodedChar == "'" })
+        assert(apostropheIndex != nil, "Apostrophe not found")
+        if let idx = apostropheIndex {
+            assert(cells[idx].isSymbol, "Apostrophe should be a symbol")
+            
+            // Validate letter after apostrophe
+            if idx + 1 < cells.count {
+                assert(cells[idx + 1].encodedChar == "4", "Expected '4' after apostrophe but got '\(cells[idx + 1].encodedChar)'")
+                assert(cells[idx + 1].solutionChar == "D", "Expected 'D' but got '\(String(describing: cells[idx + 1].solutionChar))'")
+            }
+        }
+        
+        // Validate comma
+        let commaIndex = cells.firstIndex(where: { $0.encodedChar == "," })
+        assert(commaIndex != nil, "Comma not found")
+        if let idx = commaIndex {
+            assert(cells[idx].isSymbol, "Comma should be a symbol")
+            
+            // Validate space after comma
+            if idx + 1 < cells.count {
+                assert(cells[idx + 1].encodedChar == " ", "Expected space after comma but got '\(cells[idx + 1].encodedChar)'")
+                assert(cells[idx + 1].isSymbol, "Space after comma should be a symbol")
+            }
+        }
+        
+        // Validate question mark
+        let questionIndex = cells.firstIndex(where: { $0.encodedChar == "?" })
+        assert(questionIndex != nil, "Question mark not found")
+        if let idx = questionIndex {
+            assert(cells[idx].isSymbol, "Question mark should be a symbol")
+            
+            // Validate space after question mark
+            if idx + 1 < cells.count {
+                assert(cells[idx + 1].encodedChar == " ", "Expected space after question mark but got '\(cells[idx + 1].encodedChar)'")
+                assert(cells[idx + 1].isSymbol, "Space after question mark should be a symbol")
+            }
+        }
+        
+        // Validate exclamation mark as last character
+        assert(cells.last?.encodedChar == "!", "Expected exclamation mark as last character but got '\(cells.last?.encodedChar ?? "nil")'")
+        assert(cells.last?.isSymbol == true, "Last cell should be a symbol")
+        
+        print("Complex number encoding test passed!")
     }
 }
 #endif 

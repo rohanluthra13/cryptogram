@@ -39,6 +39,16 @@ struct Puzzle: Identifiable {
     }
     
     // Create cells for letter-encoded puzzles (standard cryptogram)
+    // 
+    // This method follows these key steps:
+    // 1. Skip all spaces and punctuation in the encoded text
+    // 2. Create cells only for letters/numbers from the encoded text
+    // 3. Add spaces and punctuation cells based on their position in the solution text
+    //
+    // This ensures that:
+    // - Spaces and punctuation from the solution text are correctly represented
+    // - Letters are properly aligned between encoded and solution text
+    // - No extra cells are created for spaces/punctuation in the encoded text
     private func createLetterEncodedCells() -> [CryptogramCell] {
         var cells: [CryptogramCell] = []
         
@@ -70,10 +80,15 @@ struct Puzzle: Identifiable {
             
             var solutionChar: Character? = nil
             
+            // Skip all non-alphanumeric characters in the encoded text
+            if isSymbol {
+                continue
+            }
+            
             // Only assign a solution character for letter cells and if we have enough solution characters
             if !isSymbol && solutionIndex < solutionArray.count {
-                // Skip spaces in the solution
-                while solutionIndex < solutionArray.count && solutionArray[solutionIndex] == " " {
+                // Skip spaces and punctuation in the solution
+                while solutionIndex < solutionArray.count && !solutionArray[solutionIndex].isLetter && !solutionArray[solutionIndex].isNumber {
                     solutionIndex += 1
                 }
                 
@@ -81,11 +96,6 @@ struct Puzzle: Identifiable {
                     solutionChar = solutionArray[solutionIndex]
                     solutionIndex += 1
                 }
-            }
-            
-            // Skip spaces in encoded text - don't create cells for them
-            if encodedChar == " " {
-                continue
             }
             
             let cell = CryptogramCell(
@@ -98,7 +108,7 @@ struct Puzzle: Identifiable {
             processedCells.append(cell)
         }
         
-        // Now rebuild the cells array with spaces inserted where they appear in the solution
+        // Now rebuild the cells array with spaces and punctuation inserted where they appear in the solution
         var finalCells: [CryptogramCell] = []
         solutionIndex = 0
         
@@ -106,11 +116,11 @@ struct Puzzle: Identifiable {
             if !cell.isSymbol && cell.solutionChar != nil {
                 // Find the position of this solution character
                 while solutionIndex < solutionArray.count && solutionArray[solutionIndex] != cell.solutionChar {
-                    if solutionArray[solutionIndex] == " " {
-                        // Add a space cell whenever we encounter a space in the solution
+                    // Add a cell for any non-alphanumeric character we encounter in the solution
+                    if !solutionArray[solutionIndex].isLetter && !solutionArray[solutionIndex].isNumber {
                         finalCells.append(CryptogramCell(
                             position: finalCells.count,
-                            encodedChar: " ",
+                            encodedChar: String(solutionArray[solutionIndex]),
                             isSymbol: true
                         ))
                     }
@@ -121,18 +131,15 @@ struct Puzzle: Identifiable {
                     finalCells.append(cell)
                     solutionIndex += 1
                 }
-            } else {
-                // Just add symbols directly
-                finalCells.append(cell)
             }
         }
         
-        // Check if there are any remaining spaces in the solution
+        // Check if there are any remaining non-alphanumeric characters in the solution
         while solutionIndex < solutionArray.count {
-            if solutionArray[solutionIndex] == " " {
+            if !solutionArray[solutionIndex].isLetter && !solutionArray[solutionIndex].isNumber {
                 finalCells.append(CryptogramCell(
                     position: finalCells.count,
-                    encodedChar: " ",
+                    encodedChar: String(solutionArray[solutionIndex]),
                     isSymbol: true
                 ))
             }
@@ -148,6 +155,16 @@ struct Puzzle: Identifiable {
     }
     
     // Create cells for number-encoded puzzles
+    //
+    // This method follows these key steps:
+    // 1. Skip spaces and punctuation in the encoded text
+    // 2. Create cells only for number components representing letters
+    // 3. Add spaces and punctuation cells based on their position in the solution text
+    //
+    // This ensures that:
+    // - Spaces and punctuation from the solution text are correctly represented
+    // - Numbers are properly aligned with the solution letters they represent
+    // - No extra cells are created for spaces/punctuation in the encoded text
     private func createNumberEncodedCells() -> [CryptogramCell] {
         var cells: [CryptogramCell] = []
         
@@ -166,8 +183,20 @@ struct Puzzle: Identifiable {
         let nonEmptyComponents = components.filter { !$0.isEmpty }
         
         for component in nonEmptyComponents {
+            // Skip all punctuation components - only process number components
+            if component.allSatisfy({ $0.isPunctuation || $0.isSymbol }) {
+                continue
+            }
+            
             if component.allSatisfy({ $0.isNumber }) {
                 // This is a number representing a letter in the solution
+                // Skip spaces and punctuation in the solution to find the next letter
+                while solutionIndex < solutionArray.count && 
+                      !solutionArray[solutionIndex].isLetter && 
+                      !solutionArray[solutionIndex].isNumber {
+                    solutionIndex += 1
+                }
+                
                 if solutionIndex < solutionArray.count {
                     cells.append(CryptogramCell(
                         position: position,
@@ -178,14 +207,6 @@ struct Puzzle: Identifiable {
                     solutionIndex += 1
                     position += 1
                 }
-            } else if component.allSatisfy({ $0.isPunctuation || $0.isSymbol }) {
-                // This is punctuation or a symbol
-                cells.append(CryptogramCell(
-                    position: position,
-                    encodedChar: component,
-                    isSymbol: true
-                ))
-                position += 1
             } else if component.count > 1 {
                 // This might be multiple characters (rare case)
                 print("Warning: Multi-character component in number encoding: \(component)")
@@ -193,51 +214,73 @@ struct Puzzle: Identifiable {
                 // If it contains any numbers, it might need to map to solution
                 let hasNumbers = component.contains(where: { $0.isNumber })
                 
-                cells.append(CryptogramCell(
-                    position: position,
-                    encodedChar: component,
-                    solutionChar: hasNumbers && solutionIndex < solutionArray.count ? solutionArray[solutionIndex] : nil,
-                    isSymbol: !hasNumbers
-                ))
-                
                 if hasNumbers {
-                    solutionIndex += 1
+                    // Skip spaces and punctuation in the solution
+                    while solutionIndex < solutionArray.count && 
+                          !solutionArray[solutionIndex].isLetter && 
+                          !solutionArray[solutionIndex].isNumber {
+                        solutionIndex += 1
+                    }
+                
+                    cells.append(CryptogramCell(
+                        position: position,
+                        encodedChar: component,
+                        solutionChar: hasNumbers && solutionIndex < solutionArray.count ? solutionArray[solutionIndex] : nil,
+                        isSymbol: !hasNumbers
+                    ))
+                    
+                    if solutionIndex < solutionArray.count {
+                        solutionIndex += 1
+                    }
+                    position += 1
                 }
-                position += 1
             }
         }
         
-        // Add spaces between words based on solution
-        var wordIndex = 0
-        var cellsWithSpaces: [CryptogramCell] = []
+        // Rebuild cells array with spaces and punctuation inserted based on solution
+        var finalCells: [CryptogramCell] = []
+        solutionIndex = 0
         
         for cell in cells {
-            cellsWithSpaces.append(cell)
-            
-            // If this cell maps to a solution letter and the next letter in the solution is a space,
-            // add a visual space cell
-            if !cell.isSymbol, 
-               let currentSolutionChar = cell.solutionChar,
-               wordIndex + 1 < solution.count,
-               Array(solution)[wordIndex + 1] == " " {
+            if !cell.isSymbol && cell.solutionChar != nil {
+                // Find this character in the solution
+                while solutionIndex < solutionArray.count && solutionArray[solutionIndex] != cell.solutionChar {
+                    // Add cell for any non-alphanumeric character we encounter in the solution
+                    if !solutionArray[solutionIndex].isLetter && !solutionArray[solutionIndex].isNumber {
+                        finalCells.append(CryptogramCell(
+                            position: finalCells.count,
+                            encodedChar: String(solutionArray[solutionIndex]),
+                            isSymbol: true
+                        ))
+                    }
+                    solutionIndex += 1
+                }
                 
-                cellsWithSpaces.append(CryptogramCell(
-                    position: cellsWithSpaces.count,
-                    encodedChar: " ",
+                if solutionIndex < solutionArray.count {
+                    // Found the letter in the solution, add the cell
+                    finalCells.append(cell)
+                    solutionIndex += 1
+                }
+            }
+        }
+        
+        // Check if there are any remaining non-alphanumeric characters in the solution
+        while solutionIndex < solutionArray.count {
+            if !solutionArray[solutionIndex].isLetter && !solutionArray[solutionIndex].isNumber {
+                finalCells.append(CryptogramCell(
+                    position: finalCells.count,
+                    encodedChar: String(solutionArray[solutionIndex]),
                     isSymbol: true
                 ))
             }
-            
-            if !cell.isSymbol {
-                wordIndex += 1
-            }
+            solutionIndex += 1
         }
         
         // Debug information
         print("Number encoded puzzle: \(encodedText)")
         print("Solution: \(solution)")
-        print("Created \(cellsWithSpaces.count) cells, \(solutionIndex) mapped to solution characters")
+        print("Created \(finalCells.count) cells, mapped to \(solutionIndex) solution characters")
         
-        return cellsWithSpaces
+        return finalCells
     }
 } 
