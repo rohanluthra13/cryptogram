@@ -128,6 +128,42 @@ class PuzzleViewModel: ObservableObject {
         cells = puzzle.createCells(encodingType: encodingType)
         session = PuzzleSession()
         
+        // --- Add Difficulty-based reveal logic --- 
+        let difficulty = UserSettings.currentMode
+        if difficulty == .normal {
+            let solution = puzzle.solution.uppercased()
+            let uniqueLetters = Set(solution.filter { $0.isLetter })
+
+            if !uniqueLetters.isEmpty {
+                let revealPercentage = 0.20 // 20% reveal
+                let numToReveal = max(1, Int(ceil(Double(uniqueLetters.count) * revealPercentage)))
+                let lettersToReveal = uniqueLetters.shuffled().prefix(numToReveal)
+                
+                var revealedIndices = Set<Int>() // Track revealed indices to ensure one per letter
+
+                for letter in lettersToReveal {
+                    let letterString = String(letter)
+                    // Find indices for this letter that haven't been revealed yet
+                    let matchingIndices = cells.indices.filter { 
+                        cells[$0].solutionChar == letter && !revealedIndices.contains($0) && !cells[$0].isRevealed
+                    }
+
+                    if let indexToReveal = matchingIndices.randomElement() {
+                        // Mark the cell as revealed
+                        cells[indexToReveal].userInput = letterString
+                        cells[indexToReveal].isRevealed = true
+                        cells[indexToReveal].isError = false // Ensure no error state
+                        
+                        // Track the index to prevent revealing the same cell for another letter if counts overlap
+                        revealedIndices.insert(indexToReveal)
+                    }
+                }
+                // Convert Character sequence to String for printing
+                print("Normal mode: Revealed \(revealedIndices.count) cells for letters: \(lettersToReveal.map { String($0) }.joined())")
+            }
+        }
+        // --- End Difficulty Logic ---
+
         // Clear letter mappings when starting a new puzzle
         letterMapping = [:]
         letterUsage = [:]

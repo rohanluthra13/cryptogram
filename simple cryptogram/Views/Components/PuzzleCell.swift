@@ -49,6 +49,7 @@ struct PuzzleCell: View {
             .padding(.horizontal, 0)
         }
         .buttonStyle(PlainButtonStyle())
+        .disabled(cell.isRevealed)
         .onChange(of: cell.wasJustFilled) { newValue in
             if newValue {
                 withAnimation(.easeInOut(duration: 0.3)) {

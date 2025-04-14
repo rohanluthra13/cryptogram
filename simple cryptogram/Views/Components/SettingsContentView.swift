@@ -5,6 +5,7 @@ struct SettingsContentView: View {
     @AppStorage("isDarkMode") private var isDarkMode = false
     @EnvironmentObject private var puzzleViewModel: PuzzleViewModel
     @EnvironmentObject private var themeManager: ThemeManager
+    @StateObject private var settingsViewModel = SettingsViewModel()
     
     let encodingTypes = ["Letters", "Numbers"]
     
@@ -78,6 +79,23 @@ struct SettingsContentView: View {
                     .frame(height: 1)
                     .foregroundColor(Color.gray.opacity(0.3))
             }
+            
+            // Difficulty Picker
+            VStack(spacing: 8) {
+                Picker("Difficulty", selection: $settingsViewModel.selectedMode) {
+                    ForEach(DifficultyMode.allCases) { mode in
+                        Text(mode.displayName).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .accessibilityLabel("Select difficulty mode")
+                
+                // Thin line under the picker
+                Rectangle()
+                    .frame(height: 1)
+                    .foregroundColor(Color.gray.opacity(0.3))
+            }
+            .padding(.top, 10) // Add some spacing above the difficulty picker
             
             // Appearance Section
             Text("Appearance")
@@ -157,4 +175,5 @@ struct SettingsContentView: View {
         .previewLayout(.sizeThatFits)
         .environmentObject(PuzzleViewModel())
         .environmentObject(ThemeManager())
+        .environmentObject(SettingsViewModel())
 } 
