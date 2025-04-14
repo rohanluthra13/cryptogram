@@ -70,6 +70,14 @@ struct PuzzleState: Equatable {
         print("Total revealed indices: \(revealedIndices)")
     }
     
+    mutating func revealLetterByString(_ value: String, at index: Int) {
+        revealedIndices.insert(index)
+        hintCount += 1
+        
+        print("Letter revealed by string value: \(value) at index: \(index)")
+        print("Total revealed indices: \(revealedIndices)")
+    }
+    
     mutating func markComplete() {
         isComplete = true
         endTime = Date()

@@ -22,7 +22,7 @@ struct CryptogramButton: ViewModifier {
 }
 
 // MARK: - Cell Modifier
-struct CryptogramCell: ViewModifier {
+struct CryptogramCellStyle: ViewModifier {
     let isSelected: Bool
     let isRevealed: Bool
     let isError: Bool
@@ -64,7 +64,7 @@ extension View {
     }
     
     func cryptogramCell(isSelected: Bool = false, isRevealed: Bool = false, isError: Bool = false) -> some View {
-        modifier(CryptogramCell(isSelected: isSelected, isRevealed: isRevealed, isError: isError))
+        modifier(CryptogramCellStyle(isSelected: isSelected, isRevealed: isRevealed, isError: isError))
     }
     
     func cryptogramGrid(columns: Int) -> some View {

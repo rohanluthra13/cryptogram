@@ -15,39 +15,38 @@ struct PuzzleView: View {
                     // Timer and Mistakes on the same horizontal level
                     ZStack {
                         HStack {
-                            MistakesView(mistakeCount: viewModel.state.mistakeCount)
+                            MistakesView(mistakeCount: viewModel.mistakeCount)
                                 .padding(.leading, 16)
                             
                             Spacer()
                         }
                         
-                        TimerView(startTime: viewModel.state.startTime, isPaused: viewModel.isPaused)
+                        TimerView(startTime: viewModel.startTime ?? Date(), isPaused: viewModel.isPaused)
                             .frame(maxWidth: .infinity, alignment: .center)
+                            .opacity(viewModel.startTime == nil ? 0 : 1) // Hide if not started
                     }
                     .padding(.top, 8)
                     
                     // Hints view under the mistakes
                     HintsView(
-                        hintCount: viewModel.state.hintCount,
-                        onRequestHint: { viewModel.revealHint() },
-                        maxHints: viewModel.state.maxHints
+                        hintCount: viewModel.hintCount,
+                        onRequestHint: { viewModel.revealCell(at: viewModel.selectedCellIndex ?? 0) },
+                        maxHints: viewModel.nonSymbolCells.count / 4 // Use approximately 1/4 of the cells as max hints
                     )
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 16)
                     .padding(.top, 4)
                     
+                    // Progress indicator
+                    ProgressView(value: viewModel.progressPercentage)
+                        .padding(.horizontal, 16)
+                        .padding(.top, 8)
+                    
                     // Puzzle Grid in ScrollView with flexible height
                     ScrollView {
-                        PuzzleGrid(
-                            encodedText: puzzle.encodedText,
-                            userInput: viewModel.state.userInput,
-                            selectedIndex: viewModel.state.selectedCellIndex,
-                            revealedLetters: viewModel.state.revealedLetters,
-                            revealedIndices: viewModel.state.revealedIndices,
-                            errorIndices: viewModel.errorIndices,
-                            onCellTap: viewModel.selectCell
-                        )
-                        .padding(.horizontal, 16)
+                        PuzzleGrid()
+                            .environmentObject(viewModel)
+                            .padding(.horizontal, 16)
                     }
                     .layoutPriority(1)
                     .frame(maxWidth: .infinity)
@@ -59,10 +58,10 @@ struct PuzzleView: View {
                     
                     // Navigation Bar
                     NavigationBarView(
-                        onMoveLeft: viewModel.moveToPreviousCell,
-                        onMoveRight: viewModel.moveToNextCell,
+                        onMoveLeft: { viewModel.moveToAdjacentCell(direction: -1) },
+                        onMoveRight: { viewModel.moveToAdjacentCell(direction: 1) },
                         onTogglePause: viewModel.togglePause,
-                        onNextPuzzle: viewModel.loadNextPuzzle,
+                        onNextPuzzle: { viewModel.refreshPuzzleWithCurrentSettings() },
                         isPaused: viewModel.isPaused
                     )
                     
@@ -70,13 +69,21 @@ struct PuzzleView: View {
                     
                     // Keyboard View - fixed at bottom
                     KeyboardView(
-                        onLetterPress: viewModel.handleLetterInput,
-                        onBackspacePress: viewModel.handleDelete
+                        onLetterPress: { letter in
+                            if let index = viewModel.selectedCellIndex {
+                                viewModel.inputLetter(String(letter), at: index)
+                            }
+                        },
+                        onBackspacePress: { 
+                            if let index = viewModel.selectedCellIndex {
+                                viewModel.handleDelete(at: index)
+                            }
+                        }
                     )
                     .padding(.bottom, 8)
                     .padding(.horizontal, 4)
                     .frame(maxWidth: .infinity)
-                    .disabled(viewModel.isPaused || viewModel.state.isFailed) // Disable keyboard when game is paused or failed
+                    .disabled(viewModel.isPaused || viewModel.isComplete) // Disable keyboard when game is paused or complete
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(CryptogramTheme.Colors.background)
@@ -99,18 +106,30 @@ struct PuzzleView: View {
                                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                                 .padding(.bottom, 240)
                             }
-                        } else if viewModel.state.isFailed {
+                        } else if viewModel.isComplete {
                             Color(hex: "#f8f8f8").opacity(0.7)
                                 .edgesIgnoringSafeArea(.all)
                                 .overlay(
                                     VStack(spacing: 16) {
-                                        Text("Game Over")
+                                        Text(viewModel.mistakeCount > 0 ? "Completed!" : "Perfect Solve!")
                                             .font(.headline)
                                             .foregroundColor(CryptogramTheme.Colors.text)
                                         
+                                        if let completionTime = viewModel.completionTime {
+                                            Text("Time: \(formatTime(completionTime))")
+                                                .font(.subheadline)
+                                                .foregroundColor(CryptogramTheme.Colors.text)
+                                        }
+                                        
+                                        if viewModel.mistakeCount > 0 {
+                                            Text("Mistakes: \(viewModel.mistakeCount)")
+                                                .font(.subheadline)
+                                                .foregroundColor(CryptogramTheme.Colors.text)
+                                        }
+                                        
                                         HStack(spacing: 24) {
                                             // Try again icon - retry the current puzzle
-                                            Button(action: { viewModel.resetCurrentPuzzle() }) {
+                                            Button(action: { viewModel.reset() }) {
                                                 Image(systemName: "arrow.counterclockwise")
                                                     .font(.title3)
                                                     .frame(width: 44, height: 44)
@@ -119,7 +138,7 @@ struct PuzzleView: View {
                                             }
                                             
                                             // New puzzle icon - existing functionality
-                                            Button(action: { viewModel.loadNextPuzzle() }) {
+                                            Button(action: { viewModel.refreshPuzzleWithCurrentSettings() }) {
                                                 Image(systemName: "arrow.2.circlepath")
                                                     .font(.title3)
                                                     .frame(width: 44, height: 44)
@@ -186,11 +205,16 @@ struct PuzzleView: View {
         }
         .navigationBarHidden(true)
     }
+    
+    private func formatTime(_ timeInterval: TimeInterval) -> String {
+        let minutes = Int(timeInterval) / 60
+        let seconds = Int(timeInterval) % 60
+        return String(format: "%d:%02d", minutes, seconds)
+    }
 }
 
 #Preview {
     NavigationView {
         PuzzleView()
-            .environmentObject(PuzzleViewModel())
     }
 }

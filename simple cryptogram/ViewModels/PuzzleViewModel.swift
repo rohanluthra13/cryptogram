@@ -4,20 +4,43 @@ import SwiftUI
 
 @MainActor
 class PuzzleViewModel: ObservableObject {
-    @Published private(set) var state: PuzzleState
-    @Published private(set) var currentPuzzle: Puzzle?
-    @Published private(set) var errorIndices: Set<Int> = []
+    @Published private(set) var cells: [CryptogramCell] = []
+    @Published private(set) var selectedCellIndex: Int?
+    @Published private(set) var isComplete: Bool = false
+    @Published private(set) var mistakeCount: Int = 0
+    @Published private(set) var startTime: Date?
+    @Published private(set) var endTime: Date?
     @Published private(set) var isPaused: Bool = false
+    @Published private(set) var currentPuzzle: Puzzle?
+    @Published private(set) var hintCount: Int = 0
+    
+    // Add letter mapping to track and enforce cryptogram rules
+    private var letterMapping: [String: String] = [:]
+    private var letterUsage: [String: String] = [:]
+    
     @AppStorage("encodingType") private var encodingType = "Letters"
     private let databaseService: DatabaseService
     private var cancellables = Set<AnyCancellable>()
     private var pauseStartTime: Date?
-    private var hasStarted: Bool = false
+    
+    // Computed properties
+    var completionTime: TimeInterval? {
+        guard let start = startTime, let end = endTime else { return nil }
+        return end.timeIntervalSince(start)
+    }
+    
+    var nonSymbolCells: [CryptogramCell] {
+        cells.filter { !$0.isSymbol }
+    }
+    
+    var progressPercentage: Double {
+        let filledCells = nonSymbolCells.filter { !$0.isEmpty }.count
+        return Double(filledCells) / Double(nonSymbolCells.count)
+    }
     
     init(initialPuzzle: Puzzle? = nil) {
         print("=== PuzzleViewModel Initialization ===")
         self.databaseService = DatabaseService.shared
-        self.state = PuzzleState()
         
         if let puzzle = initialPuzzle {
             print("Using provided puzzle")
@@ -41,19 +64,193 @@ class PuzzleViewModel: ObservableObject {
                 startNewPuzzle(puzzle: self.currentPuzzle!)
             }
         }
+    }
+    
+    // MARK: - Public Methods
+    
+    func startNewPuzzle(puzzle: Puzzle) {
+        currentPuzzle = puzzle
+        cells = puzzle.createCells(encodingType: encodingType)
+        selectedCellIndex = nil
+        isComplete = false
+        mistakeCount = 0
+        startTime = nil
+        endTime = nil
+        isPaused = false
+        hintCount = 0
+        pauseStartTime = nil
         
-        setupBindings()
+        // Clear letter mappings when starting a new puzzle
+        letterMapping = [:]
+        letterUsage = [:]
+        
+        print("New puzzle started with \(cells.count) cells")
+        
+        // Debug: Log cell information to help diagnose space issues
+        #if DEBUG
+        print("=== Cell Debug Information ===")
+        for (index, cell) in cells.enumerated() {
+            let cellType = cell.isSymbol ? "Symbol" : "Letter"
+            let solutionInfo = cell.solutionChar != nil ? "Solution: \(cell.solutionChar!)" : "No solution"
+            print("Cell \(index): '\(cell.encodedChar)' (\(cellType)) - \(solutionInfo)")
+        }
+        print("=== End Cell Debug ===")
+        #endif
     }
     
-    private func setupBindings() {
-        $state
-            .sink { [weak self] newState in
-                self?.objectWillChange.send()
+    func selectCell(at index: Int) {
+        guard index >= 0 && index < cells.count else { return }
+        selectedCellIndex = index
+    }
+    
+    // Define operation types for cell modifications
+    enum CellOperation {
+        case input(String)
+        case delete
+        case reveal
+    }
+    
+    // Unified cell modification system that only updates the specific cell
+    private func modifyCells(at index: Int, operation: CellOperation) {
+        guard index >= 0 && index < cells.count, !cells[index].isSymbol else { return }
+        
+        let targetCell = cells[index]
+        let encodedChar = targetCell.encodedChar
+        
+        switch operation {
+        case .input(let letter):
+            // Input operations need to check for conflicts and update mappings
+            let uppercaseLetter = letter.uppercased()
+            
+            // Reset all wasJustFilled flags first
+            for i in 0..<cells.count {
+                cells[i].wasJustFilled = false
             }
-            .store(in: &cancellables)
+            
+            // Apply only to the target cell
+            let wasEmpty = cells[index].userInput.isEmpty
+            cells[index].userInput = uppercaseLetter
+            cells[index].wasJustFilled = true
+            
+            // Check if this input is correct
+            let isCorrect = String(cells[index].solutionChar ?? " ") == uppercaseLetter
+            cells[index].isError = !isCorrect && !uppercaseLetter.isEmpty
+            
+            // Only count a mistake once per entry and only for newly entered incorrect letters
+            if !isCorrect && !uppercaseLetter.isEmpty && wasEmpty {
+                mistakeCount += 1
+                
+                // Check if we've reached maximum mistakes
+                if mistakeCount >= 3 {
+                    endTime = Date()
+                    isComplete = true
+                }
+            }
+            
+        case .delete:
+            // Clear only the target cell
+            cells[index].userInput = ""
+            cells[index].isError = false
+            
+        case .reveal:
+            guard let solutionChar = targetCell.solutionChar else { 
+                print("DEBUG: Tried to reveal a cell without a solution character at index \(index)")
+                return 
+            }
+            let solutionString = String(solutionChar)
+            
+            print("DEBUG: Revealing cell at index \(index) with encoded char '\(encodedChar)' and solution '\(solutionString)'")
+            
+            // Reveal only the target cell
+            cells[index].userInput = solutionString
+            cells[index].isError = false
+            cells[index].isRevealed = true
+        }
+        
+        // Check for puzzle completion after any modification
+        checkPuzzleCompletion()
     }
     
-    // MARK: - Public Interface
+    // Refactor existing methods to use the unified cell modification approach
+    func inputLetter(_ letter: String, at index: Int) {
+        if startTime == nil {
+            startTime = Date() // Start timer on first input
+        }
+        
+        modifyCells(at: index, operation: .input(letter))
+        moveToNextCell()
+    }
+
+    func handleDelete(at index: Int? = nil) {
+        let targetIndex = index ?? selectedCellIndex ?? -1
+        if targetIndex >= 0 {
+            modifyCells(at: targetIndex, operation: .delete)
+        }
+    }
+
+    func revealCell(at index: Int? = nil) {
+        // Use provided index or the selectedCellIndex, with fallback to finding first unrevealed cell
+        let targetIndex: Int
+        
+        if let idx = index, idx >= 0 && idx < cells.count && !cells[idx].isSymbol && !cells[idx].isRevealed {
+            targetIndex = idx
+        } else if let selected = selectedCellIndex, 
+                  selected >= 0 && selected < cells.count && 
+                  !cells[selected].isSymbol && 
+                  !cells[selected].isRevealed {
+            targetIndex = selected
+        } else {
+            // Find first unrevealed, non-symbol cell
+            if let firstUnrevealedIndex = cells.indices.first(where: { 
+                !cells[$0].isSymbol && !cells[$0].isRevealed && cells[$0].userInput.isEmpty
+            }) {
+                targetIndex = firstUnrevealedIndex
+            } else {
+                // No unrevealed cells left
+                return
+            }
+        }
+        
+        if startTime == nil {
+            startTime = Date() // Start timer on first revealed cell
+        }
+        
+        hintCount += 1
+        modifyCells(at: targetIndex, operation: .reveal)
+        selectNextUnrevealedCell(after: targetIndex)
+    }
+    
+    func reset() {
+        for i in 0..<cells.count {
+            cells[i].userInput = ""
+            cells[i].isRevealed = false
+            cells[i].isError = false
+        }
+        
+        // Reset letter mappings
+        letterMapping = [:]
+        letterUsage = [:]
+        
+        mistakeCount = 0
+        startTime = nil
+        endTime = nil
+        isComplete = false
+        hintCount = 0
+    }
+    
+    func togglePause() {
+        isPaused.toggle()
+        
+        if isPaused {
+            // Save the time when paused
+            pauseStartTime = Date()
+        } else if let pauseStart = pauseStartTime, let start = startTime {
+            // Adjust the start time by the pause duration
+            let pauseDuration = Date().timeIntervalSince(pauseStart)
+            startTime = start.addingTimeInterval(pauseDuration)
+            pauseStartTime = nil
+        }
+    }
     
     func refreshPuzzleWithCurrentSettings() {
         guard let currentPuzzle = currentPuzzle,
@@ -71,298 +268,68 @@ class PuzzleViewModel: ObservableObject {
         }
     }
     
-    func startNewPuzzle(puzzle: Puzzle) {
-        currentPuzzle = puzzle
-        state = PuzzleState(
-            userInput: Array(repeating: "", count: puzzle.encodedText.count),
-            letterMapping: [:],
-            selectedCellIndex: nil,
-            mistakeCount: 0,
-            revealedLetters: [],
-            isComplete: false,
-            startTime: Date.distantFuture,
-            endTime: nil,
-            hintCount: 0
-        )
-        errorIndices = []
-        hasStarted = false
-        isPaused = false
-        pauseStartTime = nil
-    }
-    
-    func selectCell(at index: Int) {
-        state.selectCell(at: index)
-    }
-    
-    func handleLetterInput(_ letter: Character) {
-        guard let index = state.selectedCellIndex, let puzzle = currentPuzzle else { return }
-        
-        // Start timer on first input attempt if not already started
-        if !hasStarted {
-            hasStarted = true
-            state.startTime = Date()
-        }
-        
-        // Always ensure we're using uppercase for all letter comparisons
-        let inputChar = letter.isLetter ? Character(String(letter).uppercased()) : letter
-        
-        // Get the encoded character at this position
-        let encodedChar = puzzle.encodedText[puzzle.encodedText.index(puzzle.encodedText.startIndex, offsetBy: index)]
-        
-        // Get the correct character for this position - ensure it's uppercase for consistent comparison
-        let correctCharString = String(puzzle.solution[puzzle.solution.index(puzzle.solution.startIndex, offsetBy: index)])
-        let correctChar = Character(correctCharString.uppercased())
-        
-        // Debug logging to help diagnose the issue
-        print("Input validation - Index: \(index), Input: \(inputChar), Encoded: \(encodedChar), Correct: \(correctChar)")
-        print("Revealed letters: \(state.revealedLetters)")
-        print("Letter mapping: \(state.letterMapping)")
-        
-        // Check if the character is already revealed by hints
-        let isRevealed = state.revealedLetters.contains(encodedChar)
-        
-        // Check if we already have a mapping for this encoded character
-        let existingMapping = state.letterMapping[encodedChar]
-        
-        // For proper comparison, ensure the existing mapping is also uppercase
-        let normalizedMapping = existingMapping?.isLetter ?? false ? Character(String(existingMapping!).uppercased()) : existingMapping
-        
-        // Check if this letter is the correct solution 
-        let isCorrectLetter = inputChar == correctChar
-        
-        // Check if input matches existing mapping (using normalized mapping)
-        let matchesExistingMapping = normalizedMapping == inputChar
-        
-        // Debug validation conditions
-        print("isRevealed: \(isRevealed), isCorrectLetter: \(isCorrectLetter), matchesExistingMapping: \(matchesExistingMapping), normalizedMapping: \(String(describing: normalizedMapping))")
-        
-        // Accept the input if:
-        // 1. It matches the correct character for this position, OR
-        // 2. The position is revealed by a hint, OR
-        // 3. The encoded character has a mapping and the input matches that mapping
-        if isCorrectLetter || isRevealed || (normalizedMapping != nil && matchesExistingMapping) {
-            print("✅ Input accepted")
-            
-            // Accept input
-            state.inputLetter(inputChar, at: index)
-            
-            // If this mapping doesn't exist yet, create it
-            if state.letterMapping[encodedChar] == nil {
-                state.letterMapping[encodedChar] = inputChar
-                print("Creating new mapping: \(encodedChar) -> \(inputChar)")
-            }
-            
-            // Move to next cell automatically
-            moveToNextCell()
-            
-            // Check for completion
-            checkCompletion()
-        } else {
-            print("❌ Input rejected")
-            
-            // Reject incorrect input and count as mistake
-            state.incrementMistakeCount()
-            
-            // Check if game over (3 mistakes max)
-            if state.mistakeCount >= 3 {
-                handleGameOver()
-            }
-        }
-    }
-    
-    func handleDelete() {
-        guard let index = state.selectedCellIndex else { return }
-        state.userInput[index] = ""
-        errorIndices.remove(index)
-    }
-    
-    func revealHint() {
-        guard let puzzle = currentPuzzle else { return }
-        
-        // Start timer on first hint if not already started
-        if !hasStarted {
-            hasStarted = true
-            state.startTime = Date()
-        }
-        
-        // Get all unrevealed letters/numbers from the puzzle
-        var unrevealedCharacters: [Character: [Int]] = [:]
-        
-        for (index, char) in puzzle.encodedText.enumerated() {
-            // Consider both alphabetic characters and numbers that haven't been revealed yet
-            if (char.isLetter || char.isNumber) && !state.revealedLetters.contains(char) {
-                // Store all occurrences of each unrevealed character
-                if unrevealedCharacters[char] == nil {
-                    unrevealedCharacters[char] = [index]
-                } else {
-                    unrevealedCharacters[char]?.append(index)
-                }
-            }
-        }
-        
-        // If no unrevealed characters, return
-        if unrevealedCharacters.isEmpty {
-            return
-        }
-        
-        // Pick a random unrevealed character
-        let randomIndex = Int.random(in: 0..<unrevealedCharacters.count)
-        let randomChar = Array(unrevealedCharacters.keys)[randomIndex]
-        
-        // Get all occurrences of this character
-        let occurrences = unrevealedCharacters[randomChar]!
-        let randomOccurrenceIndex = occurrences[Int.random(in: 0..<occurrences.count)]
-        
-        // Get the correct solution letter for this position and ensure it's uppercase
-        let correctLetterStr = String(puzzle.solution[puzzle.solution.index(puzzle.solution.startIndex, offsetBy: randomOccurrenceIndex)])
-        let correctLetter = Character(correctLetterStr.uppercased())
-        
-        // Mark this character as revealed with its specific index
-        state.revealLetter(randomChar, at: randomOccurrenceIndex)
-        
-        // Fill in ONLY the randomly selected occurrence
-        state.userInput[randomOccurrenceIndex] = String(correctLetter)
-        
-        // Update the letter mapping - this is crucial for consistent validation
-        state.letterMapping[randomChar] = correctLetter
-        
-        // Debug logging
-        print("Hint revealed: \(randomChar) -> \(correctLetter) at position \(randomOccurrenceIndex)")
-        print("Updated letter mapping: \(state.letterMapping)")
-        
-        // If there's a selected cell, move to the next one
-        if state.selectedCellIndex != nil {
-            moveToNextCell()
-        }
-        
-        // Check for completion
-        checkCompletion()
-    }
-    
-    func checkCompletion() {
-        guard let puzzle = currentPuzzle else { return }
-        
-        // Convert both to uppercase for comparison
-        let userSolution = state.userInput.joined().uppercased()
-        let correctSolution = puzzle.solution.uppercased()
-        
-        print("Checking completion - User solution: \(userSolution)")
-        print("Correct solution: \(correctSolution)")
-        
-        if userSolution == correctSolution {
-            print("✅ Puzzle completed!")
-            state.markComplete()
-        }
-    }
-    
-    func reset() {
-        state.reset()
-        errorIndices = []
-    }
-    
-    // MARK: - Private Helpers
-    
-    private func validateInput() {
-        guard let puzzle = currentPuzzle else { return }
-        
-        // Save previous error count to determine if we need to increment mistake count
-        let _ = errorIndices.count
-        
-        var newErrorIndices = Set<Int>()
-        for (index, (_, user)) in zip(puzzle.encodedText, state.userInput).enumerated() {
-            if !user.isEmpty {
-                let correctLetter = puzzle.solution[puzzle.solution.index(puzzle.solution.startIndex, offsetBy: index)]
-                if Character(user) != correctLetter {
-                    newErrorIndices.insert(index)
-                }
-            }
-        }
-        
-        // Only increment mistake count if we have new errors that weren't there before
-        if !newErrorIndices.isEmpty && newErrorIndices != errorIndices {
-            state.incrementMistakeCount()
-        }
-        
-        errorIndices = newErrorIndices
-    }
-    
-    private func saveProgress() {
-        // Implementation will be added in Phase 2
-    }
-    
-    // MARK: - Navigation Bar Actions
-    
-    func moveToPreviousCell() {
-        guard let currentIndex = state.selectedCellIndex,
-              let puzzle = currentPuzzle else { return }
-        
-        // Find the previous valid cell (skipping spaces and punctuation)
-        var nextIndex = currentIndex - 1
-        while nextIndex >= 0 {
-            let char = puzzle.encodedText[puzzle.encodedText.index(puzzle.encodedText.startIndex, offsetBy: nextIndex)]
-            if char.isLetter || char.isNumber {
-                state.selectCell(at: nextIndex)
-                break
-            }
-            nextIndex -= 1
-        }
-    }
-    
     func moveToNextCell() {
-        guard let currentIndex = state.selectedCellIndex,
-              let puzzle = currentPuzzle else { return }
+        guard let currentIndex = selectedCellIndex else { return }
         
-        // Find the next valid cell (skipping spaces and punctuation)
+        // Find the next non-symbol cell
         var nextIndex = currentIndex + 1
-        while nextIndex < puzzle.encodedText.count {
-            let char = puzzle.encodedText[puzzle.encodedText.index(puzzle.encodedText.startIndex, offsetBy: nextIndex)]
-            if char.isLetter || char.isNumber {
-                state.selectCell(at: nextIndex)
-                break
+        while nextIndex < cells.count {
+            if !cells[nextIndex].isSymbol && cells[nextIndex].userInput.isEmpty {
+                selectedCellIndex = nextIndex
+                return
             }
             nextIndex += 1
         }
     }
     
-    func togglePause() {
-        if isPaused {
-            // Resume the timer by adjusting the start time
-            if let pauseTime = pauseStartTime {
-                let pauseDuration = Date().timeIntervalSince(pauseTime)
-                state.startTime = state.startTime.addingTimeInterval(pauseDuration)
-                pauseStartTime = nil
+    func moveToAdjacentCell(direction: Int) {
+        guard let currentIndex = selectedCellIndex else { return }
+        
+        // Calculate the target index
+        let targetIndex = currentIndex + direction
+        
+        // Check if the target index is valid
+        if targetIndex >= 0 && targetIndex < cells.count {
+            // Skip symbol cells
+            if !cells[targetIndex].isSymbol {
+                selectedCellIndex = targetIndex
+            } else {
+                // If we hit a symbol cell, continue in the same direction
+                moveToAdjacentCell(direction: direction > 0 ? direction + 1 : direction - 1)
             }
-        } else {
-            // Only pause if the game has actually started
-            if hasStarted {
-                // Pause the timer by recording current time
-                pauseStartTime = Date()
-            }
-        }
-        
-        isPaused = !isPaused
-    }
-    
-    func loadNextPuzzle() {
-        guard let currPuzzle = currentPuzzle else { return }
-        
-        if let newPuzzle = databaseService.fetchRandomPuzzle(current: currPuzzle, encodingType: encodingType) {
-            startNewPuzzle(puzzle: newPuzzle)
         }
     }
     
-    func resetCurrentPuzzle() {
-        if let puzzle = currentPuzzle {
-            startNewPuzzle(puzzle: puzzle)
+    private func selectNextUnrevealedCell(after index: Int) {
+        let nextIndex = cells.indices.first { idx in
+            idx > index && !cells[idx].isSymbol && !cells[idx].isRevealed && cells[idx].userInput.isEmpty
+        }
+        
+        if let next = nextIndex {
+            selectedCellIndex = next
         }
     }
     
-    // Add this new method for handling game over
-    private func handleGameOver() {
-        // Set game state to failed
-        state.markFailed()
+    // MARK: - Private Methods
+    
+    private func checkPuzzleCompletion() {
+        // Count how many non-symbol cells we have with correct inputs
+        let correctCount = nonSymbolCells.filter { $0.isCorrect }.count
+        // Count total number of non-symbol cells
+        let totalCount = nonSymbolCells.count
         
-        // No longer setting isPaused to true
+        // Debug log
+        print("Puzzle completion check: \(correctCount)/\(totalCount) cells correct")
+        
+        // The puzzle is complete when all non-symbol cells have correct inputs
+        let allCorrect = correctCount == totalCount
+        
+        if allCorrect && !isComplete {
+            isComplete = true
+            endTime = Date()
+            
+            // Save score or statistics here if needed
+        }
     }
 }
 
