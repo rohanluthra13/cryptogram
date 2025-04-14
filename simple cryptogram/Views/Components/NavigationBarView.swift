@@ -63,7 +63,7 @@ struct NavigationBarView: View {
         }
         .padding(.vertical, 8)
         .frame(maxWidth: .infinity)
-        .background(Color(hex: "#f8f8f8").opacity(0.9))
+        .background(CryptogramTheme.Colors.background)
     }
 }
 

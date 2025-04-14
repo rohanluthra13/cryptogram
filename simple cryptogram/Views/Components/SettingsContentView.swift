@@ -2,12 +2,21 @@ import SwiftUI
 
 struct SettingsContentView: View {
     @AppStorage("encodingType") private var selectedEncodingType = "Letters"
+    @AppStorage("isDarkMode") private var isDarkMode = false
     @EnvironmentObject private var puzzleViewModel: PuzzleViewModel
+    @EnvironmentObject private var themeManager: ThemeManager
     
     let encodingTypes = ["Letters", "Numbers"]
     
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
+            // Gameplay Section
+            Text("Gameplay")
+                .font(.subheadline)
+                .foregroundColor(CryptogramTheme.Colors.text)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.bottom, 5)
+            
             // Encoding Type toggle
             VStack(spacing: 8) {
                 HStack {
@@ -69,6 +78,74 @@ struct SettingsContentView: View {
                     .frame(height: 1)
                     .foregroundColor(Color.gray.opacity(0.3))
             }
+            
+            // Appearance Section
+            Text("Appearance")
+                .font(.subheadline)
+                .foregroundColor(CryptogramTheme.Colors.text)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.bottom, 5)
+                .padding(.top, 10)
+            
+            // Dark Mode toggle
+            VStack(spacing: 8) {
+                HStack {
+                    Spacer()
+                    
+                    // Left side - Light mode option
+                    Button(action: {
+                        if isDarkMode {
+                            isDarkMode = false
+                            themeManager.applyTheme()
+                        }
+                    }) {
+                        Image(systemName: "sun.max")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(!isDarkMode ? 
+                                           CryptogramTheme.Colors.text : 
+                                           CryptogramTheme.Colors.text.opacity(0.4))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .accessibilityLabel("Switch to Light mode")
+                    .padding(.trailing, 6)
+                    
+                    // Center - Toggle switch
+                    Button(action: {
+                        isDarkMode.toggle()
+                        themeManager.applyTheme()
+                    }) {
+                        Image(systemName: "arrow.left.arrow.right")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                    }
+                    .accessibilityLabel("Toggle dark mode")
+                    .padding(.horizontal, 6)
+                    
+                    // Right side - Dark mode option
+                    Button(action: {
+                        if !isDarkMode {
+                            isDarkMode = true
+                            themeManager.applyTheme()
+                        }
+                    }) {
+                        Image(systemName: "moon.stars")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(isDarkMode ? 
+                                           CryptogramTheme.Colors.text : 
+                                           CryptogramTheme.Colors.text.opacity(0.4))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .accessibilityLabel("Switch to Dark mode")
+                    .padding(.leading, 6)
+                    
+                    Spacer()
+                }
+                
+                // Thin line under the toggle
+                Rectangle()
+                    .frame(height: 1)
+                    .foregroundColor(Color.gray.opacity(0.3))
+            }
         }
     }
 }
@@ -79,4 +156,5 @@ struct SettingsContentView: View {
         .background(Color(hex: "#f8f8f8"))
         .previewLayout(.sizeThatFits)
         .environmentObject(PuzzleViewModel())
+        .environmentObject(ThemeManager())
 } 

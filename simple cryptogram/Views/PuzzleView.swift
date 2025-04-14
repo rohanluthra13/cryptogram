@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PuzzleView: View {
     @StateObject private var viewModel: PuzzleViewModel
+    @StateObject private var themeManager = ThemeManager()
     @State private var showSettings = false
     
     init(puzzle: Puzzle? = nil) {
@@ -144,34 +145,25 @@ struct PuzzleView: View {
                                     }
                                 )
                         } else if showSettings {
-                            // Settings overlay with dismissible background
-                            GeometryReader { geometry in
-                                VStack(spacing: 0) {
-                                    // Empty space at the top to keep settings button accessible
-                                    Color.clear
-                                        .frame(height: 50)
-                                        .allowsHitTesting(false)
-                                    
-                                    // Semi-transparent overlay below the top area
-                                    ZStack {
-                                        // Background that can be tapped to dismiss - less transparent
-                                        Color(hex: "#f8f8f8").opacity(0.85)
-                                            .onTapGesture {
-                                                showSettings = false
-                                            }
-                                        
-                                        // Settings panel - no background, outline or shadows
-                                        SettingsContentView()
-                                            .padding(.horizontal, 24)
-                                            .padding(.vertical, 20)
-                                            .contentShape(Rectangle())
-                                            .onTapGesture { } // Prevent dismissal when tapping content
-                                            .environmentObject(viewModel)
+                            // Full-screen settings overlay
+                            ZStack {
+                                // Background that covers the entire screen and can be tapped to dismiss
+                                CryptogramTheme.Colors.surface.opacity(0.85)
+                                    .edgesIgnoringSafeArea(.all)
+                                    .onTapGesture {
+                                        showSettings = false
                                     }
-                                    .frame(height: geometry.size.height - 50)
-                                }
+
+                                // Settings content centered on the overlay
+                                SettingsContentView()
+                                    .padding(.horizontal, 24)
+                                    .padding(.vertical, 20)
+                                    .contentShape(Rectangle()) // Prevent dismissal when tapping content
+                                    .onTapGesture { }
+                                    .environmentObject(viewModel)
+                                    .environmentObject(themeManager)
                             }
-                            .edgesIgnoringSafeArea(.bottom)
+                            // Removed GeometryReader and VStack with 50pt gap
                         }
                     }
                 )

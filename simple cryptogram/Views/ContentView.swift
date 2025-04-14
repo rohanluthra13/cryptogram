@@ -6,18 +6,9 @@ struct ContentView: View {
     @State private var errorMessage = ""
     
     var body: some View {
-        TabView {
+        NavigationView {
             PuzzleView()
                 .environmentObject(viewModel)
-                .tabItem {
-                    Label("Puzzles", systemImage: "puzzlepiece.fill")
-                }
-            
-            SettingsView()
-                .environmentObject(viewModel)
-                .tabItem {
-                    Label("Settings", systemImage: "gear")
-                }
         }
         .alert("Error", isPresented: $showError) {
             Button("OK", role: .cancel) { }

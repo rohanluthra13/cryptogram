@@ -4,11 +4,12 @@ struct CryptogramTheme {
     struct Colors {
         // Main colors
         static let primary = Color("Primary")
-        static let secondary = Color(.systemGray2)
+        static let secondary = Color("Secondary")
         
-        // Updated colors using hex
-        static let background = Color(hex: "#f8f8f8")
-        static let text = Color(hex: "#555555")
+        // Theme colors
+        static let background = Color("Background")
+        static let text = Color("Text")
+        static let surface = Color("Surface")
         
         // System colors for states
         static let error = Color(.systemRed)
@@ -16,8 +17,8 @@ struct CryptogramTheme {
         static let hint = Color(.systemOrange)
         
         // Border colors
-        static let selectedBorder = Color.blue
-        static let border = Color(.systemGray4)
+        static let selectedBorder = Color("SelectedBorder")
+        static let border = Color("Border")
     }
     
     struct Layout {
