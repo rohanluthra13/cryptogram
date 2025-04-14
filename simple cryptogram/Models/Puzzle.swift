@@ -1,5 +1,8 @@
 import Foundation
 
+// Note: This file previously relied on the EncodedChar model which has been removed.
+// CryptogramCell now serves as the unified model for all cryptogram character representations.
+
 struct Puzzle: Identifiable {
     let id: UUID
     let encodedText: String

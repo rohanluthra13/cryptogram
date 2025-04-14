@@ -9,66 +9,65 @@ struct SettingsContentView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             // Encoding Type toggle
-            HStack {
-                // Left side - Letters option
-                HStack(spacing: 8) {
-                    Image(systemName: "character.cursor.ibeam")
-                        .font(.system(size: 16))
-                        .foregroundColor(selectedEncodingType == "Letters" ? 
-                                        CryptogramTheme.Colors.text : 
-                                        CryptogramTheme.Colors.text.opacity(0.4))
+            VStack(spacing: 8) {
+                HStack {
+                    Spacer()
                     
-                    Text("Letters")
-                        .font(.subheadline)
-                        .foregroundColor(selectedEncodingType == "Letters" ? 
-                                        CryptogramTheme.Colors.text : 
-                                        CryptogramTheme.Colors.text.opacity(0.4))
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(selectedEncodingType == "Letters" ? 
-                              Color.blue.opacity(0.2) : 
-                              Color.gray.opacity(0.1))
-                )
-                .onTapGesture {
-                    if selectedEncodingType != "Letters" {
-                        selectedEncodingType = "Letters"
-                        puzzleViewModel.refreshPuzzleWithCurrentSettings()
+                    // Left side - Letters option
+                    Button(action: {
+                        if selectedEncodingType != "Letters" {
+                            selectedEncodingType = "Letters"
+                            puzzleViewModel.refreshPuzzleWithCurrentSettings()
+                        }
+                    }) {
+                        Text("ABC")
+                            .font(.footnote)
+                            .fontWeight(selectedEncodingType == "Letters" ? .bold : .regular)
+                            .foregroundColor(selectedEncodingType == "Letters" ? 
+                                            CryptogramTheme.Colors.text : 
+                                            CryptogramTheme.Colors.text.opacity(0.4))
                     }
+                    .buttonStyle(PlainButtonStyle())
+                    .accessibilityLabel("Switch to Letters encoding")
+                    .padding(.trailing, 6)
+                    
+                    // Center - Toggle switch with arrows
+                    Button(action: {
+                        selectedEncodingType = selectedEncodingType == "Letters" ? "Numbers" : "Letters"
+                        puzzleViewModel.refreshPuzzleWithCurrentSettings()
+                    }) {
+                        Image(systemName: "arrow.left.arrow.right")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                    }
+                    .accessibilityLabel("Toggle encoding type")
+                    .padding(.horizontal, 6)
+                    
+                    // Right side - Numbers option
+                    Button(action: {
+                        if selectedEncodingType != "Numbers" {
+                            selectedEncodingType = "Numbers"
+                            puzzleViewModel.refreshPuzzleWithCurrentSettings()
+                        }
+                    }) {
+                        Text("123")
+                            .font(.footnote)
+                            .fontWeight(selectedEncodingType == "Numbers" ? .bold : .regular)
+                            .foregroundColor(selectedEncodingType == "Numbers" ? 
+                                            CryptogramTheme.Colors.text : 
+                                            CryptogramTheme.Colors.text.opacity(0.4))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .accessibilityLabel("Switch to Numbers encoding")
+                    .padding(.leading, 6)
+                    
+                    Spacer()
                 }
                 
-                Spacer().frame(width: 12)
-                
-                // Right side - Numbers option
-                HStack(spacing: 8) {
-                    Image(systemName: "number")
-                        .font(.system(size: 16))
-                        .foregroundColor(selectedEncodingType == "Numbers" ? 
-                                        CryptogramTheme.Colors.text : 
-                                        CryptogramTheme.Colors.text.opacity(0.4))
-                    
-                    Text("Numbers")
-                        .font(.subheadline)
-                        .foregroundColor(selectedEncodingType == "Numbers" ? 
-                                        CryptogramTheme.Colors.text : 
-                                        CryptogramTheme.Colors.text.opacity(0.4))
-                }
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(selectedEncodingType == "Numbers" ? 
-                              Color.blue.opacity(0.2) : 
-                              Color.gray.opacity(0.1))
-                )
-                .onTapGesture {
-                    if selectedEncodingType != "Numbers" {
-                        selectedEncodingType = "Numbers"
-                        puzzleViewModel.refreshPuzzleWithCurrentSettings()
-                    }
-                }
+                // Thin line under the toggle
+                Rectangle()
+                    .frame(height: 1)
+                    .foregroundColor(Color.gray.opacity(0.3))
             }
         }
     }

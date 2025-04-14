@@ -1,5 +1,10 @@
 import Foundation
 
+/**
+ * CryptogramCell is the unified model for all character representations in the cryptogram.
+ * This model replaces the legacy EncodedChar model and provides enhanced functionality.
+ * The 'encodedChar' property corresponds to what was previously 'value' in EncodedChar.
+ */
 struct CryptogramCell: Identifiable {
     let id = UUID()
     let position: Int            // Position in the original puzzle

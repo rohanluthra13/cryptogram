@@ -12,14 +12,8 @@ struct WordGroup: Identifiable {
 @MainActor
 class PuzzleViewModel: ObservableObject {
     @Published private(set) var cells: [CryptogramCell] = []
-    @Published private(set) var selectedCellIndex: Int?
-    @Published private(set) var isComplete: Bool = false
-    @Published private(set) var mistakeCount: Int = 0
-    @Published private(set) var startTime: Date?
-    @Published private(set) var endTime: Date?
-    @Published private(set) var isPaused: Bool = false
+    @Published private(set) var session: PuzzleSession = PuzzleSession()
     @Published private(set) var currentPuzzle: Puzzle?
-    @Published private(set) var hintCount: Int = 0
     
     // Add letter mapping to track and enforce cryptogram rules
     private var letterMapping: [String: String] = [:]
@@ -28,12 +22,38 @@ class PuzzleViewModel: ObservableObject {
     @AppStorage("encodingType") private var encodingType = "Letters"
     private let databaseService: DatabaseService
     private var cancellables = Set<AnyCancellable>()
-    private var pauseStartTime: Date?
     
     // Computed properties
+    var selectedCellIndex: Int? {
+        session.selectedCellIndex
+    }
+    
+    var isComplete: Bool {
+        session.isComplete
+    }
+    
+    var mistakeCount: Int {
+        session.mistakeCount
+    }
+    
+    var startTime: Date? {
+        session.startTime
+    }
+    
+    var endTime: Date? {
+        session.endTime
+    }
+    
+    var isPaused: Bool {
+        session.isPaused
+    }
+    
+    var hintCount: Int {
+        session.hintCount
+    }
+    
     var completionTime: TimeInterval? {
-        guard let start = startTime, let end = endTime else { return nil }
-        return end.timeIntervalSince(start)
+        session.completionTime
     }
     
     var nonSymbolCells: [CryptogramCell] {
@@ -106,14 +126,7 @@ class PuzzleViewModel: ObservableObject {
     func startNewPuzzle(puzzle: Puzzle) {
         currentPuzzle = puzzle
         cells = puzzle.createCells(encodingType: encodingType)
-        selectedCellIndex = nil
-        isComplete = false
-        mistakeCount = 0
-        startTime = nil
-        endTime = nil
-        isPaused = false
-        hintCount = 0
-        pauseStartTime = nil
+        session = PuzzleSession()
         
         // Clear letter mappings when starting a new puzzle
         letterMapping = [:]
@@ -135,7 +148,7 @@ class PuzzleViewModel: ObservableObject {
     
     func selectCell(at index: Int) {
         guard index >= 0 && index < cells.count else { return }
-        selectedCellIndex = index
+        session.selectedCellIndex = index
     }
     
     // Define operation types for cell modifications
@@ -174,13 +187,7 @@ class PuzzleViewModel: ObservableObject {
             
             // Only count a mistake once per entry and only for newly entered incorrect letters
             if !isCorrect && !uppercaseLetter.isEmpty && wasEmpty {
-                mistakeCount += 1
-                
-                // Check if we've reached maximum mistakes
-                if mistakeCount >= 3 {
-                    endTime = Date()
-                    isComplete = true
-                }
+                session.incrementMistakes()
                 
                 // For incorrect letters, remove them after a brief delay
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
@@ -215,6 +222,9 @@ class PuzzleViewModel: ObservableObject {
             cells[index].isError = false
             cells[index].isRevealed = true
             
+            // Record this reveal in the session
+            session.revealCell(at: index)
+            
             inputWasCorrect = true
         }
         
@@ -226,8 +236,8 @@ class PuzzleViewModel: ObservableObject {
     
     // Refactor existing methods to use the unified cell modification approach
     func inputLetter(_ letter: String, at index: Int) {
-        if startTime == nil {
-            startTime = Date() // Start timer on first input
+        if session.startTime == nil {
+            session.startTime = Date() // Start timer on first input
         }
         
         if modifyCells(at: index, operation: .input(letter)) {
@@ -236,7 +246,7 @@ class PuzzleViewModel: ObservableObject {
     }
 
     func handleDelete(at index: Int? = nil) {
-        let targetIndex = index ?? selectedCellIndex ?? -1
+        let targetIndex = index ?? session.selectedCellIndex ?? -1
         if targetIndex >= 0 {
             modifyCells(at: targetIndex, operation: .delete)
         }
@@ -248,7 +258,7 @@ class PuzzleViewModel: ObservableObject {
         
         if let idx = index, idx >= 0 && idx < cells.count && !cells[idx].isSymbol && !cells[idx].isRevealed {
             targetIndex = idx
-        } else if let selected = selectedCellIndex, 
+        } else if let selected = session.selectedCellIndex, 
                   selected >= 0 && selected < cells.count && 
                   !cells[selected].isSymbol && 
                   !cells[selected].isRevealed {
@@ -265,16 +275,16 @@ class PuzzleViewModel: ObservableObject {
             }
         }
         
-        if startTime == nil {
-            startTime = Date() // Start timer on first revealed cell
+        if session.startTime == nil {
+            session.startTime = Date() // Start timer on first revealed cell
         }
         
-        hintCount += 1
         modifyCells(at: targetIndex, operation: .reveal)
         selectNextUnrevealedCell(after: targetIndex)
     }
     
     func reset() {
+        // Reset all cells
         for i in 0..<cells.count {
             cells[i].userInput = ""
             cells[i].isRevealed = false
@@ -285,25 +295,12 @@ class PuzzleViewModel: ObservableObject {
         letterMapping = [:]
         letterUsage = [:]
         
-        mistakeCount = 0
-        startTime = nil
-        endTime = nil
-        isComplete = false
-        hintCount = 0
+        // Reset session data
+        session.reset()
     }
     
     func togglePause() {
-        isPaused.toggle()
-        
-        if isPaused {
-            // Save the time when paused
-            pauseStartTime = Date()
-        } else if let pauseStart = pauseStartTime, let start = startTime {
-            // Adjust the start time by the pause duration
-            let pauseDuration = Date().timeIntervalSince(pauseStart)
-            startTime = start.addingTimeInterval(pauseDuration)
-            pauseStartTime = nil
-        }
+        session.togglePause()
     }
     
     func refreshPuzzleWithCurrentSettings() {
@@ -323,13 +320,13 @@ class PuzzleViewModel: ObservableObject {
     }
     
     func moveToNextCell() {
-        guard let currentIndex = selectedCellIndex else { return }
+        guard let currentIndex = session.selectedCellIndex else { return }
         
         // Find the next non-symbol cell
         var nextIndex = currentIndex + 1
         while nextIndex < cells.count {
             if !cells[nextIndex].isSymbol && cells[nextIndex].userInput.isEmpty {
-                selectedCellIndex = nextIndex
+                session.selectedCellIndex = nextIndex
                 return
             }
             nextIndex += 1
@@ -337,7 +334,7 @@ class PuzzleViewModel: ObservableObject {
     }
     
     func moveToAdjacentCell(direction: Int) {
-        guard let currentIndex = selectedCellIndex else { return }
+        guard let currentIndex = session.selectedCellIndex else { return }
         
         // Calculate the target index
         let targetIndex = currentIndex + direction
@@ -346,7 +343,7 @@ class PuzzleViewModel: ObservableObject {
         if targetIndex >= 0 && targetIndex < cells.count {
             // Skip symbol cells
             if !cells[targetIndex].isSymbol {
-                selectedCellIndex = targetIndex
+                session.selectedCellIndex = targetIndex
             } else {
                 // If we hit a symbol cell, continue in the same direction
                 moveToAdjacentCell(direction: direction > 0 ? direction + 1 : direction - 1)
@@ -360,7 +357,7 @@ class PuzzleViewModel: ObservableObject {
         }
         
         if let next = nextIndex {
-            selectedCellIndex = next
+            session.selectedCellIndex = next
         }
     }
     
@@ -378,9 +375,8 @@ class PuzzleViewModel: ObservableObject {
         // The puzzle is complete when all non-symbol cells have correct inputs
         let allCorrect = correctCount == totalCount
         
-        if allCorrect && !isComplete {
-            isComplete = true
-            endTime = Date()
+        if allCorrect && !session.isComplete {
+            session.markComplete()
             
             // Save score or statistics here if needed
         }
