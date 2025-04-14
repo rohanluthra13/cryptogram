@@ -10,7 +10,7 @@ struct PuzzleCell: View {
     
     var body: some View {
         Button(action: onTap) {
-            VStack(spacing: 4) {
+            VStack(spacing: 2) {
                 // Input cell
                 ZStack(alignment: .center) {
                     if cell.isRevealed {
@@ -29,10 +29,10 @@ struct PuzzleCell: View {
                     }
                     
                     Text(cell.userInput)
-                        .font(.system(size: 14, weight: .medium, design: .monospaced))
+                        .font(.system(size: 13, weight: .medium, design: .monospaced))
                         .foregroundColor(.primary)
-                        .frame(height: 32)
-                        .frame(width: 40)
+                        .frame(height: 30)
+                        .frame(width: 28)
                         .scaleEffect(1.0 + (0.2 * cellHighlightAmount))
                     
                     Rectangle()
@@ -43,10 +43,10 @@ struct PuzzleCell: View {
                 
                 // Encoded value (letter or number)
                 Text(cell.encodedChar)
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
                     .foregroundColor(textColor)
             }
-            .padding(.horizontal, 6)
+            .padding(.horizontal, 0)
         }
         .buttonStyle(PlainButtonStyle())
         .onChange(of: cell.wasJustFilled) { newValue in

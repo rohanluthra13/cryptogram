@@ -2,6 +2,13 @@ import Foundation
 import Combine
 import SwiftUI
 
+// Add WordGroup struct definition
+struct WordGroup: Identifiable {
+    let id = UUID()
+    let indices: [Int]
+    let includesSpace: Bool
+}
+
 @MainActor
 class PuzzleViewModel: ObservableObject {
     @Published private(set) var cells: [CryptogramCell] = []
@@ -36,6 +43,34 @@ class PuzzleViewModel: ObservableObject {
     var progressPercentage: Double {
         let filledCells = nonSymbolCells.filter { !$0.isEmpty }.count
         return Double(filledCells) / Double(nonSymbolCells.count)
+    }
+    
+    // Add wordGroups computed property
+    var wordGroups: [WordGroup] {
+        var groups: [WordGroup] = []
+        var currentWordIndices: [Int] = []
+        
+        for index in cells.indices {
+            let cell = cells[index]
+            
+            if cell.isSymbol && cell.encodedChar == " " {
+                // End current word
+                if !currentWordIndices.isEmpty {
+                    groups.append(WordGroup(indices: currentWordIndices, includesSpace: true))
+                    currentWordIndices = []
+                }
+            } else {
+                // Add to current word
+                currentWordIndices.append(index)
+            }
+        }
+        
+        // Add last word if not empty
+        if !currentWordIndices.isEmpty {
+            groups.append(WordGroup(indices: currentWordIndices, includesSpace: false))
+        }
+        
+        return groups
     }
     
     init(initialPuzzle: Puzzle? = nil) {

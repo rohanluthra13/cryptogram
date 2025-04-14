@@ -39,7 +39,7 @@ struct PuzzleView: View {
                     
                     // Puzzle Grid in ScrollView with flexible height
                     ScrollView {
-                        PuzzleGrid()
+                        WordAwarePuzzleGrid()
                             .environmentObject(viewModel)
                             .padding(.horizontal, 16)
                     }
