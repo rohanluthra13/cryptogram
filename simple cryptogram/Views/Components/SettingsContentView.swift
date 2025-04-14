@@ -136,6 +136,10 @@ struct SettingsContentView: View {
                 }
             }
             
+            // Add a divider before the Appearance section
+            Divider()
+                .padding(.top, 5)
+            
             // Appearance Section
             Text("Appearance")
                 .font(.subheadline)

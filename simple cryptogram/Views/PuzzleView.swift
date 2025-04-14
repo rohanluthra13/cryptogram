@@ -4,6 +4,7 @@ struct PuzzleView: View {
     @StateObject private var viewModel: PuzzleViewModel
     @StateObject private var themeManager = ThemeManager()
     @State private var showSettings = false
+    @AppStorage("isDarkMode") private var isDarkMode = false
     
     init(puzzle: Puzzle? = nil) {
         _viewModel = StateObject(wrappedValue: PuzzleViewModel(initialPuzzle: puzzle))
@@ -148,7 +149,8 @@ struct PuzzleView: View {
                             // Full-screen settings overlay
                             ZStack {
                                 // Background that covers the entire screen and can be tapped to dismiss
-                                CryptogramTheme.Colors.surface.opacity(0.85)
+                                CryptogramTheme.Colors.surface
+                                    .opacity(isDarkMode ? 0.95 : 0.85) // More opaque in dark mode
                                     .edgesIgnoringSafeArea(.all)
                                     .onTapGesture {
                                         showSettings = false
