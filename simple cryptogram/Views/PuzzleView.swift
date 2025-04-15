@@ -24,30 +24,11 @@ struct PuzzleView: View {
         ZStack {
             if viewModel.currentPuzzle != nil {
                 VStack(spacing: 0) {
-                    // Timer and Mistakes on the same horizontal level
-                    ZStack {
-                        HStack {
-                            MistakesView(mistakeCount: viewModel.mistakeCount)
-                                .padding(.leading, 16)
-                            
-                            Spacer()
-                        }
-                        
-                        TimerView(startTime: viewModel.startTime ?? Date(), isPaused: viewModel.isPaused)
-                            .frame(maxWidth: .infinity, alignment: .center)
-                            .opacity(viewModel.startTime == nil ? 0 : 1) // Hide if not started
-                    }
-                    .padding(.top, 8)
-                    
-                    // Hints view under the mistakes
-                    HintsView(
-                        hintCount: viewModel.hintCount,
-                        onRequestHint: { viewModel.revealCell(at: viewModel.selectedCellIndex ?? 0) },
-                        maxHints: viewModel.nonSymbolCells.count / 4 // Use approximately 1/4 of the cells as max hints
-                    )
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 16)
-                    .padding(.top, 4)
+                    // Timer centered at top
+                    TimerView(startTime: viewModel.startTime ?? Date(), isPaused: viewModel.isPaused)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                        .opacity(viewModel.startTime == nil ? 0 : 1) // Hide if not started
+                        .padding(.top, 8)
                     
                     // Puzzle Grid in ScrollView with flexible height
                     ScrollView {
@@ -57,11 +38,16 @@ struct PuzzleView: View {
                     }
                     .layoutPriority(1)
                     .frame(maxWidth: .infinity)
-                    .frame(maxHeight: UIScreen.main.bounds.height * 0.5)
+                    .frame(maxHeight: UIScreen.main.bounds.height * 0.45)
                     .padding(.horizontal, 12)
-                    .padding(.top, 8)
+                    .padding(.top, 40) // Increased top padding to account for hints/mistakes views
+                    .padding(.bottom, 12)
                     
-                    Spacer(minLength: 16)
+                    // Fixed height spacer (modern approach - non-collapsible)
+                    Rectangle()
+                        .fill(Color.clear)
+                        .frame(height: 20) // Adjust this value to control spacing precisely
+                        .allowsHitTesting(false) // Ensures touches pass through
                     
                     // Navigation Bar with all controls in a single layer
                     NavigationBarView(
@@ -175,11 +161,16 @@ struct PuzzleView: View {
                     .transition(.opacity)
             }
             
-            // Settings button on the top layer
+            // Settings button, Mistakes and Hints view on the top layer
             if !showCompletionView {
-                // Settings button at top right
-                VStack {
+                // Top bar with Settings and Mistakes
+                VStack(alignment: .leading, spacing: 4) {
                     HStack {
+                        // Mistakes view at top left
+                        MistakesView(mistakeCount: viewModel.mistakeCount)
+                            .padding(.leading, 16)
+                            .padding(.top, 8)
+                        
                         Spacer()
                         
                         Button(action: { 
@@ -195,10 +186,19 @@ struct PuzzleView: View {
                                 .accessibilityLabel("Settings")
                         }
                     }
+                    
+                    // Hints view under the mistakes
+                    HintsView(
+                        hintCount: viewModel.hintCount,
+                        onRequestHint: { viewModel.revealCell(at: viewModel.selectedCellIndex ?? 0) },
+                        maxHints: viewModel.nonSymbolCells.count / 4 // Use approximately 1/4 of the cells as max hints
+                    )
+                    .padding(.horizontal, 16)
+                    
                     Spacer()
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
-                .zIndex(2) // Ensure settings button is above other layers
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .zIndex(2) // Ensure top bar is above other layers
             }
         }
         .onChange(of: viewModel.isComplete) { oldValue, isComplete in
