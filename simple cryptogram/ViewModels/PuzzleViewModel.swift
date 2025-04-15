@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import SwiftUI
+import UIKit
 
 // Add WordGroup struct definition
 struct WordGroup: Identifiable {
@@ -191,6 +192,12 @@ class PuzzleViewModel: ObservableObject {
     func selectCell(at index: Int) {
         guard index >= 0 && index < cells.count else { return }
         session.selectedCellIndex = index
+        
+        // Add subtle haptic feedback for cell selection
+        DispatchQueue.main.async {
+            let generator = UIImpactFeedbackGenerator(style: .light)
+            generator.impactOccurred(intensity: 0.5) // Reduced intensity for less intrusive feedback
+        }
     }
     
     // Define operation types for cell modifications
@@ -226,6 +233,19 @@ class PuzzleViewModel: ObservableObject {
             // Check if this input is correct
             let isCorrect = String(cells[index].solutionChar ?? " ") == uppercaseLetter
             cells[index].isError = !isCorrect && !uppercaseLetter.isEmpty
+            
+            // Add haptic feedback for letter input - different for correct vs incorrect
+            DispatchQueue.main.async {
+                if isCorrect {
+                    // Light feedback for correct letter
+                    let generator = UIImpactFeedbackGenerator(style: .light)
+                    generator.impactOccurred()
+                } else if !uppercaseLetter.isEmpty {
+                    // Medium feedback for incorrect letter
+                    let generator = UIImpactFeedbackGenerator(style: .medium)
+                    generator.impactOccurred()
+                }
+            }
             
             // Only count a mistake once per entry and only for newly entered incorrect letters
             if !isCorrect && !uppercaseLetter.isEmpty && wasEmpty {
@@ -267,6 +287,12 @@ class PuzzleViewModel: ObservableObject {
             
             // Record this reveal in the session
             session.revealCell(at: index)
+            
+            // Add haptic feedback for revealing a letter (hint)
+            DispatchQueue.main.async {
+                let generator = UISelectionFeedbackGenerator()
+                generator.selectionChanged()
+            }
             
             inputWasCorrect = true
         }
