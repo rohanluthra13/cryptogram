@@ -20,7 +20,7 @@ struct SettingsContentView: View {
                 .frame(height: 160)
             
             // Gameplay Section
-            SettingsSection(title: "Gameplay") {
+            SettingsSection(title: "gameplay") {
                 VStack(spacing: 15) {
                     // Difficulty toggle with info support
                     ToggleOptionRow(
@@ -58,7 +58,7 @@ struct SettingsContentView: View {
             
             // Appearance Section - only visible when no info panels are shown
             if !showDifficultyInfo {
-                SettingsSection(title: "Appearance") {
+                SettingsSection(title: "theme & layout") {
                     VStack(spacing: 15) {
                         // Dark mode toggle with icons
                         HStack {
