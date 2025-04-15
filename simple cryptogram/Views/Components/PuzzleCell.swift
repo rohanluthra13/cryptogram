@@ -32,7 +32,7 @@ struct PuzzleCell: View {
                     if cellHighlightAmount > 0 {
                         Rectangle()
                             .frame(width: 24, height: 28)
-                            .foregroundColor(Color.blue.opacity(0.2 * cellHighlightAmount))
+                            .foregroundColor(CryptogramTheme.Colors.selectedBorder.opacity(0.2 * cellHighlightAmount))
                             .cornerRadius(2)
                     }
                     

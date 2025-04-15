@@ -131,7 +131,7 @@ struct PuzzleCompletionView: View {
                 ZStack {
                     // Background that covers the entire screen and can be tapped to dismiss
                     CryptogramTheme.Colors.surface
-                        .opacity(isDarkMode ? 0.95 : 0.85) // More opaque in dark mode
+                        .opacity(0.95) // Same opacity for both modes
                         .edgesIgnoringSafeArea(.all)
                         .onTapGesture {
                             showSettings = false

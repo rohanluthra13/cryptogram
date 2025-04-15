@@ -46,7 +46,7 @@ struct SettingsContentView: View {
                         // Encoding toggle (hidden when info is shown)
                         if !showDifficultyInfo {
                             ToggleOptionRow(
-                                leftOption: ("Letters", "ABC"),
+                                leftOption: ("Letters", "abc"),
                                 rightOption: ("Numbers", "123"),
                                 selection: $selectedEncodingType
                             )

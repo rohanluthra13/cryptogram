@@ -2,6 +2,7 @@ import SwiftUI
 
 struct NavBarLayoutSelector: View {
     @Binding var selection: NavigationBarLayout
+    @State private var isExpanded = false
     
     // Get sorted layout options
     private var sortedLayouts: [NavigationBarLayout] {
@@ -10,17 +11,57 @@ struct NavBarLayoutSelector: View {
     
     var body: some View {
         VStack(spacing: 6) {
-            // Button options row
-            MultiOptionRow(
-                options: sortedLayouts,
-                selection: $selection,
-                labelProvider: { $0.displayName }
-            )
+            // Expandable button
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    isExpanded.toggle()
+                }
+            }) {
+                HStack {
+                    Spacer()
+                    
+                    Text("button layout: ")
+                        .font(.footnote)
+                        .foregroundColor(CryptogramTheme.Colors.text) +
+                    Text(selection.displayName)
+                        .font(.footnote)
+                        .fontWeight(.bold)
+                        .foregroundColor(CryptogramTheme.Colors.text)
+                    
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundColor(CryptogramTheme.Colors.text)
+                        .padding(.leading, 4)
+                    
+                    Spacer()
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(CryptogramTheme.Colors.surface)
+                )
+            }
+            .buttonStyle(PlainButtonStyle())
             
-            // Only show the selected layout's preview
-            NavBarLayoutPreview(layout: selection)
-                .padding(.horizontal, 10)
-                .padding(.bottom, 5)
+            // Expanded options
+            if isExpanded {
+                VStack(spacing: 10) {
+                    // Button options row
+                    MultiOptionRow(
+                        options: sortedLayouts,
+                        selection: $selection,
+                        labelProvider: { $0.displayName }
+                    )
+                    
+                    // Layout preview
+                    NavBarLayoutPreview(layout: selection)
+                        .padding(.horizontal, 10)
+                        .padding(.bottom, 5)
+                }
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .padding(.top, 8)
+            }
         }
     }
 }

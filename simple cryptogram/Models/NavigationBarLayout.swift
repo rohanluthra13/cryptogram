@@ -9,9 +9,9 @@ enum NavigationBarLayout: String, CaseIterable, Identifiable {
     
     var displayName: String {
         switch self {
-        case .leftLayout: return "Left"
-        case .centerLayout: return "Center"
-        case .rightLayout: return "Right"
+        case .leftLayout: return "left"
+        case .centerLayout: return "middle"
+        case .rightLayout: return "right"
         }
     }
 } 
