@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 struct PuzzleView: View {
     @StateObject private var viewModel: PuzzleViewModel
@@ -6,6 +7,14 @@ struct PuzzleView: View {
     @State private var showSettings = false
     @State private var showCompletionView = false
     @AppStorage("isDarkMode") private var isDarkMode = false
+    
+    // Create a custom binding for the layout
+    private var layoutBinding: Binding<NavigationBarLayout> {
+        Binding(
+            get: { UserSettings.navigationBarLayout },
+            set: { UserSettings.navigationBarLayout = $0 }
+        )
+    }
     
     init(puzzle: Puzzle? = nil) {
         _viewModel = StateObject(wrappedValue: PuzzleViewModel(initialPuzzle: puzzle))
@@ -69,7 +78,8 @@ struct PuzzleView: View {
                         },
                         isPaused: viewModel.isPaused,
                         isFailed: viewModel.isFailed,
-                        showCenterButtons: true // Show all buttons in the nav bar
+                        showCenterButtons: true, // Show all buttons in the nav bar
+                        layout: layoutBinding
                     )
                     
                     // Keyboard View - fixed at bottom
@@ -96,7 +106,7 @@ struct PuzzleView: View {
                 .overlay(
                     // Overlay for paused state (not completion which is handled separately)
                     Group {
-                        if viewModel.isPaused {
+                        if viewModel.isPaused && !showSettings {
                             ZStack {
                                 // Semi-transparent overlay that allows clicks to pass through to navigation bar
                                 Color.black.opacity(0.5)
@@ -112,7 +122,7 @@ struct PuzzleView: View {
                                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                                 .padding(.bottom, 240)
                             }
-                        } else if viewModel.isFailed {
+                        } else if viewModel.isFailed && !showSettings {
                             ZStack {
                                 // Semi-transparent overlay for game over
                                 Color.black.opacity(0.5)
@@ -134,18 +144,24 @@ struct PuzzleView: View {
                                     .opacity(isDarkMode ? 0.95 : 0.85) // More opaque in dark mode
                                     .edgesIgnoringSafeArea(.all)
                                     .onTapGesture {
+                                        print("Tapped background, closing settings")
                                         showSettings = false
                                     }
+                                    .zIndex(10) // Ensure overlay is above other elements
 
                                 // Settings content centered on the overlay
                                 SettingsContentView()
                                     .padding(.horizontal, 24)
                                     .padding(.vertical, 20)
                                     .contentShape(Rectangle()) // Prevent dismissal when tapping content
-                                    .onTapGesture { }
+                                    .onTapGesture { 
+                                        print("Tapped settings content")
+                                    }
                                     .environmentObject(viewModel)
                                     .environmentObject(themeManager)
+                                    .zIndex(11) // Above the background
                             }
+                            .zIndex(100) // Ensure settings overlay is above everything
                         }
                     }
                 )
@@ -166,7 +182,11 @@ struct PuzzleView: View {
                     HStack {
                         Spacer()
                         
-                        Button(action: { showSettings.toggle() }) {
+                        Button(action: { 
+                            // Print a debug message to verify the button is being pressed
+                            print("Settings button pressed, toggling showSettings to \(!showSettings)")
+                            showSettings.toggle() 
+                        }) {
                             Image(systemName: "gearshape")
                                 .font(.title3)
                                 .foregroundColor(CryptogramTheme.Colors.text)
@@ -178,6 +198,7 @@ struct PuzzleView: View {
                     Spacer()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
+                .zIndex(2) // Ensure settings button is above other layers
             }
         }
         .onChange(of: viewModel.isComplete) { oldValue, isComplete in

@@ -2,6 +2,10 @@ import SwiftUI
 
 struct UserSettings {
     static let difficultyModeKey = "difficultyMode"
+    static let navigationBarLayoutKey = "navigationBarLayout"
+    
+    // Notification name for layout changes
+    static let navigationBarLayoutChangedNotification = Notification.Name("NavigationBarLayoutChanged")
 
     static var currentMode: DifficultyMode {
         get {
@@ -10,6 +14,18 @@ struct UserSettings {
         }
         set {
             UserDefaults.standard.set(newValue.rawValue, forKey: difficultyModeKey)
+        }
+    }
+    
+    static var navigationBarLayout: NavigationBarLayout {
+        get {
+            let storedValue = UserDefaults.standard.string(forKey: navigationBarLayoutKey) ?? NavigationBarLayout.centerLayout.rawValue
+            return NavigationBarLayout(rawValue: storedValue) ?? .centerLayout
+        }
+        set {
+            UserDefaults.standard.set(newValue.rawValue, forKey: navigationBarLayoutKey)
+            // Post notification when the layout changes
+            NotificationCenter.default.post(name: navigationBarLayoutChangedNotification, object: nil)
         }
     }
 

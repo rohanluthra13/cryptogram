@@ -378,6 +378,16 @@ class PuzzleViewModel: ObservableObject {
     }
     
     func moveToAdjacentCell(direction: Int) {
+        // If no cell is selected, select the first non-symbol cell before proceeding
+        if session.selectedCellIndex == nil {
+            if let firstNonSymbolIndex = cells.indices.first(where: { !cells[$0].isSymbol }) {
+                session.selectedCellIndex = firstNonSymbolIndex
+                return
+            } else {
+                return // If no non-symbol cells exist at all, exit
+            }
+        }
+        
         guard let currentIndex = session.selectedCellIndex else { return }
         
         // Calculate the target index

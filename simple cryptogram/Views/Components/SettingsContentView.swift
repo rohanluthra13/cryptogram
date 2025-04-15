@@ -244,6 +244,68 @@ struct SettingsContentView: View {
                                 Spacer()
                             }
                         }
+                        
+                        Divider()
+                            .padding(.vertical, 10)
+
+                        // Navigation bar layout section
+                        Text("Navigation Bar Layout")
+                            .font(.subheadline)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .padding(.vertical, 5)
+
+                        // Layout selection buttons
+                        HStack {
+                            Spacer()
+                            
+                            // Left layout button
+                            Button(action: {
+                                settingsViewModel.selectedNavBarLayout = .leftLayout
+                            }) {
+                                Text("Left")
+                                    .font(.footnote)
+                                    .fontWeight(settingsViewModel.selectedNavBarLayout == .leftLayout ? .bold : .regular)
+                                    .foregroundColor(settingsViewModel.selectedNavBarLayout == .leftLayout ?
+                                                   CryptogramTheme.Colors.text :
+                                                   CryptogramTheme.Colors.text.opacity(0.4))
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .accessibilityLabel("Left navigation bar layout")
+                            .padding(.trailing, 6)
+                            
+                            // Center layout button
+                            Button(action: {
+                                settingsViewModel.selectedNavBarLayout = .centerLayout
+                            }) {
+                                Text("Center")
+                                    .font(.footnote)
+                                    .fontWeight(settingsViewModel.selectedNavBarLayout == .centerLayout ? .bold : .regular)
+                                    .foregroundColor(settingsViewModel.selectedNavBarLayout == .centerLayout ?
+                                                   CryptogramTheme.Colors.text :
+                                                   CryptogramTheme.Colors.text.opacity(0.4))
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .accessibilityLabel("Center navigation bar layout")
+                            .padding(.horizontal, 6)
+                            
+                            // Right layout button
+                            Button(action: {
+                                settingsViewModel.selectedNavBarLayout = .rightLayout
+                            }) {
+                                Text("Right")
+                                    .font(.footnote)
+                                    .fontWeight(settingsViewModel.selectedNavBarLayout == .rightLayout ? .bold : .regular)
+                                    .foregroundColor(settingsViewModel.selectedNavBarLayout == .rightLayout ?
+                                                   CryptogramTheme.Colors.text :
+                                                   CryptogramTheme.Colors.text.opacity(0.4))
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            .accessibilityLabel("Right navigation bar layout")
+                            .padding(.leading, 6)
+                            
+                            Spacer()
+                        }
                     }
                 }
                 
