@@ -49,7 +49,7 @@ struct MistakesView: View {
                 Text("X")
                     .font(.system(size: 18, weight: .bold))
                     .foregroundColor(index < mistakeCount 
-                                    ? Color.red.opacity(0.9) 
+                                    ? Color(hex: "#9B0303") 
                                     : CryptogramTheme.Colors.secondary.opacity(0.3))
             }
         }

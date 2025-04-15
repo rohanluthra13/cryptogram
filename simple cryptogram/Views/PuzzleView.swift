@@ -24,11 +24,7 @@ struct PuzzleView: View {
         ZStack {
             if viewModel.currentPuzzle != nil {
                 VStack(spacing: 0) {
-                    // Timer centered at top
-                    TimerView(startTime: viewModel.startTime ?? Date(), isPaused: viewModel.isPaused)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .opacity(viewModel.startTime == nil ? 0 : 1) // Hide if not started
-                        .padding(.top, 8)
+                    // Timer moved to top bar, no longer needed here
                     
                     // Puzzle Grid in ScrollView with flexible height
                     ScrollView {
@@ -106,7 +102,7 @@ struct PuzzleView: View {
                                         .foregroundColor(CryptogramTheme.Colors.text)
                                 }
                                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                                .padding(.bottom, 240)
+                                .padding(.bottom, 265)
                             }
                         } else if viewModel.isFailed && !showSettings {
                             ZStack {
@@ -120,7 +116,7 @@ struct PuzzleView: View {
                                     .font(.headline)
                                     .foregroundColor(CryptogramTheme.Colors.text)
                                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                                    .padding(.bottom, 240)
+                                    .padding(.bottom, 265)
                             }
                         } else if showSettings {
                             // Full-screen settings overlay
@@ -161,18 +157,26 @@ struct PuzzleView: View {
                     .transition(.opacity)
             }
             
-            // Settings button, Mistakes and Hints view on the top layer
+            // Top bar with Settings, Timer, and Mistakes
             if !showCompletionView {
-                // Top bar with Settings and Mistakes
                 VStack(alignment: .leading, spacing: 4) {
                     HStack {
-                        // Mistakes view at top left
+                        // Mistakes view at top left with fixed width container
                         MistakesView(mistakeCount: viewModel.mistakeCount)
                             .padding(.leading, 16)
+                            .padding(.top, 8)
+                            .frame(width: 100, alignment: .leading) // Fixed width container
+                        
+                        Spacer()
+                        
+                        // Timer centered at top aligned with mistakes and settings
+                        TimerView(startTime: viewModel.startTime ?? Date(), isPaused: viewModel.isPaused)
+                            .opacity(viewModel.startTime == nil ? 0 : 1) // Hide if not started
                             .padding(.top, 8)
                         
                         Spacer()
                         
+                        // Settings button with matching fixed width container
                         Button(action: { 
                             // Print a debug message to verify the button is being pressed
                             print("Settings button pressed, toggling showSettings to \(!showSettings)")
@@ -185,6 +189,7 @@ struct PuzzleView: View {
                                 .padding(.top, 8)
                                 .accessibilityLabel("Settings")
                         }
+                        .frame(width: 100, alignment: .trailing) // Fixed width container
                     }
                     
                     // Hints view under the mistakes

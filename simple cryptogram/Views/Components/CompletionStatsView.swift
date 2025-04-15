@@ -74,8 +74,6 @@ struct CompletionStatsView: View {
             .font(.footnote)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
-            .background(CryptogramTheme.Colors.surface.opacity(0.1))
-            .cornerRadius(CryptogramTheme.Layout.buttonCornerRadius)
             
             Spacer()
         }

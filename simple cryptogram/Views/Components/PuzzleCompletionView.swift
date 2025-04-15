@@ -4,6 +4,9 @@ struct PuzzleCompletionView: View {
     @ObservedObject var viewModel: PuzzleViewModel
     @Environment(\.colorScheme) var colorScheme
     @Binding var showCompletionView: Bool
+    @State private var showSettings = false
+    @StateObject private var themeManager = ThemeManager()
+    @AppStorage("isDarkMode") private var isDarkMode = false
     
     // Animation states
     @State private var showQuote = false
@@ -99,6 +102,54 @@ struct PuzzleCompletionView: View {
                 .padding(.bottom, 120)  // Increased padding to push everything higher
             }
             .padding(CryptogramTheme.Layout.gridPadding)
+            
+            // Settings button at top right
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Spacer()
+                    
+                    Button(action: { 
+                        showSettings.toggle() 
+                    }) {
+                        Image(systemName: "gearshape")
+                            .font(.title3)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                            .padding(.trailing, 16)
+                            .padding(.top, 8)
+                            .accessibilityLabel("Settings")
+                    }
+                }
+                
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .zIndex(101) // Higher zIndex to keep button above the settings overlay
+            
+            // Settings overlay
+            if showSettings {
+                // Full-screen settings overlay
+                ZStack {
+                    // Background that covers the entire screen and can be tapped to dismiss
+                    CryptogramTheme.Colors.surface
+                        .opacity(isDarkMode ? 0.95 : 0.85) // More opaque in dark mode
+                        .edgesIgnoringSafeArea(.all)
+                        .onTapGesture {
+                            showSettings = false
+                        }
+                        .zIndex(10) // Ensure overlay is above other elements
+
+                    // Settings content centered on the overlay
+                    SettingsContentView()
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 20)
+                        .contentShape(Rectangle()) // Prevent dismissal when tapping content
+                        .onTapGesture { }
+                        .environmentObject(viewModel)
+                        .environmentObject(themeManager)
+                        .zIndex(11) // Above the background
+                }
+                .zIndex(100) // Ensure settings overlay is above everything
+            }
         }
         .onAppear {
             startAnimationSequence()
