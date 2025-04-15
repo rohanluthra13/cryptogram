@@ -18,6 +18,50 @@ The current `SettingsContentView` has several issues:
 4. Maintain all current functionality including typewriter animation
 5. Support future extensibility for additional info panels
 6. Clean up the visual hierarchy and spacing
+7. Remove auto-refresh when encoding type changes
+8. Leverage existing theme structure and ViewModifiers
+
+## Theme Extensions
+
+### New ViewModifiers for Settings
+
+We'll create new ViewModifiers to extend the existing theme system for settings components:
+
+```swift
+// Add to ViewModifiers.swift
+struct SettingsToggleStyle: ViewModifier {
+    let isSelected: Bool
+    
+    func body(content: Content) -> some View {
+        content
+            .font(.footnote)
+            .fontWeight(isSelected ? .bold : .regular)
+            .foregroundColor(isSelected ? 
+                          CryptogramTheme.Colors.text : 
+                          CryptogramTheme.Colors.text.opacity(0.4))
+    }
+}
+
+struct SettingsSectionStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.subheadline)
+            .foregroundColor(CryptogramTheme.Colors.text)
+            .frame(maxWidth: .infinity, alignment: .center)
+    }
+}
+
+// Add to View extensions
+extension View {
+    func settingsToggleStyle(isSelected: Bool) -> some View {
+        modifier(SettingsToggleStyle(isSelected: isSelected))
+    }
+    
+    func settingsSectionStyle() -> some View {
+        modifier(SettingsSectionStyle())
+    }
+}
+```
 
 ## Component Architecture
 
@@ -34,9 +78,8 @@ struct SettingsSection: View {
     var body: some View {
         VStack(alignment: .center, spacing: 12) {
             Text(title)
-                .font(.subheadline)
-                .foregroundColor(CryptogramTheme.Colors.text)
-                .frame(maxWidth: .infinity, alignment: .center)
+                .settingsSectionStyle()
+                .padding(.bottom, 5)
             
             content()
                 .padding(.bottom, 8)
@@ -47,7 +90,7 @@ struct SettingsSection: View {
 ```
 
 #### 2. `ToggleOptionRow`
-A reusable toggle component that supports optional info buttons:
+A reusable toggle component for binary choices that supports optional info buttons:
 
 ```swift
 struct ToggleOptionRow<T: Equatable>: View {
@@ -56,6 +99,7 @@ struct ToggleOptionRow<T: Equatable>: View {
     @Binding var selection: T
     var showInfoButton: Bool = false
     var onInfoButtonTap: (() -> Void)? = nil
+    var onSelectionChanged: (() -> Void)? = nil
     
     var body: some View {
         HStack {
@@ -64,39 +108,37 @@ struct ToggleOptionRow<T: Equatable>: View {
             // Left option button
             Button(action: {
                 selection = leftOption.value
+                onSelectionChanged?()
             }) {
                 Text(leftOption.label)
-                    .font(.footnote)
-                    .fontWeight(selection == leftOption.value ? .bold : .regular)
-                    .foregroundColor(selection == leftOption.value ? 
-                                   CryptogramTheme.Colors.text : 
-                                   CryptogramTheme.Colors.text.opacity(0.4))
+                    .settingsToggleStyle(isSelected: selection == leftOption.value)
             }
             .buttonStyle(PlainButtonStyle())
+            .accessibilityLabel("Switch to \(leftOption.label)")
             .padding(.trailing, 6)
             
             // Toggle arrow
             Button(action: {
                 selection = selection == leftOption.value ? rightOption.value : leftOption.value
+                onSelectionChanged?()
             }) {
                 Image(systemName: selection == leftOption.value ? "arrow.right" : "arrow.left")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(CryptogramTheme.Colors.text)
             }
+            .accessibilityLabel("Toggle between \(leftOption.label) and \(rightOption.label)")
             .padding(.horizontal, 6)
             
             // Right option button
             Button(action: {
                 selection = rightOption.value
+                onSelectionChanged?()
             }) {
                 Text(rightOption.label)
-                    .font(.footnote)
-                    .fontWeight(selection == rightOption.value ? .bold : .regular)
-                    .foregroundColor(selection == rightOption.value ? 
-                                   CryptogramTheme.Colors.text : 
-                                   CryptogramTheme.Colors.text.opacity(0.4))
+                    .settingsToggleStyle(isSelected: selection == rightOption.value)
             }
             .buttonStyle(PlainButtonStyle())
+            .accessibilityLabel("Switch to \(rightOption.label)")
             .padding(.leading, 6)
             
             Spacer()
@@ -110,6 +152,7 @@ struct ToggleOptionRow<T: Equatable>: View {
                         .font(.system(size: 15, weight: .medium))
                         .foregroundColor(CryptogramTheme.Colors.text)
                 }
+                .accessibilityLabel("Information")
                 .padding(.trailing, 5)
             }
         }
@@ -118,7 +161,104 @@ struct ToggleOptionRow<T: Equatable>: View {
 }
 ```
 
-#### 3. `InfoPanel`
+#### 3. `MultiOptionRow`
+A component for selections with more than two options:
+
+```swift
+struct MultiOptionRow<T: Hashable & Identifiable>: View {
+    let options: [T]
+    @Binding var selection: T
+    var labelProvider: (T) -> String
+    var showInfoButton: Bool = false
+    var onInfoButtonTap: (() -> Void)? = nil
+    var onSelectionChanged: (() -> Void)? = nil
+    
+    var body: some View {
+        HStack {
+            Spacer()
+            
+            // Multi-button implementation
+            HStack(spacing: 12) {
+                ForEach(options) { option in
+                    Button(action: {
+                        selection = option
+                        onSelectionChanged?()
+                    }) {
+                        Text(labelProvider(option))
+                            .settingsToggleStyle(isSelected: selection.id == option.id)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .accessibilityLabel("Switch to \(labelProvider(option))")
+                }
+            }
+            
+            Spacer()
+            
+            // Optional info button
+            if showInfoButton {
+                Button(action: {
+                    onInfoButtonTap?()
+                }) {
+                    Text("i")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(CryptogramTheme.Colors.text)
+                }
+                .accessibilityLabel("Information")
+                .padding(.trailing, 5)
+            }
+        }
+        .frame(height: 44) // Fixed height for consistency
+    }
+}
+
+// Alternative implementation using a dropdown/picker
+struct DropdownOptionRow<T: Hashable & Identifiable>: View {
+    let options: [T]
+    @Binding var selection: T
+    var labelProvider: (T) -> String
+    var showInfoButton: Bool = false
+    var onInfoButtonTap: (() -> Void)? = nil
+    var onSelectionChanged: (() -> Void)? = nil
+    
+    var body: some View {
+        HStack {
+            Spacer()
+            
+            // Picker implementation
+            Picker("", selection: $selection) {
+                ForEach(options) { option in
+                    Text(labelProvider(option))
+                        .tag(option)
+                }
+            }
+            .pickerStyle(SegmentedPickerStyle())
+            .onChange(of: selection) { _ in
+                onSelectionChanged?()
+            }
+            .frame(maxWidth: 240)
+            .accessibilityLabel("Select option")
+            
+            Spacer()
+            
+            // Optional info button
+            if showInfoButton {
+                Button(action: {
+                    onInfoButtonTap?()
+                }) {
+                    Text("i")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundColor(CryptogramTheme.Colors.text)
+                }
+                .accessibilityLabel("Information")
+                .padding(.trailing, 5)
+            }
+        }
+        .frame(height: 44) // Fixed height for consistency
+    }
+}
+```
+
+#### 4. `InfoPanel`
 A component for displaying expandable info content with typewriter animation:
 
 ```swift
@@ -212,7 +352,7 @@ struct InfoPanel: View {
 }
 ```
 
-#### 4. `IconToggleButton`
+#### 5. `IconToggleButton`
 A specialized toggle button for icon-based toggles (like dark/light mode):
 
 ```swift
@@ -220,6 +360,7 @@ struct IconToggleButton: View {
     let iconName: String
     let isSelected: Bool
     let action: () -> Void
+    let accessibilityLabel: String
     
     var body: some View {
         Button(action: action) {
@@ -230,6 +371,7 @@ struct IconToggleButton: View {
                                CryptogramTheme.Colors.text.opacity(0.4))
         }
         .buttonStyle(PlainButtonStyle())
+        .accessibilityLabel(accessibilityLabel)
     }
 }
 ```
@@ -239,8 +381,13 @@ struct IconToggleButton: View {
 ```swift
 struct SettingsContentView: View {
     // Existing properties and bindings
+    @AppStorage("encodingType") private var selectedEncodingType = "Letters"
+    @AppStorage("isDarkMode") private var isDarkMode = false
+    @EnvironmentObject private var puzzleViewModel: PuzzleViewModel
+    @EnvironmentObject private var themeManager: ThemeManager
+    @StateObject private var settingsViewModel = SettingsViewModel()
     
-    // New state properties for info panels
+    // State properties for info panels
     @State private var showDifficultyInfo = false
     
     var body: some View {
@@ -275,7 +422,7 @@ struct SettingsContentView: View {
                         }
                     }
                     
-                    // Encoding toggle
+                    // Encoding toggle (no auto-refresh)
                     ToggleOptionRow(
                         leftOption: ("Letters", "ABC"),
                         rightOption: ("Numbers", "123"),
@@ -300,7 +447,8 @@ struct SettingsContentView: View {
                                     isDarkMode = false
                                     themeManager.applyTheme()
                                 }
-                            }
+                            },
+                            accessibilityLabel: "Switch to Light mode"
                         )
                         .padding(.trailing, 6)
                         
@@ -313,6 +461,7 @@ struct SettingsContentView: View {
                                 .font(.system(size: 13, weight: .medium))
                                 .foregroundColor(CryptogramTheme.Colors.text)
                         }
+                        .accessibilityLabel("Toggle dark mode")
                         .padding(.horizontal, 6)
                         
                         // Dark mode
@@ -324,19 +473,30 @@ struct SettingsContentView: View {
                                     isDarkMode = true
                                     themeManager.applyTheme()
                                 }
-                            }
+                            },
+                            accessibilityLabel: "Switch to Dark mode"
                         )
                         .padding(.leading, 6)
                         
                         Spacer()
                     }
                     
-                    // Layout selection buttons
-                    ToggleOptionRow(
-                        leftOption: (NavBarLayout.leftLayout, "Left"),
-                        rightOption: (NavBarLayout.rightLayout, "Right"),
-                        selection: $settingsViewModel.selectedNavBarLayout
+                    // Layout selection buttons - using multi-option approach
+                    // Option 1: Keep the existing 3-button setup
+                    MultiOptionRow(
+                        options: NavigationBarLayout.allCases.sorted { $0.rawValue < $1.rawValue },
+                        selection: $settingsViewModel.selectedNavBarLayout,
+                        labelProvider: { $0.displayName }
                     )
+                    
+                    // Option 2: Use dropdown/segmented control
+                    /*
+                    DropdownOptionRow(
+                        options: NavigationBarLayout.allCases.sorted { $0.rawValue < $1.rawValue },
+                        selection: $settingsViewModel.selectedNavBarLayout,
+                        labelProvider: { $0.displayName }
+                    )
+                    */
                 }
             }
             
@@ -348,33 +508,43 @@ struct SettingsContentView: View {
 
 ## Implementation Plan
 
-### Phase 1: Setup Base Components
+### Phase 1: Extend Theme System
 
-1. Create the new component files:
+1. Add new view modifiers for settings components to the existing ViewModifiers.swift:
+   - `SettingsToggleStyle` - For styling toggle text
+   - `SettingsSectionStyle` - For styling section headers
+   
+2. Ensure that these modifiers integrate with the existing theme system, using colors from CryptogramTheme
+
+### Phase 2: Create Base Components
+
+1. Create the new component files, leveraging the new ViewModifiers:
    - `SettingsSection.swift`
    - `ToggleOptionRow.swift`
+   - `MultiOptionRow.swift` (and/or `DropdownOptionRow.swift`)
    - `InfoPanel.swift`
    - `IconToggleButton.swift`
 
-2. Implement the base functionality for each component as outlined above
-   - Ensure components maintain fixed heights where needed
-   - Implement proper styling and theming
-   - Set up animation hooks
+2. Implement the base functionality for each component:
+   - Apply proper styling using the new modifiers
+   - Implement proper behavior and state management
+   - Add accessibility labels
 
-### Phase 2: Refactor Main View
+### Phase 3: Refactor Main View
 
 1. Update the `SettingsContentView.swift` file:
    - Remove existing complex nested view structure
    - Add new state variables for info panel visibility
    - Implement the new section-based layout
    - Connect existing bindings to new components
+   - Remove auto-refresh when encoding type changes
 
 2. Refine the structure to use the new components:
    - Connect the difficulty toggle to the info panel
-   - Set up proper layout constraints
-   - Ensure all existing functionality is preserved
+   - Implement the navigation bar layout using either MultiOptionRow or DropdownOptionRow
+   - Ensure consistent spacing and alignment
 
-### Phase 3: Implement Info Panel
+### Phase 4: Implement Info Panel
 
 1. Move typewriter animation logic to the `InfoPanel` component:
    - Extract existing animation code
@@ -385,13 +555,14 @@ struct SettingsContentView: View {
    - Use fixed height containers
    - Implement smooth transitions
 
-### Phase 4: Test and Refine
+### Phase 5: Test and Refine
 
 1. Test all functionality:
    - Verify toggles work correctly
    - Test info panel appearance and animation
    - Ensure dark mode toggle functions properly
    - Verify layout option selection works
+   - Confirm encoding type changes don't auto-refresh
 
 2. Polish animations and transitions:
    - Fine-tune timing
@@ -400,25 +571,32 @@ struct SettingsContentView: View {
 
 ## Technical Considerations
 
-### 1. Animation System
+### 1. Integration with Existing Theme
+- Leverage the existing `CryptogramTheme` for colors and layout values
+- Extend rather than replace the existing ViewModifiers
+- Maintain consistency with the app's overall design language
+
+### 2. Animation System
 - Use SwiftUI's built-in animation system for transitions
 - Combine with custom timers for typewriter effects
 - Ensure animations don't cause layout shifts
 
-### 2. Layout Stability
+### 3. Layout Stability
 - Use fixed heights for toggles to prevent layout shifts
 - Consider using `ZStack` with proper alignment for overlaying info content
 - Implement proper transitions that don't affect surrounding content
 
-### 3. Component Design
+### 4. Component Design
 - Keep components focused on single responsibilities
 - Use generics where appropriate to support different value types
 - Make components reusable for future extension
+- Provide flexibility for 2-option toggles vs multi-option selectors
 
-### 4. State Management
+### 5. State Management
 - Use proper binding propagation
 - Consider adding derived state properties for complex conditions
 - Ensure state changes trigger appropriate UI updates
+- Use onSelectionChanged callbacks instead of direct side effects
 
 ## Extension Points
 
@@ -432,7 +610,11 @@ The new architecture is designed to be extensible for future enhancements:
    - The generic toggle design supports different value types
    - Additional toggle varieties can be added with consistent styling
 
-3. Theming Improvements
+3. Multi-option Selectors
+   - Both button group and dropdown approaches are provided
+   - Can be extended to support additional layout options or different styling
+
+4. Theming Improvements
    - Components use theme colors for consistent styling
    - Easy to update for new theme options
 
@@ -440,9 +622,10 @@ The new architecture is designed to be extensible for future enhancements:
 
 This refactoring can be completed in a single PR with the following timeline:
 
-1. Phase 1 (Base Components): 2-3 hours
-2. Phase 2 (Main View): 2-3 hours
-3. Phase 3 (Info Panel): 1-2 hours
-4. Phase 4 (Testing/Refinement): 1-2 hours
+1. Phase 1 (Extend Theme System): 1 hour
+2. Phase 2 (Base Components): 2 hours
+3. Phase 3 (Main View): 2 hours
+4. Phase 4 (Info Panel): 1 hour
+5. Phase 5 (Testing/Refinement): 1-2 hours
 
-Total estimated time: 6-10 hours of development work. 
+Total estimated time: 7-8 hours of development work. 

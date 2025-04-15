@@ -57,6 +57,29 @@ struct CryptogramGrid: ViewModifier {
     }
 }
 
+// MARK: - Settings Modifiers
+struct SettingsToggleStyle: ViewModifier {
+    let isSelected: Bool
+    
+    func body(content: Content) -> some View {
+        content
+            .font(.footnote)
+            .fontWeight(isSelected ? .bold : .regular)
+            .foregroundColor(isSelected ? 
+                          CryptogramTheme.Colors.text : 
+                          CryptogramTheme.Colors.text.opacity(0.4))
+    }
+}
+
+struct SettingsSectionStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.subheadline)
+            .foregroundColor(CryptogramTheme.Colors.text)
+            .frame(maxWidth: .infinity, alignment: .center)
+    }
+}
+
 // MARK: - View Extensions
 extension View {
     func cryptogramButton(isSelected: Bool = false, isEnabled: Bool = true) -> some View {
@@ -69,5 +92,13 @@ extension View {
     
     func cryptogramGrid(columns: Int) -> some View {
         modifier(CryptogramGrid(columns: columns))
+    }
+    
+    func settingsToggleStyle(isSelected: Bool) -> some View {
+        modifier(SettingsToggleStyle(isSelected: isSelected))
+    }
+    
+    func settingsSectionStyle() -> some View {
+        modifier(SettingsSectionStyle())
     }
 } 
