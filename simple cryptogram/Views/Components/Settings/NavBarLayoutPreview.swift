@@ -25,18 +25,39 @@ struct NavBarLayoutPreview: View {
         .scaleEffect(scale)
     }
     
+    // Helper for arrow button
+    private func arrowButton(direction: String, action: @escaping () -> Void) -> some View {
+        Button(action: {
+            let generator = UIImpactFeedbackGenerator(style: .light)
+            generator.impactOccurred()
+            action()
+        }) {
+            Image(systemName: direction)
+                .font(.system(size: 14))
+                .frame(width: iconSize, height: iconSize)
+        }
+    }
+
+    // Helper for action button
+    private func actionButton(icon: String, action: @escaping () -> Void) -> some View {
+        Button(action: {
+            let generator = UIImpactFeedbackGenerator(style: .medium)
+            generator.impactOccurred()
+            action()
+        }) {
+            Image(systemName: icon)
+                .font(.system(size: 14))
+                .frame(width: iconSize, height: iconSize)
+        }
+    }
+
     // Left layout preview - arrows on left, action buttons on right
     private var leftLayoutPreview: some View {
         HStack {
             // Left side - navigation arrows
             HStack(spacing: iconSpacing) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 14))
-                    .frame(width: iconSize, height: iconSize)
-                
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14))
-                    .frame(width: iconSize, height: iconSize)
+                arrowButton(direction: "chevron.left", action: {})
+                arrowButton(direction: "chevron.right", action: {})
             }
             .padding(.leading, 8)
             
@@ -44,13 +65,8 @@ struct NavBarLayoutPreview: View {
             
             // Right side - action buttons
             HStack(spacing: iconSpacing) {
-                Image(systemName: "pause")
-                    .font(.system(size: 14))
-                    .frame(width: iconSize, height: iconSize)
-                
-                Image(systemName: "arrow.2.circlepath")
-                    .font(.system(size: 14))
-                    .frame(width: iconSize, height: iconSize)
+                actionButton(icon: "pause", action: {})
+                actionButton(icon: "arrow.2.circlepath", action: {})
             }
             .padding(.trailing, 8)
         }
@@ -62,30 +78,21 @@ struct NavBarLayoutPreview: View {
     private var centerLayoutPreview: some View {
         HStack {
             // Left arrow
-            Image(systemName: "chevron.left")
-                .font(.system(size: 14))
-                .frame(width: iconSize, height: iconSize)
+            arrowButton(direction: "chevron.left", action: {})
                 .padding(.leading, 5)
             
             Spacer()
             
             // Center action buttons
             HStack(spacing: iconSpacing) {
-                Image(systemName: "pause")
-                    .font(.system(size: 14))
-                    .frame(width: iconSize, height: iconSize)
-                
-                Image(systemName: "arrow.2.circlepath")
-                    .font(.system(size: 14))
-                    .frame(width: iconSize, height: iconSize)
+                actionButton(icon: "pause", action: {})
+                actionButton(icon: "arrow.2.circlepath", action: {})
             }
             
             Spacer()
             
             // Right arrow
-            Image(systemName: "chevron.right")
-                .font(.system(size: 14))
-                .frame(width: iconSize, height: iconSize)
+            arrowButton(direction: "chevron.right", action: {})
                 .padding(.trailing, 5)
         }
         .frame(width: 160, height: 40)
@@ -97,13 +104,8 @@ struct NavBarLayoutPreview: View {
         HStack {
             // Left side - action buttons
             HStack(spacing: iconSpacing) {
-                Image(systemName: "pause")
-                    .font(.system(size: 14))
-                    .frame(width: iconSize, height: iconSize)
-                
-                Image(systemName: "arrow.2.circlepath")
-                    .font(.system(size: 14))
-                    .frame(width: iconSize, height: iconSize)
+                actionButton(icon: "pause", action: {})
+                actionButton(icon: "arrow.2.circlepath", action: {})
             }
             .padding(.leading, 8)
             
@@ -111,13 +113,8 @@ struct NavBarLayoutPreview: View {
             
             // Right side - navigation arrows
             HStack(spacing: iconSpacing) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 14))
-                    .frame(width: iconSize, height: iconSize)
-                
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14))
-                    .frame(width: iconSize, height: iconSize)
+                arrowButton(direction: "chevron.left", action: {})
+                arrowButton(direction: "chevron.right", action: {})
             }
             .padding(.trailing, 8)
         }

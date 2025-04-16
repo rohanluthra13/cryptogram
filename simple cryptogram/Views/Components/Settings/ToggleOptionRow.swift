@@ -14,6 +14,8 @@ struct ToggleOptionRow<T: Equatable>: View {
             
             // Left option button
             Button(action: {
+                let generator = UIImpactFeedbackGenerator(style: .light)
+                generator.impactOccurred()
                 selection = leftOption.value
                 onSelectionChanged?()
             }) {
@@ -26,6 +28,8 @@ struct ToggleOptionRow<T: Equatable>: View {
             
             // Toggle arrow
             Button(action: {
+                let generator = UIImpactFeedbackGenerator(style: .light)
+                generator.impactOccurred()
                 selection = selection == leftOption.value ? rightOption.value : leftOption.value
                 onSelectionChanged?()
             }) {
@@ -38,6 +42,8 @@ struct ToggleOptionRow<T: Equatable>: View {
             
             // Right option button
             Button(action: {
+                let generator = UIImpactFeedbackGenerator(style: .light)
+                generator.impactOccurred()
                 selection = rightOption.value
                 onSelectionChanged?()
             }) {

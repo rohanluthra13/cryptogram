@@ -23,6 +23,8 @@ struct NavBarLayoutDropdown: View {
     
     private var selectionButton: some View {
         Button(action: {
+            let generator = UIImpactFeedbackGenerator(style: .light)
+            generator.impactOccurred()
             withAnimation {
                 isDropdownOpen.toggle()
             }
@@ -66,6 +68,8 @@ struct NavBarLayoutDropdown: View {
         let fontWeight = isSelected ? Font.Weight.semibold : Font.Weight.regular
         
         return Button(action: {
+            let generator = UIImpactFeedbackGenerator(style: .light)
+            generator.impactOccurred()
             selection = option
             withAnimation {
                 isDropdownOpen = false

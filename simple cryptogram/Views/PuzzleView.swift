@@ -195,7 +195,7 @@ struct PuzzleView: View {
                     // Hints view under the mistakes
                     HintsView(
                         hintCount: viewModel.hintCount,
-                        onRequestHint: { viewModel.revealCell(at: viewModel.selectedCellIndex ?? 0) },
+                        onRequestHint: { viewModel.revealCell() },
                         maxHints: viewModel.nonSymbolCells.count / 4 // Use approximately 1/4 of the cells as max hints
                     )
                     .padding(.horizontal, 16)

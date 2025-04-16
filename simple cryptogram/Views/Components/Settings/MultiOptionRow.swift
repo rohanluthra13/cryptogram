@@ -16,6 +16,8 @@ struct MultiOptionRow<T: Hashable & Identifiable>: View {
             HStack(spacing: 12) {
                 ForEach(options) { option in
                     Button(action: {
+                        let generator = UIImpactFeedbackGenerator(style: .light)
+                        generator.impactOccurred()
                         selection = option
                         onSelectionChanged?()
                     }) {

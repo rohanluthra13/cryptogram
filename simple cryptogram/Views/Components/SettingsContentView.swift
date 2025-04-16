@@ -3,15 +3,18 @@ import SwiftUI
 struct SettingsContentView: View {
     @AppStorage("encodingType") private var selectedEncodingType = "Letters"
     @AppStorage("isDarkMode") private var isDarkMode = false
+    @AppStorage("selectedDifficulties") private var selectedDifficulties = "easy,medium,hard" // default all selected
     @EnvironmentObject private var puzzleViewModel: PuzzleViewModel
     @EnvironmentObject private var themeManager: ThemeManager
     @StateObject private var settingsViewModel = SettingsViewModel()
     
     // State properties for info panels
     @State private var showDifficultyInfo = false
+    @State private var showLengthSelector = false
     
     // Info text for difficulty
     private let difficultyInfoText = "normal mode gives you some starting letters.\nexpert mode does not."
+    private let lengthInfoText = "easy: short quotes (13-49 chars)\nmedium: medium quotes (50-99 chars)\nhard: long quotes (100+ chars)"
     
     var body: some View {
         VStack(spacing: 20) {
@@ -31,6 +34,7 @@ struct SettingsContentView: View {
                         onInfoButtonTap: {
                             withAnimation {
                                 showDifficultyInfo.toggle()
+                                if showLengthSelector { showLengthSelector = false }
                             }
                         }
                     )
@@ -43,21 +47,88 @@ struct SettingsContentView: View {
                         )
                         .padding(.top, 8)
                         
-                        // Encoding toggle (hidden when info is shown)
+                        // Encoding toggle and length dropdown (hidden when info is shown)
                         if !showDifficultyInfo {
-                            ToggleOptionRow(
-                                leftOption: ("Letters", "abc"),
-                                rightOption: ("Numbers", "123"),
-                                selection: $selectedEncodingType
-                            )
-                            .transition(.opacity)
+                            VStack(spacing: 15) {
+                                // Encoding toggle
+                                ToggleOptionRow(
+                                    leftOption: ("Letters", "abc"),
+                                    rightOption: ("Numbers", "123"),
+                                    selection: $selectedEncodingType
+                                )
+                                .transition(.opacity)
+                                
+                                // Quote Length Dropdown Toggle
+                                Button(action: {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        showLengthSelector.toggle()
+                                    }
+                                }) {
+                                    HStack {
+                                        Spacer()
+                                        
+                                        Text("character length: ")
+                                            .font(.footnote)
+                                            .foregroundColor(CryptogramTheme.Colors.text) +
+                                        Text(settingsViewModel.quoteRangeDisplayText)
+                                            .font(.footnote)
+                                            .fontWeight(.bold)
+                                            .foregroundColor(CryptogramTheme.Colors.text)
+                                        
+                                        Image(systemName: showLengthSelector ? "chevron.up" : "chevron.down")
+                                            .font(.system(size: 12, weight: .medium))
+                                            .foregroundColor(CryptogramTheme.Colors.text)
+                                            .padding(.leading, 4)
+                                        
+                                        Spacer()
+                                    }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 10)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(CryptogramTheme.Colors.surface)
+                                    )
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                
+                                // Show checkboxes when expanded
+                                if showLengthSelector {
+                                    HStack(spacing: 4) {
+                                        MultiCheckboxRow(
+                                            title: "< 50",
+                                            isSelected: settingsViewModel.isLengthSelected("easy"),
+                                            action: { settingsViewModel.toggleLength("easy") }
+                                        )
+                                        MultiCheckboxRow(
+                                            title: "50 - 99",
+                                            isSelected: settingsViewModel.isLengthSelected("medium"),
+                                            action: { settingsViewModel.toggleLength("medium") }
+                                        )
+                                        MultiCheckboxRow(
+                                            title: "100 +",
+                                            isSelected: settingsViewModel.isLengthSelected("hard"),
+                                            action: { settingsViewModel.toggleLength("hard") }
+                                        )
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .contentShape(Rectangle())
+                                    .overlay(
+                                        GeometryReader { geometry in
+                                            Color.clear.preference(key: HStackWidthPreferenceKey.self, value: geometry.size.width)
+                                        }
+                                    )
+                                    .frame(maxWidth: .infinity, alignment: .center)
+                                    .transition(.move(edge: .top).combined(with: .opacity))
+                                    .padding(.top, 0)
+                                }
+                            }
                         }
                     }
                 }
             }
             
             // Appearance Section - only visible when no info panels are shown
-            if !showDifficultyInfo {
+            if !showDifficultyInfo && !showLengthSelector {
                 SettingsSection(title: "theme & layout") {
                     VStack(spacing: 15) {
                         // Dark mode toggle with icons
@@ -119,6 +190,15 @@ struct SettingsContentView: View {
             Spacer() // Fill remaining space
         }
         .animation(.easeInOut(duration: 0.3), value: showDifficultyInfo)
+        .animation(.easeInOut(duration: 0.3), value: showLengthSelector)
+    }
+}
+
+// PreferenceKey to help with centering if needed
+struct HStackWidthPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }
 

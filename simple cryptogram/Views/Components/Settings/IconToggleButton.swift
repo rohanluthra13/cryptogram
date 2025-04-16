@@ -7,7 +7,11 @@ struct IconToggleButton: View {
     let accessibilityLabel: String
     
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            let generator = UIImpactFeedbackGenerator(style: .light)
+            generator.impactOccurred()
+            action()
+        }) {
             Image(systemName: iconName)
                 .font(.system(size: 15, weight: .medium))
                 .foregroundColor(isSelected ? 

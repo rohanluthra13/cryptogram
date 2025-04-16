@@ -64,7 +64,7 @@ class DatabaseService {
         }
     }
     
-    func fetchRandomPuzzle(current: Puzzle? = nil, encodingType: String = "Letters") -> Puzzle? {
+    func fetchRandomPuzzle(current: Puzzle? = nil, encodingType: String = "Letters", selectedDifficulties: [String] = UserSettings.selectedDifficulties) -> Puzzle? {
         guard let db = db else {
             print("Error: Database not initialized")
             return nil
@@ -88,7 +88,14 @@ class DatabaseService {
             
             // Start with a random query
             var randomQuery = quotesTable.select(id, quoteText, author, length, difficulty, createdAt)
-                .order(Expression<Int>.random())
+            
+            // Apply difficulty filter if any are selected, otherwise don't filter (show all)
+            if !selectedDifficulties.isEmpty {
+                randomQuery = randomQuery.filter(selectedDifficulties.contains(difficulty))
+            }
+            
+            // Order randomly
+            randomQuery = randomQuery.order(Expression<Int>.random())
             
             // If we have a current puzzle, exclude it from the results
             if let currentPuzzle = current,

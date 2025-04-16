@@ -125,6 +125,27 @@ class PuzzleViewModel: ObservableObject {
                 startNewPuzzle(puzzle: self.currentPuzzle!)
             }
         }
+        
+        // Setup observers for settings changes
+        setupNotificationObservers()
+    }
+    
+    private func setupNotificationObservers() {
+        // Listen for difficulty selection changes
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleDifficultySelectionChanged),
+            name: SettingsViewModel.difficultySelectionChangedNotification,
+            object: nil
+        )
+    }
+    
+    @objc private func handleDifficultySelectionChanged() {
+        // Only reload if we're on the main menu or just starting
+        // Don't interrupt an active game
+        if session.isComplete || !session.hasStarted {
+            loadNewPuzzle()
+        }
     }
     
     // MARK: - Public Methods
@@ -438,6 +459,24 @@ class PuzzleViewModel: ObservableObject {
         
         if let next = nextIndex {
             session.selectedCellIndex = next
+        }
+    }
+    
+    func loadNewPuzzle() {
+        print("Loading new puzzle...")
+        
+        // Get selected difficulties from UserSettings
+        let selectedDifficulties = UserSettings.selectedDifficulties
+        
+        if let puzzle = databaseService.fetchRandomPuzzle(
+            current: currentPuzzle,
+            encodingType: encodingType,
+            selectedDifficulties: selectedDifficulties
+        ) {
+            // Restart the game with the new puzzle
+            startNewPuzzle(puzzle: puzzle)
+        } else {
+            print("Error: Failed to load a new puzzle")
         }
     }
     

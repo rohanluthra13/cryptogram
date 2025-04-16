@@ -19,6 +19,11 @@ struct PuzzleSession: Equatable {
     var isPaused: Bool = false
     private var pauseStartTime: Date?
     
+    // Determines if the session has actively started
+    var hasStarted: Bool {
+        return startTime != nil && !isComplete && !isFailed
+    }
+    
     init(
         startTime: Date? = nil,
         endTime: Date? = nil,
