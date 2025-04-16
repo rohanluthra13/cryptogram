@@ -30,10 +30,15 @@ struct CompletionStatsView: View {
                         .font(.footnote)
                     
                     if viewModel.mistakeCount == 0 {
-                        // Show green tick for no mistakes - smaller size, dark muted green
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(checkmarkColor)
+                        // Show "none!" text with green tick
+                        HStack(spacing: 4) {
+                            Text("none!")
+                                .foregroundColor(CryptogramTheme.Colors.text)
+                            
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(checkmarkColor)
+                        }
                     } else {
                         // Show crosses for mistakes
                         HStack(spacing: 8) {
@@ -55,10 +60,15 @@ struct CompletionStatsView: View {
                         .font(.footnote)
                     
                     if viewModel.hintCount == 0 {
-                        // Show green tick for no hints used - smaller size, dark muted green
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(checkmarkColor)
+                        // Show "none!" text with green tick
+                        HStack(spacing: 4) {
+                            Text("none!")
+                                .foregroundColor(CryptogramTheme.Colors.text)
+                            
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(checkmarkColor)
+                        }
                     } else {
                         // Show lightbulb and count for hints used - using theme color and outline version
                         Image(systemName: "lightbulb")

@@ -50,6 +50,9 @@ struct PuzzleCompletionView: View {
                         .padding(.horizontal, 32)
                         .opacity(showQuote ? 1 : 0)
                         .scaleEffect(showQuote ? 1 : 0.9)
+                        .onTapGesture {
+                            skipTypingAnimation()
+                        }
                 }
                 
                 // Author attribution - removed the redundant attribution with dash
@@ -207,6 +210,20 @@ struct PuzzleCompletionView: View {
                     }
                 }
             }
+        }
+    }
+    
+    func skipTypingAnimation() {
+        // Cancel the typing timer
+        typingTimer?.invalidate()
+        typingTimer = nil
+        
+        // Complete the quote immediately
+        displayedQuote = quoteToType
+        
+        // Bold the author name immediately
+        withAnimation {
+            authorIsBold = true
         }
     }
     

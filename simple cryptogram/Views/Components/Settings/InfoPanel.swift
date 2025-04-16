@@ -27,6 +27,9 @@ struct InfoPanel: View {
                     .onDisappear {
                         resetTypewriterAnimation()
                     }
+                    .onTapGesture {
+                        skipTypingAnimation()
+                    }
             }
         }
         .frame(maxWidth: .infinity)
@@ -85,6 +88,15 @@ struct InfoPanel: View {
         displayedInfoText = ""
         currentCharacterIndex = 0
         isTypingComplete = false
+    }
+    
+    // Skip typing animation and show full text immediately
+    private func skipTypingAnimation() {
+        typingTimer?.invalidate()
+        typingTimer = nil
+        displayedInfoText = infoText
+        currentCharacterIndex = infoText.count
+        isTypingComplete = true
     }
 }
 
