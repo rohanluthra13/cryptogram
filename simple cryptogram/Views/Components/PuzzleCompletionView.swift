@@ -1,11 +1,11 @@
 import SwiftUI
 
 struct PuzzleCompletionView: View {
-    @ObservedObject var viewModel: PuzzleViewModel
-    @Environment(\.colorScheme) var colorScheme
+    @EnvironmentObject private var viewModel: PuzzleViewModel
+    @EnvironmentObject private var themeManager: ThemeManager
+    @EnvironmentObject private var settingsViewModel: SettingsViewModel
     @Binding var showCompletionView: Bool
     @State private var showSettings = false
-    @StateObject private var themeManager = ThemeManager()
     @AppStorage("isDarkMode") private var isDarkMode = false
     
     // Animation states
@@ -89,7 +89,8 @@ struct PuzzleCompletionView: View {
                 // Stats and button container
                 VStack(spacing: 8) {
                     // Stats
-                    CompletionStatsView(viewModel: viewModel)
+                    CompletionStatsView()
+                        .environmentObject(viewModel)
                         .opacity(showStats ? 1 : 0)
                         .offset(y: showStats ? 0 : 20)
                     
@@ -143,13 +144,13 @@ struct PuzzleCompletionView: View {
 
                     // Settings content centered on the overlay
                     SettingsContentView()
+                        .environmentObject(themeManager)
+                        .environmentObject(viewModel)
+                        .environmentObject(settingsViewModel)
                         .padding(.horizontal, 24)
                         .padding(.vertical, 20)
                         .contentShape(Rectangle()) // Prevent dismissal when tapping content
                         .onTapGesture { }
-                        .environmentObject(viewModel)
-                        .environmentObject(themeManager)
-                        .zIndex(11) // Above the background
                 }
                 .zIndex(100) // Ensure settings overlay is above everything
             }
@@ -244,4 +245,16 @@ struct PuzzleCompletionView: View {
             viewModel.refreshPuzzleWithCurrentSettings()
         }
     }
-} 
+}
+
+#if DEBUG
+struct PuzzleCompletionView_Previews: PreviewProvider {
+    @State static var showCompletionView = true
+    static var previews: some View {
+        PuzzleCompletionView(showCompletionView: $showCompletionView)
+            .environmentObject(PuzzleViewModel())
+            .environmentObject(ThemeManager())
+            .environmentObject(SettingsViewModel())
+    }
+}
+#endif

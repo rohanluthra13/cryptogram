@@ -16,6 +16,9 @@ class PuzzleViewModel: ObservableObject {
     @Published private(set) var session: PuzzleSession = PuzzleSession()
     @Published private(set) var currentPuzzle: Puzzle?
     @Published var isWiggling = false // Animation state for completion celebrations
+    @Published var completedLetters: Set<String> = [] // Set of encoded letters that are completed (all cells filled, normal mode only)
+    @Published var cellsToAnimate: Set<UUID> = [] // Set of cell IDs to animate completion for
+    @Published var hasUserEngaged: Bool = false // Track if the user has interacted with the puzzle yet
     
     // Add letter mapping to track and enforce cryptogram rules
     private var letterMapping: [String: String] = [:]
@@ -151,9 +154,14 @@ class PuzzleViewModel: ObservableObject {
     // MARK: - Public Methods
     
     func startNewPuzzle(puzzle: Puzzle) {
+        completedLetters = [] // Reset completed letters
         currentPuzzle = puzzle
         cells = puzzle.createCells(encodingType: encodingType)
         session = PuzzleSession()
+        updateCompletedLetters() // Ensure completedLetters is up-to-date for pre-filled cells
+        
+        // Animate all completed cells on puzzle load
+        cellsToAnimate = Set(cells.filter { completedLetters.contains($0.encodedChar) }.map { $0.id })
         
         // --- Add Difficulty-based reveal logic --- 
         let difficulty = UserSettings.currentMode
@@ -330,6 +338,21 @@ class PuzzleViewModel: ObservableObject {
             session.startTime = Date() // Start timer on first input
         }
         
+        guard index >= 0 && index < cells.count, !cells[index].isSymbol else { return }
+        let cell = cells[index]
+        // Only allow correct input
+        if let solution = cell.solutionChar, letter.uppercased() == String(solution).uppercased() {
+            cells[index].userInput = letter.uppercased()
+            cells[index].wasJustFilled = true
+            cells[index].isError = false
+            // Reset error state for animation
+        } else {
+            // Incorrect input: trigger error animation
+            cells[index].isError = true
+            // No input change (reject)
+            return
+        }
+        updateCompletedLetters()
         if modifyCells(at: index, operation: .input(letter)) {
             moveToNextCell()
         }
@@ -339,6 +362,7 @@ class PuzzleViewModel: ObservableObject {
         let targetIndex = index ?? session.selectedCellIndex ?? -1
         if targetIndex >= 0 {
             _ = modifyCells(at: targetIndex, operation: .delete)
+            updateCompletedLetters()
         }
     }
 
@@ -374,20 +398,19 @@ class PuzzleViewModel: ObservableObject {
     }
     
     func reset() {
-        // Reset all cells
-        for i in 0..<cells.count {
+        completedLetters = [] // Reset completed letters
+        session = PuzzleSession()
+        for i in cells.indices {
             cells[i].userInput = ""
-            cells[i].isRevealed = false
             cells[i].isError = false
-            cells[i].isPreFilled = false // Ensure pre-filled is also reset
+            cells[i].wasJustFilled = false
+            cells[i].isRevealed = false
+            // Don't reset isPreFilled, as that's determined by mode
         }
+        updateCompletedLetters() // Ensure completedLetters is up-to-date for pre-filled cells
         
-        // Reset letter mappings
-        letterMapping = [:]
-        letterUsage = [:]
-        
-        // Reset session data
-        session.reset()
+        // Animate all completed cells on reset
+        cellsToAnimate = Set(cells.filter { completedLetters.contains($0.encodedChar) }.map { $0.id })
     }
     
     func togglePause() {
@@ -408,6 +431,28 @@ class PuzzleViewModel: ObservableObject {
         if let puzzle = databaseService.fetchRandomPuzzle(current: currentPuzzle, encodingType: encodingType) {
             startNewPuzzle(puzzle: puzzle)
         }
+    }
+    
+    func loadNewPuzzle() {
+        completedLetters = [] // Reset completed letters
+        print("Loading new puzzle...")
+        // Get selected difficulties from UserSettings
+        let selectedDifficulties = UserSettings.selectedDifficulties
+        
+        if let puzzle = databaseService.fetchRandomPuzzle(
+            current: currentPuzzle,
+            encodingType: encodingType,
+            selectedDifficulties: selectedDifficulties
+        ) {
+            // Restart the game with the new puzzle
+            startNewPuzzle(puzzle: puzzle)
+        } else {
+            print("Error: Failed to load a new puzzle")
+        }
+        updateCompletedLetters() // Ensure completedLetters is up-to-date for pre-filled cells
+        
+        // Animate all completed cells on load
+        cellsToAnimate = Set(cells.filter { completedLetters.contains($0.encodedChar) }.map { $0.id })
     }
     
     func moveToNextCell() {
@@ -462,24 +507,6 @@ class PuzzleViewModel: ObservableObject {
         }
     }
     
-    func loadNewPuzzle() {
-        print("Loading new puzzle...")
-        
-        // Get selected difficulties from UserSettings
-        let selectedDifficulties = UserSettings.selectedDifficulties
-        
-        if let puzzle = databaseService.fetchRandomPuzzle(
-            current: currentPuzzle,
-            encodingType: encodingType,
-            selectedDifficulties: selectedDifficulties
-        ) {
-            // Restart the game with the new puzzle
-            startNewPuzzle(puzzle: puzzle)
-        } else {
-            print("Error: Failed to load a new puzzle")
-        }
-    }
-    
     // MARK: - Private Methods
     
     private func checkPuzzleCompletion() {
@@ -513,6 +540,40 @@ class PuzzleViewModel: ObservableObject {
         }
     }
     
+    private func updateCompletedLetters() {
+        guard UserSettings.currentMode == .normal else {
+            completedLetters = []
+            return
+        }
+        // Find all unique encoded letters (excluding symbols)
+        let allLetters = Set(cells.filter { !$0.isSymbol }.map { $0.encodedChar })
+        var newCompleted: Set<String> = []
+        for letter in allLetters {
+            let letterCells = cells.filter { $0.encodedChar == letter && !$0.isSymbol }
+            if letterCells.allSatisfy({ !$0.userInput.isEmpty }) {
+                newCompleted.insert(letter)
+            }
+        }
+        // Haptic feedback for any new completions
+        let added = newCompleted.subtracting(completedLetters)
+        if !added.isEmpty {
+            let generator = UIImpactFeedbackGenerator(style: .medium)
+            generator.impactOccurred()
+        }
+        completedLetters = newCompleted
+        
+        // Animate only newly completed cells on user input
+        let newCellIDs = cells.filter { added.contains($0.encodedChar) }.map { $0.id }
+        if !newCellIDs.isEmpty {
+            cellsToAnimate.formUnion(newCellIDs)
+        }
+    }
+    
+    // Called by PuzzleCell when its animation completes
+    func markCellAnimationComplete(_ cellID: UUID) {
+        cellsToAnimate.remove(cellID)
+    }
+    
     // MARK: - Completion Animations
     
     func triggerCompletionWiggle() {
@@ -524,6 +585,15 @@ class PuzzleViewModel: ObservableObject {
             self?.isWiggling = false
         }
     }
+    
+    func userEngaged() {
+        guard !hasUserEngaged else { return }
+        print("[DEBUG] userEngaged() called")
+        hasUserEngaged = true
+        // Animate all pre-filled or revealed cells on first engagement
+        let preCompletedCellIDs = cells.filter { $0.isPreFilled || $0.isRevealed }.map { $0.id }
+        print("[DEBUG] Pre-filled/revealed cell IDs to animate: \(preCompletedCellIDs)")
+        cellsToAnimate.formUnion(preCompletedCellIDs)
+        print("[DEBUG] cellsToAnimate after engagement: \(cellsToAnimate)")
+    }
 }
-
-

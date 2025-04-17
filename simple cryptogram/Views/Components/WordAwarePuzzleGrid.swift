@@ -26,8 +26,12 @@ struct WordAwarePuzzleGrid: View {
                                 PuzzleCell(
                                     cell: cell,
                                     isSelected: viewModel.selectedCellIndex == index,
-                                    onTap: { viewModel.selectCell(at: index) }
+                                    onTap: { viewModel.selectCell(at: index) },
+                                    isCompleted: viewModel.completedLetters.contains(cell.encodedChar),
+                                    shouldAnimate: viewModel.cellsToAnimate.contains(cell.id),
+                                    onAnimationComplete: { viewModel.markCellAnimationComplete(cell.id) }
                                 )
+                                .id("\(viewModel.currentPuzzle?.id ?? UUID())-\(cell.id)")
                                 .aspectRatio(1, contentMode: .fit)
                             }
                         }

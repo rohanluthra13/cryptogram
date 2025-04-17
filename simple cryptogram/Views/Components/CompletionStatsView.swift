@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct CompletionStatsView: View {
-    @ObservedObject var viewModel: PuzzleViewModel
+    @EnvironmentObject private var viewModel: PuzzleViewModel
     let maxMistakes: Int = 3
     
     // Dark muted green color for checkmark icons - using a more muted green directly
@@ -94,4 +94,4 @@ struct CompletionStatsView: View {
         let seconds = Int(timeInterval) % 60
         return String(format: "%d:%02d", minutes, seconds)
     }
-} 
+}

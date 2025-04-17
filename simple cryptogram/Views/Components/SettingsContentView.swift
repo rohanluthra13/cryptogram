@@ -6,7 +6,7 @@ struct SettingsContentView: View {
     @AppStorage("selectedDifficulties") private var selectedDifficulties = "easy,medium,hard" // default all selected
     @EnvironmentObject private var puzzleViewModel: PuzzleViewModel
     @EnvironmentObject private var themeManager: ThemeManager
-    @StateObject private var settingsViewModel = SettingsViewModel()
+    @EnvironmentObject private var settingsViewModel: SettingsViewModel
     
     // State properties for info panels
     @State private var showDifficultyInfo = false

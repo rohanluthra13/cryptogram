@@ -4,6 +4,7 @@ struct KeyboardView: View {
     // Callbacks for key presses
     var onLetterPress: (Character) -> Void
     var onBackspacePress: () -> Void
+    var completedLetters: Set<String> = [] // NEW: letters that are completed and should be locked
 
     private let topRow: [Character] = ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"]
     private let middleRow: [Character] = ["A", "S", "D", "F", "G", "H", "J", "K", "L"]
@@ -49,15 +50,17 @@ struct KeyboardView: View {
     
     // Helper method to create a key button
     private func keyButton(for key: Character) -> some View {
-        Button(action: { onLetterPress(key) }) {
+        let isLocked = completedLetters.contains(String(key).uppercased())
+        return Button(action: { onLetterPress(key) }) {
             Text(String(key))
                 .font(.system(size: 16, weight: .medium))
                 .frame(height: keyHeight)
                 .frame(minWidth: 0, maxWidth: .infinity)
-                .foregroundColor(CryptogramTheme.Colors.text)
+                .foregroundColor(isLocked ? Color.gray : CryptogramTheme.Colors.text)
                 .cornerRadius(5)
                 .accessibilityLabel("Key \(key)")
         }
+        .disabled(isLocked)
     }
     
     private var backspaceButton: some View {
@@ -74,6 +77,6 @@ struct KeyboardView: View {
 }
 
 #Preview {
-    KeyboardView(onLetterPress: { _ in }, onBackspacePress: { })
+    KeyboardView(onLetterPress: { _ in }, onBackspacePress: { }, completedLetters: ["A", "B"])
         .padding(8)
 } 

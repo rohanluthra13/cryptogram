@@ -2,8 +2,9 @@ import SwiftUI
 import Combine
 
 struct PuzzleView: View {
-    @StateObject private var viewModel: PuzzleViewModel
-    @StateObject private var themeManager = ThemeManager()
+    @EnvironmentObject private var viewModel: PuzzleViewModel
+    @EnvironmentObject private var themeManager: ThemeManager
+    @EnvironmentObject private var settingsViewModel: SettingsViewModel
     @State private var showSettings = false
     @State private var showCompletionView = false
     @AppStorage("isDarkMode") private var isDarkMode = false
@@ -14,10 +15,6 @@ struct PuzzleView: View {
             get: { UserSettings.navigationBarLayout },
             set: { UserSettings.navigationBarLayout = $0 }
         )
-    }
-    
-    init(puzzle: Puzzle? = nil) {
-        _viewModel = StateObject(wrappedValue: PuzzleViewModel(initialPuzzle: puzzle))
     }
     
     var body: some View {
@@ -141,6 +138,7 @@ struct PuzzleView: View {
                                     }
                                     .environmentObject(viewModel)
                                     .environmentObject(themeManager)
+                                    .environmentObject(settingsViewModel)
                                     .zIndex(11) // Above the background
                             }
                             .zIndex(100) // Ensure settings overlay is above everything
@@ -153,8 +151,9 @@ struct PuzzleView: View {
             
             // Completion overlay - conditionally shown
             if showCompletionView {
-                PuzzleCompletionView(viewModel: viewModel, showCompletionView: $showCompletionView)
-                    .transition(.opacity)
+                PuzzleCompletionView(showCompletionView: $showCompletionView)
+                    .environmentObject(themeManager)
+                    .environmentObject(viewModel)
             }
             
             // Top bar with Settings, Timer, and Mistakes
@@ -227,12 +226,15 @@ struct PuzzleView: View {
     private func formatTime(_ timeInterval: TimeInterval) -> String {
         let minutes = Int(timeInterval) / 60
         let seconds = Int(timeInterval) % 60
-        return String(format: "%d:%02d", minutes, seconds)
+        return String(format: "%02d:%02d", minutes, seconds)
     }
 }
 
 #Preview {
     NavigationView {
         PuzzleView()
+            .environmentObject(PuzzleViewModel())
+            .environmentObject(ThemeManager())
+            .environmentObject(SettingsViewModel())
     }
 }
