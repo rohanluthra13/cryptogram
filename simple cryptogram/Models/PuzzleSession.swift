@@ -45,8 +45,11 @@ struct PuzzleSession: Equatable {
     }
     
     mutating func incrementMistakes() {
+        print("[DEBUG] incrementMistakes called. Previous mistakeCount: \(mistakeCount)")
         mistakeCount += 1
+        print("[DEBUG] incrementMistakes: New mistakeCount: \(mistakeCount)")
         if mistakeCount >= 3 {
+            print("[DEBUG] incrementMistakes: mistakeCount >= 3, calling markFailed()")
             markFailed()
         }
     }

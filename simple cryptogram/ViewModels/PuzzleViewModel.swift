@@ -158,6 +158,7 @@ class PuzzleViewModel: ObservableObject {
         currentPuzzle = puzzle
         cells = puzzle.createCells(encodingType: encodingType)
         session = PuzzleSession()
+        session = session
         updateCompletedLetters() // Ensure completedLetters is up-to-date for pre-filled cells
         
         // Animate all completed cells on puzzle load
@@ -221,6 +222,7 @@ class PuzzleViewModel: ObservableObject {
     func selectCell(at index: Int) {
         guard index >= 0 && index < cells.count else { return }
         session.selectedCellIndex = index
+        session = session
         
         // Add subtle haptic feedback for cell selection
         DispatchQueue.main.async {
@@ -238,6 +240,7 @@ class PuzzleViewModel: ObservableObject {
     
     // Unified cell modification system that only updates the specific cell
     private func modifyCells(at index: Int, operation: CellOperation) -> Bool {
+        print("[DEBUG] modifyCells called with index: \(index), operation: \(operation)")
         guard index >= 0 && index < cells.count, !cells[index].isSymbol else { return false }
         
         let targetCell = cells[index]
@@ -278,7 +281,11 @@ class PuzzleViewModel: ObservableObject {
             
             // Only count a mistake once per entry and only for newly entered incorrect letters
             if !isCorrect && !uppercaseLetter.isEmpty && wasEmpty {
+                print("[DEBUG] Detected mistake at cell index \(index). Calling incrementMistakes().")
+                print("[DEBUG] Before incrementMistakes, session.mistakeCount = \(session.mistakeCount)")
                 session.incrementMistakes()
+                print("[DEBUG] After incrementMistakes, session.mistakeCount = \(session.mistakeCount)")
+                session = session // Ensure UI updates after mutation
                 
                 // For incorrect letters, remove them after a brief delay
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
@@ -316,6 +323,7 @@ class PuzzleViewModel: ObservableObject {
             
             // Record this reveal in the session
             session.revealCell(at: index)
+            session = session
             
             // Add haptic feedback for revealing a letter (hint)
             DispatchQueue.main.async {
@@ -334,8 +342,10 @@ class PuzzleViewModel: ObservableObject {
     
     // Refactor existing methods to use the unified cell modification approach
     func inputLetter(_ letter: String, at index: Int) {
+        print("[DEBUG] inputLetter called with letter: \(letter), index: \(index)")
         if session.startTime == nil {
             session.startTime = Date() // Start timer on first input
+            session = session
         }
         
         guard index >= 0 && index < cells.count, !cells[index].isSymbol else { return }
@@ -345,12 +355,9 @@ class PuzzleViewModel: ObservableObject {
             cells[index].userInput = letter.uppercased()
             cells[index].wasJustFilled = true
             cells[index].isError = false
-            // Reset error state for animation
         } else {
             // Incorrect input: trigger error animation
             cells[index].isError = true
-            // No input change (reject)
-            return
         }
         updateCompletedLetters()
         if modifyCells(at: index, operation: .input(letter)) {
@@ -391,6 +398,7 @@ class PuzzleViewModel: ObservableObject {
         
         if session.startTime == nil {
             session.startTime = Date() // Start timer on first revealed cell
+            session = session
         }
         
         _ = modifyCells(at: targetIndex, operation: .reveal)
@@ -400,6 +408,7 @@ class PuzzleViewModel: ObservableObject {
     func reset() {
         completedLetters = [] // Reset completed letters
         session = PuzzleSession()
+        session = session
         for i in cells.indices {
             cells[i].userInput = ""
             cells[i].isError = false
@@ -411,10 +420,48 @@ class PuzzleViewModel: ObservableObject {
         
         // Animate all completed cells on reset
         cellsToAnimate = Set(cells.filter { completedLetters.contains($0.encodedChar) }.map { $0.id })
+        
+        // --- Add Difficulty-based reveal logic --- 
+        let difficulty = UserSettings.currentMode
+        if difficulty == .normal {
+            let solution = currentPuzzle?.solution.uppercased() ?? ""
+            let uniqueLetters = Set(solution.filter { $0.isLetter })
+
+            if !uniqueLetters.isEmpty {
+                let revealPercentage = 0.20 // 20% reveal
+                let numToReveal = max(1, Int(ceil(Double(uniqueLetters.count) * revealPercentage)))
+                let lettersToReveal = uniqueLetters.shuffled().prefix(numToReveal)
+                
+                var revealedIndices = Set<Int>() // Track revealed indices to ensure one per letter
+
+                for letter in lettersToReveal {
+                    let letterString = String(letter)
+                    // Find indices for this letter that haven't been revealed yet
+                    let matchingIndices = cells.indices.filter { 
+                        cells[$0].solutionChar == letter && !revealedIndices.contains($0) && !cells[$0].isRevealed
+                    }
+
+                    if let indexToReveal = matchingIndices.randomElement() {
+                        // Mark the cell as revealed
+                        cells[indexToReveal].userInput = letterString
+                        cells[indexToReveal].isRevealed = true
+                        cells[indexToReveal].isError = false // Ensure no error state
+                        cells[indexToReveal].isPreFilled = true // Mark as pre-filled for Normal mode
+                        
+                        // Track the index to prevent revealing the same cell for another letter if counts overlap
+                        revealedIndices.insert(indexToReveal)
+                    }
+                }
+                // Convert Character sequence to String for printing
+                print("Normal mode: Revealed \(revealedIndices.count) cells for letters: \(lettersToReveal.map { String($0) }.joined())")
+            }
+        }
+        // --- End Difficulty Logic ---
     }
     
     func togglePause() {
         session.togglePause()
+        session = session
     }
     
     func refreshPuzzleWithCurrentSettings() {
@@ -463,6 +510,7 @@ class PuzzleViewModel: ObservableObject {
         while nextIndex < cells.count {
             if !cells[nextIndex].isSymbol && cells[nextIndex].userInput.isEmpty {
                 session.selectedCellIndex = nextIndex
+                session = session
                 return
             }
             nextIndex += 1
@@ -474,6 +522,7 @@ class PuzzleViewModel: ObservableObject {
         if session.selectedCellIndex == nil {
             if let firstNonSymbolIndex = cells.indices.first(where: { !cells[$0].isSymbol }) {
                 session.selectedCellIndex = firstNonSymbolIndex
+                session = session
                 return
             } else {
                 return // If no non-symbol cells exist at all, exit
@@ -490,6 +539,7 @@ class PuzzleViewModel: ObservableObject {
             // Skip symbol cells
             if !cells[targetIndex].isSymbol {
                 session.selectedCellIndex = targetIndex
+                session = session
             } else {
                 // If we hit a symbol cell, continue in the same direction
                 moveToAdjacentCell(direction: direction > 0 ? direction + 1 : direction - 1)
@@ -504,6 +554,7 @@ class PuzzleViewModel: ObservableObject {
         
         if let next = nextIndex {
             session.selectedCellIndex = next
+            session = session
         }
     }
     
@@ -523,6 +574,7 @@ class PuzzleViewModel: ObservableObject {
         
         if allCorrect && !session.isComplete {
             session.markComplete()
+            session = session
             
             // Save score or statistics here if needed
         }
@@ -531,6 +583,7 @@ class PuzzleViewModel: ObservableObject {
         if session.mistakeCount >= 3 && !session.isFailed {
             print("Game over: Too many mistakes!")
             session.markFailed()
+            session = session
             
             // Add haptic feedback for failure
             DispatchQueue.main.async {
