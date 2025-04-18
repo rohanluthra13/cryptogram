@@ -147,6 +147,21 @@ class PuzzleViewModel: ObservableObject {
         progressStore.allAttempts().compactMap { $0.completionTime }.min()
     }
     
+    // MARK: - Aggregate User Stats
+    /// Percentage of successful completions over total attempts
+    var winRatePercentage: Int {
+        let attempts = totalAttempts
+        guard attempts > 0 else { return 0 }
+        return Int(Double(totalCompletions) / Double(attempts) * 100)
+    }
+    
+    /// Average completion time over all successful attempts
+    var averageTime: TimeInterval? {
+        let times = progressStore.allAttempts().compactMap { $0.completionTime }
+        guard !times.isEmpty else { return nil }
+        return times.reduce(0, +) / Double(times.count)
+    }
+    
     init(initialPuzzle: Puzzle? = nil, progressStore: PuzzleProgressStore? = nil) {
         print("=== PuzzleViewModel Initialization ===")
         self.databaseService = DatabaseService.shared

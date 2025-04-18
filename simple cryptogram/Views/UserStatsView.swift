@@ -30,6 +30,28 @@ struct UserStatsView: View {
                         Spacer()
                     }
                     .padding(.leading, 80)
+                    HStack {
+                        Text("win rate:")
+                            .font(.footnote)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                        Text("\(viewModel.winRatePercentage)%")
+                            .font(.footnote)
+                            .fontWeight(.bold)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                        Spacer()
+                    }
+                    .padding(.leading, 80)
+                    HStack {
+                        Text("average time:")
+                            .font(.footnote)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                        Text(viewModel.averageTime.map { formatTime($0) } ?? "--:--")
+                            .font(.footnote)
+                            .fontWeight(.bold)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                        Spacer()
+                    }
+                    .padding(.leading, 80)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 16)

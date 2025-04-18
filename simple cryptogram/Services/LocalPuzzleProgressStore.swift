@@ -13,9 +13,26 @@ class LocalPuzzleProgressStore: PuzzleProgressStore {
     private let mode = Expression<String>("mode")
     private let hintCount = Expression<Int>("hint_count")
     private let mistakeCount = Expression<Int>("mistake_count")
+    // Metadata table for tracking schema version
+    private let metadataTable = Table("metadata")
+    private let metaKey = Expression<String>("key")
+    private let metaValue = Expression<String>("value")
 
     init(database: Connection) {
         self.db = database
+        // Create metadata table if needed
+        try? db.run(metadataTable.create(ifNotExists: true) { t in
+            t.column(metaKey, primaryKey: true)
+            t.column(metaValue)
+        })
+        // Read current schema version
+        var currentVersion = 0
+        if let row = try? db.pluck(metadataTable.filter(metaKey == "schema_version")) {
+            let versionString = row[metaValue]
+            if let v = Int(versionString) {
+                currentVersion = v
+            }
+        }
         try? db.run(attemptsTable.create(ifNotExists: true) { t in
             t.column(attemptID, primaryKey: true)
             t.column(puzzleID)
@@ -27,6 +44,18 @@ class LocalPuzzleProgressStore: PuzzleProgressStore {
             t.column(hintCount)
             t.column(mistakeCount)
         })
+        // Versioned migration to add missing columns
+        if currentVersion < 1 {
+            let stmts = [
+                "ALTER TABLE puzzle_progress_attempts ADD COLUMN mode TEXT DEFAULT 'normal'",
+                "ALTER TABLE puzzle_progress_attempts ADD COLUMN hint_count INTEGER DEFAULT 0",
+                "ALTER TABLE puzzle_progress_attempts ADD COLUMN mistake_count INTEGER DEFAULT 0"
+            ]
+            for s in stmts { try? db.run(s) }
+            // Update schema version
+            try? db.run(metadataTable.insert(or: .replace,
+                metaKey <- "schema_version", metaValue <- "1"))
+        }
     }
 
     func logAttempt(_ attempt: PuzzleAttempt) {
@@ -42,7 +71,11 @@ class LocalPuzzleProgressStore: PuzzleProgressStore {
             self.hintCount <- attempt.hintCount,
             self.mistakeCount <- attempt.mistakeCount
         )
-        _ = try? db.run(insert)
+        do {
+            try db.run(insert)
+        } catch {
+            print("PuzzleProgressStore insert error: \(error)")
+        }
     }
 
     func attempts(for puzzleID: UUID, encodingType: String? = nil) -> [PuzzleAttempt] {
