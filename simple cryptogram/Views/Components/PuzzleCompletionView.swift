@@ -22,15 +22,79 @@ struct PuzzleCompletionView: View {
     @State private var typingTimer: Timer?
     @State private var currentCharacterIndex = 0
     @State private var quoteToType = ""
-    // Author summary typewriter animation
-    @State private var displayedSummary = ""
-    @State private var summaryTypingTimer: Timer?
-    @State private var summaryCharacterIndex = 0
-    @State private var isSummaryTyping = false
     
+    // MARK: - Author Summary Animated Display
+    @State private var showSummaryLine = false
+    @State private var showBornLine = false
+    @State private var showDiedLine = false
+    @State private var summaryTyped = ""
+    @State private var bornTyped = ""
+    @State private var diedTyped = ""
+
     // Helper for summary typing speed
     var summaryTypingSpeed: Double { 0.015 }
-    
+
+    // MARK: - Helper for line typing animation
+    private func typeLine(line: String, setter: @escaping (String) -> Void, completion: @escaping () -> Void) {
+        let characters = Array(line)
+        var currentIndex = 0
+        func typeNext() {
+            if currentIndex <= characters.count {
+                setter(String(characters.prefix(currentIndex)))
+                currentIndex += 1
+                if currentIndex <= characters.count {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + summaryTypingSpeed) {
+                        typeNext()
+                    }
+                } else {
+                    completion()
+                }
+            }
+        }
+        typeNext()
+    }
+
+    private func skipSummaryTyping() {
+        showSummaryLine = true
+        showBornLine = true
+        showDiedLine = true
+        if let author = viewModel.currentAuthor {
+            summaryTyped = (author.summary ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+            if let birthDate = formattedDate(author.birthDate) {
+                bornTyped = (author.placeOfBirth?.isEmpty == false) ? "\(birthDate) (\(author.placeOfBirth!))" : birthDate
+            } else {
+                bornTyped = ""
+            }
+            if let deathDate = formattedDate(author.deathDate) {
+                diedTyped = (author.placeOfDeath?.isEmpty == false) ? "\(deathDate) (\(author.placeOfDeath!))" : deathDate
+            } else {
+                diedTyped = ""
+            }
+        } else {
+            summaryTyped = ""
+            bornTyped = ""
+            diedTyped = ""
+        }
+    }
+
+    // MARK: - Date Formatting Helper
+    private func formattedDate(_ dateString: String?) -> String? {
+        guard let dateString = dateString, !dateString.isEmpty else { return nil }
+        let formats = ["yyyy-MM-dd", "yyyy-MM", "yyyy"]
+        let outputFormatter = DateFormatter()
+        outputFormatter.locale = Locale(identifier: "en_US_POSIX")
+        outputFormatter.dateFormat = "d MMM yyyy"
+        for format in formats {
+            let inputFormatter = DateFormatter()
+            inputFormatter.locale = Locale(identifier: "en_US_POSIX")
+            inputFormatter.dateFormat = format
+            if let date = inputFormatter.date(from: dateString) {
+                return outputFormatter.string(from: date)
+            }
+        }
+        return dateString // fallback to raw if parsing fails
+    }
+
     var body: some View {
         ZStack {
             // Background
@@ -38,7 +102,6 @@ struct PuzzleCompletionView: View {
                 .edgesIgnoringSafeArea(.all)
 
             VStack(spacing: 0) {
-                Spacer(minLength: 0)
                 // Main content (quote, author, summary)
                 VStack(spacing: 24) {
                     // Header - different for success vs failure
@@ -80,53 +143,111 @@ struct PuzzleCompletionView: View {
                                 guard let name = viewModel.currentPuzzle?.authorName else { return }
                                 viewModel.loadAuthorIfNeeded(name: name)
                                 withAnimation { isAuthorVisible.toggle() }
-                                if !isAuthorVisible {
-                                    summaryTypingTimer?.invalidate()
-                                    displayedSummary = ""
-                                    summaryCharacterIndex = 0
-                                    isSummaryTyping = false
-                                } else {
-                                    startSummaryTyping()
-                                }
                             }
                     }
                     // Author summary area (fixed height to prevent shifting)
                     ZStack(alignment: .top) {
                         if isAuthorVisible {
                             VStack(spacing: 0) {
-                                Text(verbatim: displayedSummary.isEmpty ? "\u{00a0}" : displayedSummary)
-                                    .font(.caption)
-                                    .foregroundColor(CryptogramTheme.Colors.text)
-                                    .padding(.top, 2)
-                                    .padding(.horizontal, 6)
-                                    .frame(maxWidth: .infinity, alignment: .top)
-                                    .onTapGesture { skipSummaryTyping() }
-                                    .animation(.easeOut(duration: 0.13), value: displayedSummary)
-                                Spacer()
+                                if let author = viewModel.currentAuthor {
+                                    let summaryText = (author.summary ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                                    let bornDate = formattedDate(author.birthDate)
+                                    let diedDate = formattedDate(author.deathDate)
+                                    let bornLine = (bornDate != nil) ? "Born: \(bornDate!)" + (author.placeOfBirth?.isEmpty == false ? " (\(author.placeOfBirth!))" : "") : nil
+                                    let diedLine = (diedDate != nil) ? "Died: \(diedDate!)" + (author.placeOfDeath?.isEmpty == false ? " (\(author.placeOfDeath!))" : "") : nil
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        if showSummaryLine {
+                                            Text(summaryTyped)
+                                                .font(.caption)
+                                                .foregroundColor(CryptogramTheme.Colors.text)
+                                                .transition(.opacity)
+                                        }
+                                        if let bornLine = bornLine, showBornLine {
+                                            HStack(alignment: .top, spacing: 0) {
+                                                Text("Born:")
+                                                    .bold()
+                                                    .font(.caption)
+                                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                                Text(bornTyped)
+                                                    .font(.caption)
+                                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                            }
+                                            .transition(.opacity)
+                                        }
+                                        if let diedLine = diedLine, showDiedLine {
+                                            HStack(alignment: .top, spacing: 0) {
+                                                Text("Died:")
+                                                    .bold()
+                                                    .font(.caption)
+                                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                                Text(diedTyped)
+                                                    .font(.caption)
+                                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                            }
+                                            .transition(.opacity)
+                                        }
+                                    }
+                                    .padding(.horizontal, 10)
+                                    .onAppear {
+                                        showSummaryLine = false; showBornLine = false; showDiedLine = false
+                                        summaryTyped = ""; bornTyped = ""; diedTyped = ""
+                                        // Animate summary line typing
+                                        withAnimation(.easeOut(duration: 0.3)) { showSummaryLine = true }
+                                        typeLine(line: summaryText, setter: { summaryTyped = $0 }) {
+                                            if bornLine != nil {
+                                                withAnimation(.easeOut(duration: 0.3)) { showBornLine = true }
+                                                typeLine(line: String(bornLine!.dropFirst(5)), setter: { bornTyped = $0 }) {
+                                                    if diedLine != nil {
+                                                        let diedDelay = (bornLine != nil) ? 0.2 : 0.0
+                                                        DispatchQueue.main.asyncAfter(deadline: .now() + diedDelay) {
+                                                            withAnimation(.easeOut(duration: 0.3)) { showDiedLine = true }
+                                                            typeLine(line: String(diedLine!.dropFirst(5)), setter: { diedTyped = $0 }, completion: {})
+                                                        }
+                                                    }
+                                                }
+                                            } else if diedLine != nil {
+                                                withAnimation(.easeOut(duration: 0.3)) { showDiedLine = true }
+                                                typeLine(line: String(diedLine!.dropFirst(5)), setter: { diedTyped = $0 }, completion: {})
+                                            }
+                                        }
+                                    }
+                                    .onDisappear {
+                                        showSummaryLine = false; showBornLine = false; showDiedLine = false
+                                        summaryTyped = ""; bornTyped = ""; diedTyped = ""
+                                    }
+                                    .animation(.easeOut(duration: 0.13), value: showSummaryLine)
+                                    .animation(.easeOut(duration: 0.13), value: showBornLine)
+                                    .animation(.easeOut(duration: 0.13), value: showDiedLine)
+                                    Spacer()
+                                } else {
+                                    Text(verbatim: summaryTyped.isEmpty ? "\u{00a0}" : summaryTyped)
+                                        .font(.caption)
+                                        .foregroundColor(CryptogramTheme.Colors.text)
+                                        .padding(.horizontal, 6)
+                                        .frame(maxWidth: .infinity, alignment: .top)
+                                        .onTapGesture { skipSummaryTyping() }
+                                        .animation(.easeOut(duration: 0.13), value: summaryTyped)
+                                    Spacer()
+                                }
                             }
                         } else {
                             Text(verbatim: "\u{00a0}")
                                 .font(.caption)
-                                .padding(.top, 2)
+                                .foregroundColor(CryptogramTheme.Colors.text)
                                 .padding(.horizontal, 6)
-                                .hidden()
+                                .frame(maxWidth: .infinity, alignment: .top)
+                                .animation(.easeOut(duration: 0.13))
+                            Spacer()
                         }
                     }
-                    .frame(height: 180)
-                    .overlay(
-                        Rectangle()
-                            .frame(height: 1)
-                            .foregroundColor(Color.gray.opacity(0.4)),
-                        alignment: .bottom
-                    )
-                    .onChange(of: viewModel.currentAuthor?.summary) { newSummary in
-                        if isAuthorVisible, let summary = newSummary, summary != displayedSummary, summary != "Loading author summary..." {
-                            startSummaryTyping()
-                        }
-                    }
+                    .frame(height: 150)
                 }
-                .padding(.horizontal)
-                // Stats and button container (fixed at bottom)
+                .padding(.top, 120)
+                .frame(maxWidth: .infinity, alignment: .top)
+
+                Spacer()
+
+                // Stats and button container
                 VStack(spacing: 8) {
                     if viewModel.isFailed {
                         Text("Too many mistakes!")
@@ -149,6 +270,7 @@ struct PuzzleCompletionView: View {
                 }
                 .padding(.bottom, 120)
             }
+            .frame(maxHeight: .infinity)
             .padding(CryptogramTheme.Layout.gridPadding)
 
             // Settings button at top right
@@ -261,36 +383,6 @@ struct PuzzleCompletionView: View {
         withAnimation {
             authorIsBold = true
         }
-    }
-    
-    // MARK: - Author Summary Typewriter Animation
-    func startSummaryTyping() {
-        summaryTypingTimer?.invalidate()
-        guard let summary = viewModel.currentAuthor?.summary else {
-            displayedSummary = "Loading author summary..."
-            return
-        }
-        displayedSummary = ""
-        summaryCharacterIndex = 0
-        isSummaryTyping = true
-        summaryTypingTimer = Timer.scheduledTimer(withTimeInterval: summaryTypingSpeed, repeats: true) { timer in
-            if summaryCharacterIndex < summary.count {
-                let idx = summary.index(summary.startIndex, offsetBy: summaryCharacterIndex + 1)
-                displayedSummary = String(summary[..<idx])
-                summaryCharacterIndex += 1
-            } else {
-                isSummaryTyping = false
-                timer.invalidate()
-            }
-        }
-    }
-    
-    func skipSummaryTyping() {
-        guard isSummaryTyping, let summary = viewModel.currentAuthor?.summary else { return }
-        summaryTypingTimer?.invalidate()
-        displayedSummary = summary
-        summaryCharacterIndex = summary.count
-        isSummaryTyping = false
     }
     
     func loadNextPuzzle() {
