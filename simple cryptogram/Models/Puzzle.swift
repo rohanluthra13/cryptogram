@@ -286,4 +286,7 @@ struct Puzzle: Identifiable {
         
         return finalCells
     }
+    
+    /// Original author string from DB
+    var authorName: String { author }
 } 

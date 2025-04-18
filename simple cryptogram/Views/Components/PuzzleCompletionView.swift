@@ -15,12 +15,21 @@ struct PuzzleCompletionView: View {
     @State private var showNextButton = false
     @State private var displayedQuote = ""
     @State private var authorIsBold = false
+    @State private var isAuthorVisible = false
     
     // Typewriter animation properties
     var typingSpeed: Double = 0.09
     @State private var typingTimer: Timer?
     @State private var currentCharacterIndex = 0
     @State private var quoteToType = ""
+    // Author summary typewriter animation
+    @State private var displayedSummary = ""
+    @State private var summaryTypingTimer: Timer?
+    @State private var summaryCharacterIndex = 0
+    @State private var isSummaryTyping = false
+    
+    // Helper for summary typing speed
+    var summaryTypingSpeed: Double { 0.015 }
     
     var body: some View {
         ZStack {
@@ -62,7 +71,7 @@ struct PuzzleCompletionView: View {
                 
                 // Source/hint
                 if let source = viewModel.currentPuzzle?.hint, !source.isEmpty {
-                    // Check if hint starts with "Author:" and remove that part if it does
+                    // Check if hint starts with "Author:" and remove that part
                     let processedSource = source.hasPrefix("Author:") ? 
                         source.replacingOccurrences(of: "Author:", with: "").trimmingCharacters(in: .whitespacesAndNewlines) : 
                         source
@@ -70,9 +79,59 @@ struct PuzzleCompletionView: View {
                     Text(processedSource)
                         .font(.caption)
                         .foregroundColor(CryptogramTheme.Colors.text)
-                        .fontWeight(authorIsBold ? .bold : .regular)
+                        .fontWeight(isAuthorVisible ? .bold : .regular)
                         .padding(.top, 4)
                         .opacity(showAttribution ? 1 : 0)
+                        .onTapGesture {
+                            guard let name = viewModel.currentPuzzle?.authorName else { return }
+                            viewModel.loadAuthorIfNeeded(name: name)
+                            withAnimation { isAuthorVisible.toggle() }
+                            if !isAuthorVisible {
+                                // If hiding, reset summary
+                                summaryTypingTimer?.invalidate()
+                                displayedSummary = ""
+                                summaryCharacterIndex = 0
+                                isSummaryTyping = false
+                            } else {
+                                // If showing, start typewriter
+                                startSummaryTyping()
+                            }
+                        }
+                }
+                // Author summary area (fixed height to prevent shifting)
+                ZStack(alignment: .top) {
+                    if isAuthorVisible {
+                        Text(verbatim: displayedSummary.isEmpty ? "\u{00a0}" : displayedSummary)
+                            .font(.caption)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                            .padding(.top, 2)
+                            .padding(.horizontal, 6)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                            .onTapGesture {
+                                skipSummaryTyping()
+                            }
+                            .animation(.easeOut(duration: 0.13), value: displayedSummary)
+                    } else {
+                        // Invisible placeholder to reserve space
+                        Text(verbatim: "\u{00a0}")
+                            .font(.caption)
+                            .padding(.top, 2)
+                            .padding(.horizontal, 6)
+                            .hidden()
+                    }
+                }
+                .frame(height: 180) // Fixed height for summary area
+                .overlay(
+                    Rectangle()
+                        .frame(height: 1)
+                        .foregroundColor(Color.gray.opacity(0.4)),
+                    alignment: .bottom
+                )
+                .onChange(of: viewModel.currentAuthor?.summary) { newSummary in
+                    // If summary loads while visible, restart typewriter for the new summary
+                    if isAuthorVisible, let summary = newSummary, summary != displayedSummary, summary != "Loading author summary..." {
+                        startSummaryTyping()
+                    }
                 }
                 
                 Spacer(minLength: 20) // Reduced spacer to move stats up
@@ -226,6 +285,36 @@ struct PuzzleCompletionView: View {
         withAnimation {
             authorIsBold = true
         }
+    }
+    
+    // MARK: - Author Summary Typewriter Animation
+    func startSummaryTyping() {
+        summaryTypingTimer?.invalidate()
+        guard let summary = viewModel.currentAuthor?.summary else {
+            displayedSummary = "Loading author summary..."
+            return
+        }
+        displayedSummary = ""
+        summaryCharacterIndex = 0
+        isSummaryTyping = true
+        summaryTypingTimer = Timer.scheduledTimer(withTimeInterval: summaryTypingSpeed, repeats: true) { timer in
+            if summaryCharacterIndex < summary.count {
+                let idx = summary.index(summary.startIndex, offsetBy: summaryCharacterIndex + 1)
+                displayedSummary = String(summary[..<idx])
+                summaryCharacterIndex += 1
+            } else {
+                isSummaryTyping = false
+                timer.invalidate()
+            }
+        }
+    }
+    
+    func skipSummaryTyping() {
+        guard isSummaryTyping, let summary = viewModel.currentAuthor?.summary else { return }
+        summaryTypingTimer?.invalidate()
+        displayedSummary = summary
+        summaryCharacterIndex = summary.count
+        isSummaryTyping = false
     }
     
     func loadNextPuzzle() {

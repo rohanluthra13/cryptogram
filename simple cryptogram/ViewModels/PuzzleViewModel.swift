@@ -28,6 +28,20 @@ class PuzzleViewModel: ObservableObject {
     private let databaseService: DatabaseService
     private var cancellables = Set<AnyCancellable>()
     
+    // MARK: - Author Info
+    @Published var currentAuthor: Author?
+    private var lastAuthorName: String?
+
+    /// Load author info if name changed
+    func loadAuthorIfNeeded(name: String) {
+        guard name != lastAuthorName else { return }
+        lastAuthorName = name
+        Task {
+            let author = await databaseService.fetchAuthor(byName: name)
+            currentAuthor = author
+        }
+    }
+    
     // Computed properties
     var selectedCellIndex: Int? {
         session.selectedCellIndex

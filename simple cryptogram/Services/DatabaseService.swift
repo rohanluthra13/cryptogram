@@ -179,6 +179,39 @@ class DatabaseService {
         }
         return nil
     }
+    
+    /// Fetch an Author record by name
+    func fetchAuthor(byName name: String) async -> Author? {
+        guard let db = db else {
+            print("Error: Database not initialized")
+            return nil
+        }
+        do {
+            let authorsTable = Table("authors")
+            let idExpr = Expression<Int>("id")
+            let nameExpr = Expression<String>("name")
+            let fullNameExpr = Expression<String?>("full_name")
+            let birthDateExpr = Expression<String?>("birth_date")
+            let deathDateExpr = Expression<String?>("death_date")
+            let pobExpr = Expression<String?>("place_of_birth")
+            let podExpr = Expression<String?>("place_of_death")
+            let summaryExpr = Expression<String?>("summary")
+            let query = authorsTable.filter(nameExpr == name)
+            if let row = try db.pluck(query) {
+                return Author(
+                    id: row[idExpr],
+                    name: row[nameExpr],
+                    fullName: row[fullNameExpr],
+                    birthDate: row[birthDateExpr],
+                    deathDate: row[deathDateExpr],
+                    placeOfBirth: row[pobExpr],
+                    placeOfDeath: row[podExpr],
+                    summary: row[summaryExpr]
+                )
+            }
+        } catch {
+            print("Error fetching author: \(error)")
+        }
+        return nil
+    }
 }
-
-
