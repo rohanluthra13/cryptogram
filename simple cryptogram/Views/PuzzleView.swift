@@ -72,7 +72,8 @@ struct PuzzleView: View {
                             if let index = viewModel.selectedCellIndex {
                                 viewModel.handleDelete(at: index)
                             }
-                        }
+                        },
+                        completedLetters: viewModel.completedLetters
                     )
                     .padding(.bottom, 4)
                     .padding(.horizontal, 4)
