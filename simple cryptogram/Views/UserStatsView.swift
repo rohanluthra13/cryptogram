@@ -4,59 +4,47 @@ struct UserStatsView: View {
     @ObservedObject var viewModel: PuzzleViewModel
     
     var body: some View {
-        VStack(spacing: 24) {
-            Text("Your Cryptogram Stats")
-                .font(.title2)
-                .fontWeight(.bold)
-                .padding(.top, 8)
-            
-            VStack(spacing: 12) {
-                Text("All-Time Attempts")
-                    .font(.headline)
-                    .padding(.bottom, 4)
-                
-                HStack(spacing: 32) {
-                    VStack {
+        VStack {
+            Spacer()
+            SettingsSection(title: "stats") {
+                VStack(spacing: 24) {
+                    HStack {
+                        Text("total completed:")
+                            .font(.footnote)
+                            .foregroundColor(CryptogramTheme.Colors.text)
                         Text("\(viewModel.totalCompletions)")
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundColor(.green)
-                        Text("Completed")
-                            .font(.subheadline)
+                            .font(.footnote)
+                            .fontWeight(.bold)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                        Spacer()
                     }
-                    VStack {
-                        Text("\(viewModel.totalFailures)")
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundColor(.red)
-                        Text("Failed")
-                            .font(.subheadline)
-                    }
-                    VStack {
+                    .padding(.leading, 80)
+                    HStack {
+                        Text("total played:")
+                            .font(.footnote)
+                            .foregroundColor(CryptogramTheme.Colors.text)
                         Text("\(viewModel.totalAttempts)")
-                            .font(.system(size: 32, weight: .bold))
-                            .foregroundColor(.blue)
-                        Text("Total")
-                            .font(.subheadline)
+                            .font(.footnote)
+                            .fontWeight(.bold)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                        Spacer()
                     }
+                    .padding(.leading, 80)
                 }
-                
-                if let bestTime = viewModel.globalBestTime {
-                    Text("Best time: \(formatTime(bestTime))")
-                        .font(.subheadline)
-                        .foregroundColor(.blue)
-                }
+                .padding(.horizontal, 16)
+                .padding(.top, 16)
             }
             Spacer()
-            Button(role: .destructive) {
-                viewModel.resetAllProgress()
-            } label: {
-                Label("Reset All Stats", systemImage: "arrow.counterclockwise")
-                    .font(.headline)
-                    .padding()
+            Button(action: { viewModel.resetAllProgress() }) {
+                Text("Reset All Stats")
+                    .font(.footnote)
+                    .foregroundColor(.red)
+                    .padding(.top, 8)
             }
-            .buttonStyle(.borderedProminent)
-            .tint(.red)
+            .buttonStyle(PlainButtonStyle())
             .padding(.bottom, 24)
         }
+        .frame(maxHeight: .infinity)
         .padding()
     }
     

@@ -66,9 +66,9 @@ struct PuzzleView: View {
                                 }
                             }
                         }) {
-                            Image(systemName: "chart.bar.xaxis")
-                                .font(.title3)
-                                .foregroundColor(.accentColor)
+                            Image(systemName: "chart.bar")
+                                .font(.system(size: 17)) // 0.9x of .title3 (19)
+                                .foregroundColor(CryptogramTheme.Colors.text)
                                 .frame(width: 44, height: 44)
                                 .accessibilityLabel("Puzzle Stats")
                         }
@@ -218,7 +218,7 @@ struct PuzzleView: View {
             // --- Stats Overlay (custom ZStack, slides from top) ---
             if showStatsOverlay {
                 ZStack(alignment: .top) {
-                    Color(.systemBackground)
+                    CryptogramTheme.Colors.background
                         .ignoresSafeArea()
                         .opacity(0.98)
                         .onTapGesture { showStatsOverlay = false }
@@ -229,9 +229,9 @@ struct PuzzleView: View {
                     }
                 }
                 .matchedGeometryEffect(id: "statsOverlay", in: statsOverlayNamespace)
-                .transition(.move(edge: .top).combined(with: .opacity))
+                .transition(.opacity)
                 .zIndex(50) // Below top bar
-                .animation(.easeInOut(duration: 0.16), value: showStatsOverlay)
+                .animation(.easeInOut(duration: 0.3), value: showStatsOverlay)
             }
         }
         .onChange(of: viewModel.isComplete) { oldValue, isComplete in
