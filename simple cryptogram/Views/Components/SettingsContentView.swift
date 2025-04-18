@@ -209,4 +209,4 @@ struct HStackWidthPreferenceKey: PreferenceKey {
         .environmentObject(PuzzleViewModel())
         .environmentObject(ThemeManager())
         .environmentObject(SettingsViewModel())
-} 
+}
