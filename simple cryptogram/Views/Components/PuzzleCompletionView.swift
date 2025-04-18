@@ -272,47 +272,17 @@ struct PuzzleCompletionView: View {
             }
             .frame(maxHeight: .infinity)
             .padding(CryptogramTheme.Layout.gridPadding)
-
-            // Settings button at top right
-            VStack(alignment: .leading, spacing: 4) {
-                HStack {
-                    Spacer()
-                    Button(action: { 
-                        showSettings.toggle() 
-                    }) {
-                        Image(systemName: "gearshape")
-                            .font(.title3)
-                            .foregroundColor(CryptogramTheme.Colors.text)
-                            .padding(.trailing, 16)
-                            .padding(.top, 8)
-                            .accessibilityLabel("Settings")
-                    }
-                }
-                Spacer()
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .zIndex(101)
-
-            // Settings overlay
-            if showSettings {
-                ZStack {
-                    CryptogramTheme.Colors.surface
-                        .opacity(0.95)
-                        .edgesIgnoringSafeArea(.all)
-                        .onTapGesture {
-                            showSettings = false
-                        }
-                    SettingsContentView()
-                        .environmentObject(settingsViewModel)
-                        .environmentObject(themeManager)
-                        .frame(maxWidth: 500)
-                        .padding(.top, 50)
-                        .transition(.move(edge: .top))
-                }
-                .zIndex(200)
-            }
         }
         .onAppear {
+            // Reset author summary state on appear
+            viewModel.currentAuthor = nil
+            isAuthorVisible = false
+            summaryTyped = ""
+            bornTyped = ""
+            diedTyped = ""
+            showSummaryLine = false
+            showBornLine = false
+            showDiedLine = false
             startAnimationSequence()
         }
     }
