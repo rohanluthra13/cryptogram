@@ -8,7 +8,7 @@ struct UserStatsView: View {
             Text("Your Cryptogram Stats")
                 .font(.title2)
                 .fontWeight(.bold)
-                .padding(.top, 24)
+                .padding(.top, 8)
             
             VStack(spacing: 12) {
                 Text("All-Time Attempts")

@@ -7,7 +7,8 @@ struct PuzzleView: View {
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
     @State private var showSettings = false
     @State private var showCompletionView = false
-    @State private var showStatsView = false
+    @State private var showStatsOverlay = false
+    @Namespace private var statsOverlayNamespace
     @AppStorage("isDarkMode") private var isDarkMode = false
     
     // Create a custom binding for the layout
@@ -20,10 +21,71 @@ struct PuzzleView: View {
     
     var body: some View {
         ZStack {
+            // --- Persistent Top Bar (always visible) ---
+            VStack {
+                HStack(alignment: .top) {
+                    // Left column: Mistakes above Hints
+                    VStack(alignment: .leading, spacing: 4) {
+                        MistakesView(mistakeCount: viewModel.mistakeCount)
+                        HintsView(
+                            hintCount: viewModel.hintCount,
+                            onRequestHint: { viewModel.revealCell() },
+                            maxHints: viewModel.nonSymbolCells.count / 4
+                        )
+                    }
+                    .padding(.leading, 16)
+                    .padding(.top, 8)
+
+                    Spacer()
+
+                    // Right column: Settings above Stats
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Button(action: {
+                            withAnimation {
+                                if showStatsOverlay {
+                                    showStatsOverlay = false
+                                    showSettings = true
+                                } else {
+                                    showSettings.toggle()
+                                }
+                            }
+                        }) {
+                            Image(systemName: "gearshape")
+                                .font(.title3)
+                                .foregroundColor(CryptogramTheme.Colors.text)
+                                .frame(width: 44, height: 44)
+                                .accessibilityLabel("Settings")
+                        }
+                        Button(action: {
+                            withAnimation {
+                                if showSettings {
+                                    showSettings = false
+                                    showStatsOverlay = true
+                                } else {
+                                    showStatsOverlay.toggle()
+                                }
+                            }
+                        }) {
+                            Image(systemName: "chart.bar.xaxis")
+                                .font(.title3)
+                                .foregroundColor(.accentColor)
+                                .frame(width: 44, height: 44)
+                                .accessibilityLabel("Puzzle Stats")
+                        }
+                    }
+                    .padding(.trailing, 16)
+                    .padding(.top, 2)
+                }
+                .padding(.top, 8)
+                Spacer()
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .zIndex(100)
+
+            // --- Main Content ---
             if viewModel.currentPuzzle != nil {
                 VStack(spacing: 0) {
                     // Timer moved to top bar, no longer needed here
-                    
                     // Puzzle Grid in ScrollView with flexible height
                     ScrollView {
                         WordAwarePuzzleGrid()
@@ -36,13 +98,13 @@ struct PuzzleView: View {
                     .padding(.horizontal, 12)
                     .padding(.top, 40) // Increased top padding to account for hints/mistakes views
                     .padding(.bottom, 12)
-                    
+
                     // Fixed height spacer (modern approach - non-collapsible)
                     Rectangle()
                         .fill(Color.clear)
                         .frame(height: 20) // Adjust this value to control spacing precisely
                         .allowsHitTesting(false) // Ensures touches pass through
-                    
+
                     // Navigation Bar with all controls in a single layer
                     NavigationBarView(
                         onMoveLeft: { viewModel.moveToAdjacentCell(direction: -1) },
@@ -61,7 +123,6 @@ struct PuzzleView: View {
                         showCenterButtons: true, // Show all buttons in the nav bar
                         layout: layoutBinding
                     )
-                    
                     // Keyboard View - fixed at bottom
                     KeyboardView(
                         onLetterPress: { letter in
@@ -84,6 +145,7 @@ struct PuzzleView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(CryptogramTheme.Colors.background)
                 .opacity(showCompletionView ? 0 : 1)
+                .zIndex(10)
                 .overlay(
                     // Overlay for paused state (not completion which is handled separately)
                     Group {
@@ -93,7 +155,6 @@ struct PuzzleView: View {
                                 Color.black.opacity(0.5)
                                     .edgesIgnoringSafeArea(.all)
                                     .allowsHitTesting(false)  // This lets clicks pass through
-                                
                                 // Pause text
                                 Button(action: { viewModel.togglePause() }) {
                                     Text("paused")
@@ -109,7 +170,6 @@ struct PuzzleView: View {
                                 Color.black.opacity(0.5)
                                     .edgesIgnoringSafeArea(.all)
                                     .allowsHitTesting(false)  // This lets clicks pass through to navigation bar
-                                
                                 // Game over text - without dedicated icon
                                 Text("game over")
                                     .font(.headline)
@@ -129,7 +189,6 @@ struct PuzzleView: View {
                                         showSettings = false
                                     }
                                     .zIndex(10) // Ensure overlay is above other elements
-
                                 // Settings content centered on the overlay
                                 SettingsContentView()
                                     .padding(.horizontal, 24)
@@ -143,81 +202,36 @@ struct PuzzleView: View {
                                     .environmentObject(settingsViewModel)
                                     .zIndex(11) // Above the background
                             }
-                            .zIndex(100) // Ensure settings overlay is above everything
+                            .zIndex(50) // Below top bar
                         }
                     }
                 )
             } else {
                 LoadingView(message: "Loading your puzzle...")
             }
-            
             // Completion overlay - conditionally shown
             if showCompletionView {
                 PuzzleCompletionView(showCompletionView: $showCompletionView)
                     .environmentObject(themeManager)
                     .environmentObject(viewModel)
             }
-            
-            // Top bar with Settings, Timer, and Mistakes
-            if !showCompletionView {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack {
-                        // Mistakes view at top left with fixed width container
-                        MistakesView(mistakeCount: viewModel.mistakeCount)
-                            .padding(.leading, 16)
-                            .padding(.top, 8)
-                            .frame(width: 100, alignment: .leading) // Fixed width container
-                        
-                        Spacer()
-                        
-                        // Timer centered at top aligned with mistakes and settings
-                        TimerView(startTime: viewModel.startTime ?? Date(), isPaused: viewModel.isPaused)
-                            .opacity(viewModel.startTime == nil ? 0 : 1) // Hide if not started
-                            .padding(.top, 8)
-                        
-                        Spacer()
-                        
-                        // Settings and Stats buttons with matching fixed width container
-                        VStack(spacing: 2) {
-                            Button(action: {
-                                print("Settings button pressed, toggling showSettings to \(!showSettings)")
-                                showSettings.toggle()
-                            }) {
-                                Image(systemName: "gearshape")
-                                    .font(.title3)
-                                    .foregroundColor(CryptogramTheme.Colors.text)
-                                    .padding(.trailing, 16)
-                                    .padding(.top, 8)
-                                    .accessibilityLabel("Settings")
-                            }
-                            .frame(width: 100, alignment: .trailing)
-                            // --- Stats Icon ---
-                            Button(action: {
-                                showStatsView = true
-                            }) {
-                                Image(systemName: "chart.bar.xaxis")
-                                    .font(.title3)
-                                    .foregroundColor(.accentColor)
-                                    .padding(.trailing, 16)
-                                    .padding(.top, 2)
-                                    .accessibilityLabel("Puzzle Stats")
-                            }
-                            .frame(width: 100, alignment: .trailing)
-                        }
+            // --- Stats Overlay (custom ZStack, slides from top) ---
+            if showStatsOverlay {
+                ZStack(alignment: .top) {
+                    Color(.systemBackground)
+                        .ignoresSafeArea()
+                        .opacity(0.98)
+                        .onTapGesture { showStatsOverlay = false }
+                    VStack(spacing: 0) {
+                        Spacer(minLength: 0)
+                        UserStatsView(viewModel: viewModel)
+                            .padding(.top, 24)
                     }
-                    
-                    // Hints view under the mistakes
-                    HintsView(
-                        hintCount: viewModel.hintCount,
-                        onRequestHint: { viewModel.revealCell() },
-                        maxHints: viewModel.nonSymbolCells.count / 4 // Use approximately 1/4 of the cells as max hints
-                    )
-                    .padding(.horizontal, 16)
-                    
-                    Spacer()
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .zIndex(2) // Ensure top bar is above other layers
+                .matchedGeometryEffect(id: "statsOverlay", in: statsOverlayNamespace)
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .zIndex(50) // Below top bar
+                .animation(.easeInOut(duration: 0.16), value: showStatsOverlay)
             }
         }
         .onChange(of: viewModel.isComplete) { oldValue, isComplete in
@@ -236,10 +250,6 @@ struct PuzzleView: View {
             }
         }
         .navigationBarHidden(true)
-        .sheet(isPresented: $showStatsView) {
-            UserStatsView(viewModel: viewModel)
-                .presentationDetents([.medium, .large])
-        }
     }
     
     private func formatTime(_ timeInterval: TimeInterval) -> String {
