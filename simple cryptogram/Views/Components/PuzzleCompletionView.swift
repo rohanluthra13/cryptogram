@@ -36,124 +36,109 @@ struct PuzzleCompletionView: View {
             // Background
             CryptogramTheme.Colors.background
                 .edgesIgnoringSafeArea(.all)
-            
-            VStack(spacing: 24) {
-                Spacer()
-                
-                // Header - different for success vs failure
-                if viewModel.isFailed {
-                    Text("Game Over")
-                        .font(.system(.title, design: .rounded))
-                        .foregroundColor(CryptogramTheme.Colors.error)
-                        .opacity(showQuote ? 1 : 0)
-                        .scaleEffect(showQuote ? 1 : 0.9)
-                        .padding(.top, 20)
-                }
-                
-                // Quote
-                if let quote = viewModel.currentPuzzle?.solution {
-                    Text(displayedQuote.uppercased())
-                        .font(.system(.body, design: .default))
-                        .multilineTextAlignment(.center)
-                        .foregroundColor(CryptogramTheme.Colors.text)
-                        .padding(.horizontal, 32)
-                        .opacity(showQuote ? 1 : 0)
-                        .scaleEffect(showQuote ? 1 : 0.9)
-                        .onTapGesture {
-                            skipTypingAnimation()
-                        }
-                }
-                
-                // Author attribution - removed the redundant attribution with dash
-                Spacer()
-                    .frame(height: 8)
-                    .opacity(showAttribution ? 1 : 0)
-                
-                // Source/hint
-                if let source = viewModel.currentPuzzle?.hint, !source.isEmpty {
-                    // Check if hint starts with "Author:" and remove that part
-                    let processedSource = source.hasPrefix("Author:") ? 
-                        source.replacingOccurrences(of: "Author:", with: "").trimmingCharacters(in: .whitespacesAndNewlines) : 
-                        source
-                    
-                    Text(processedSource)
-                        .font(.caption)
-                        .foregroundColor(CryptogramTheme.Colors.text)
-                        .fontWeight(isAuthorVisible ? .bold : .regular)
-                        .padding(.top, 4)
-                        .opacity(showAttribution ? 1 : 0)
-                        .onTapGesture {
-                            guard let name = viewModel.currentPuzzle?.authorName else { return }
-                            viewModel.loadAuthorIfNeeded(name: name)
-                            withAnimation { isAuthorVisible.toggle() }
-                            if !isAuthorVisible {
-                                // If hiding, reset summary
-                                summaryTypingTimer?.invalidate()
-                                displayedSummary = ""
-                                summaryCharacterIndex = 0
-                                isSummaryTyping = false
-                            } else {
-                                // If showing, start typewriter
-                                startSummaryTyping()
+
+            VStack(spacing: 0) {
+                Spacer(minLength: 0)
+                // Main content (quote, author, summary)
+                VStack(spacing: 24) {
+                    // Header - different for success vs failure
+                    if viewModel.isFailed {
+                        Text("Game Over")
+                            .font(.system(.title, design: .rounded))
+                            .foregroundColor(CryptogramTheme.Colors.error)
+                            .opacity(showQuote ? 1 : 0)
+                            .scaleEffect(showQuote ? 1 : 0.9)
+                            .padding(.top, 20)
+                    }
+                    // Quote
+                    if let quote = viewModel.currentPuzzle?.solution {
+                        Text(displayedQuote.uppercased())
+                            .font(.system(.body, design: .default))
+                            .multilineTextAlignment(.center)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                            .padding(.horizontal, 32)
+                            .opacity(showQuote ? 1 : 0)
+                            .scaleEffect(showQuote ? 1 : 0.9)
+                            .onTapGesture {
+                                skipTypingAnimation()
                             }
-                        }
-                }
-                // Author summary area (fixed height to prevent shifting)
-                ZStack(alignment: .top) {
-                    if isAuthorVisible {
-                        Text(verbatim: displayedSummary.isEmpty ? "\u{00a0}" : displayedSummary)
+                    }
+                    // Author attribution - removed the redundant attribution with dash
+                    Spacer().frame(height: 8).opacity(showAttribution ? 1 : 0)
+                    // Source/hint
+                    if let source = viewModel.currentPuzzle?.hint, !source.isEmpty {
+                        let processedSource = source.hasPrefix("Author:") ? 
+                            source.replacingOccurrences(of: "Author:", with: "").trimmingCharacters(in: .whitespacesAndNewlines) : 
+                            source
+                        Text(processedSource)
                             .font(.caption)
                             .foregroundColor(CryptogramTheme.Colors.text)
-                            .padding(.top, 2)
-                            .padding(.horizontal, 6)
-                            .frame(maxWidth: .infinity, alignment: .center)
+                            .fontWeight(isAuthorVisible ? .bold : .regular)
+                            .padding(.top, 4)
+                            .opacity(showAttribution ? 1 : 0)
                             .onTapGesture {
-                                skipSummaryTyping()
+                                guard let name = viewModel.currentPuzzle?.authorName else { return }
+                                viewModel.loadAuthorIfNeeded(name: name)
+                                withAnimation { isAuthorVisible.toggle() }
+                                if !isAuthorVisible {
+                                    summaryTypingTimer?.invalidate()
+                                    displayedSummary = ""
+                                    summaryCharacterIndex = 0
+                                    isSummaryTyping = false
+                                } else {
+                                    startSummaryTyping()
+                                }
                             }
-                            .animation(.easeOut(duration: 0.13), value: displayedSummary)
-                    } else {
-                        // Invisible placeholder to reserve space
-                        Text(verbatim: "\u{00a0}")
-                            .font(.caption)
-                            .padding(.top, 2)
-                            .padding(.horizontal, 6)
-                            .hidden()
+                    }
+                    // Author summary area (fixed height to prevent shifting)
+                    ZStack(alignment: .top) {
+                        if isAuthorVisible {
+                            VStack(spacing: 0) {
+                                Text(verbatim: displayedSummary.isEmpty ? "\u{00a0}" : displayedSummary)
+                                    .font(.caption)
+                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                    .padding(.top, 2)
+                                    .padding(.horizontal, 6)
+                                    .frame(maxWidth: .infinity, alignment: .top)
+                                    .onTapGesture { skipSummaryTyping() }
+                                    .animation(.easeOut(duration: 0.13), value: displayedSummary)
+                                Spacer()
+                            }
+                        } else {
+                            Text(verbatim: "\u{00a0}")
+                                .font(.caption)
+                                .padding(.top, 2)
+                                .padding(.horizontal, 6)
+                                .hidden()
+                        }
+                    }
+                    .frame(height: 180)
+                    .overlay(
+                        Rectangle()
+                            .frame(height: 1)
+                            .foregroundColor(Color.gray.opacity(0.4)),
+                        alignment: .bottom
+                    )
+                    .onChange(of: viewModel.currentAuthor?.summary) { newSummary in
+                        if isAuthorVisible, let summary = newSummary, summary != displayedSummary, summary != "Loading author summary..." {
+                            startSummaryTyping()
+                        }
                     }
                 }
-                .frame(height: 180) // Fixed height for summary area
-                .overlay(
-                    Rectangle()
-                        .frame(height: 1)
-                        .foregroundColor(Color.gray.opacity(0.4)),
-                    alignment: .bottom
-                )
-                .onChange(of: viewModel.currentAuthor?.summary) { newSummary in
-                    // If summary loads while visible, restart typewriter for the new summary
-                    if isAuthorVisible, let summary = newSummary, summary != displayedSummary, summary != "Loading author summary..." {
-                        startSummaryTyping()
-                    }
-                }
-                
-                Spacer(minLength: 20) // Reduced spacer to move stats up
-                
-                // Display a message for failure case
-                if viewModel.isFailed {
-                    Text("Too many mistakes!")
-                        .font(.headline)
-                        .foregroundColor(CryptogramTheme.Colors.error)
-                        .padding(.vertical, 5)
-                        .opacity(showStats ? 1 : 0)
-                }
-                
-                // Stats and button container
+                .padding(.horizontal)
+                // Stats and button container (fixed at bottom)
                 VStack(spacing: 8) {
-                    // Stats
+                    if viewModel.isFailed {
+                        Text("Too many mistakes!")
+                            .font(.headline)
+                            .foregroundColor(CryptogramTheme.Colors.error)
+                            .padding(.vertical, 5)
+                            .opacity(showStats ? 1 : 0)
+                    }
                     CompletionStatsView()
                         .environmentObject(viewModel)
                         .opacity(showStats ? 1 : 0)
                         .offset(y: showStats ? 0 : 20)
-                    
-                    // Next button directly below stats with minimal spacing
                     Button(action: { loadNextPuzzle() }) {
                         Image(systemName: viewModel.isFailed ? "arrow.counterclockwise" : "arrow.right")
                             .font(.system(size: 22))
@@ -162,15 +147,14 @@ struct PuzzleCompletionView: View {
                     .opacity(showNextButton ? 1 : 0)
                     .offset(y: showNextButton ? 0 : 15)
                 }
-                .padding(.bottom, 120)  // Increased padding to push everything higher
+                .padding(.bottom, 120)
             }
             .padding(CryptogramTheme.Layout.gridPadding)
-            
+
             // Settings button at top right
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     Spacer()
-                    
                     Button(action: { 
                         showSettings.toggle() 
                     }) {
@@ -182,36 +166,28 @@ struct PuzzleCompletionView: View {
                             .accessibilityLabel("Settings")
                     }
                 }
-                
                 Spacer()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .zIndex(101) // Higher zIndex to keep button above the settings overlay
-            
+            .zIndex(101)
+
             // Settings overlay
             if showSettings {
-                // Full-screen settings overlay
                 ZStack {
-                    // Background that covers the entire screen and can be tapped to dismiss
                     CryptogramTheme.Colors.surface
-                        .opacity(0.95) // Same opacity for both modes
+                        .opacity(0.95)
                         .edgesIgnoringSafeArea(.all)
                         .onTapGesture {
                             showSettings = false
                         }
-                        .zIndex(10) // Ensure overlay is above other elements
-
-                    // Settings content centered on the overlay
                     SettingsContentView()
-                        .environmentObject(themeManager)
-                        .environmentObject(viewModel)
                         .environmentObject(settingsViewModel)
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 20)
-                        .contentShape(Rectangle()) // Prevent dismissal when tapping content
-                        .onTapGesture { }
+                        .environmentObject(themeManager)
+                        .frame(maxWidth: 500)
+                        .padding(.top, 50)
+                        .transition(.move(edge: .top))
                 }
-                .zIndex(100) // Ensure settings overlay is above everything
+                .zIndex(200)
             }
         }
         .onAppear {
