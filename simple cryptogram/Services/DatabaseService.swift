@@ -3,7 +3,7 @@ import SQLite
 
 class DatabaseService {
     static let shared = DatabaseService()
-    private var db: Connection?
+    private var _db: Connection?
     private let databaseFileName = "quotes.db"
     private var isInitialized = false
     
@@ -12,60 +12,46 @@ class DatabaseService {
     }
     
     private func setupDatabase() {
+        let fileManager = FileManager.default
+        let databaseFileName = "quotes.db"
+        // Path to the app's Documents directory
+        let documentsURL = try! fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        let destinationURL = documentsURL.appendingPathComponent(databaseFileName)
+
+        // Path to the bundled database in the app bundle
+        guard let bundleDBPath = Bundle.main.path(forResource: "quotes", ofType: "db") else {
+            print("Error: Could not find quotes.db in bundle.")
+            return
+        }
+
+        // Copy the DB from the bundle to Documents if it doesn't already exist there
+        if !fileManager.fileExists(atPath: destinationURL.path) {
+            do {
+                try fileManager.copyItem(atPath: bundleDBPath, toPath: destinationURL.path)
+                print("Copied quotes.db to Documents directory.")
+            } catch {
+                print("Error copying quotes.db to Documents: \(error)")
+                return
+            }
+        } else {
+            print("quotes.db already exists in Documents directory.")
+        }
+
+        // Now open the DB from the Documents directory (read-write)
         do {
-            print("Starting database setup...")
-            print("Looking for database file: \(databaseFileName)")
-            
-            // First try to find the database in the data directory
-            let dataDirectoryPath = Bundle.main.bundlePath.appending("/data/\(databaseFileName)")
-            print("Checking data directory path: \(dataDirectoryPath)")
-            
-            if FileManager.default.fileExists(atPath: dataDirectoryPath) {
-                print("Found database in data directory")
-                db = try Connection(dataDirectoryPath, readonly: true)
-                print("Successfully connected to data directory database")
-                isInitialized = true
-                return
-            }
-            
-            // If not in data directory, try the main bundle
-            if let bundlePath = Bundle.main.path(forResource: databaseFileName, ofType: nil) {
-                print("Found database in bundle at: \(bundlePath)")
-                db = try Connection(bundlePath, readonly: true)
-                print("Successfully connected to bundle database")
-                isInitialized = true
-                return
-            }
-            
-            print("Database not found in data directory or bundle, checking documents directory")
-            
-            // If not in bundle, try to find it in the documents directory
-            let fileManager = FileManager.default
-            let documentsPath = try fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-            let databasePath = documentsPath.appendingPathComponent(databaseFileName)
-            
-            print("Documents directory path: \(documentsPath.path)")
-            print("Database path in documents: \(databasePath.path)")
-            
-            if !fileManager.fileExists(atPath: databasePath.path) {
-                print("Database not found in documents directory")
-                print("Error: Could not find \(databaseFileName) in any location")
-                return
-            } else {
-                print("Found existing database in documents directory")
-            }
-            
-            db = try Connection(databasePath.path)
-            print("Successfully connected to documents database")
+            _db = try Connection(destinationURL.path)
+            print("Successfully connected to writable database in Documents.")
             isInitialized = true
-            
         } catch {
-            print("Error setting up database: \(error.localizedDescription)")
+            print("Error opening writable database: \(error)")
         }
     }
     
+    // Make the database connection accessible for progress tracking and other services
+    var db: Connection? { _db }
+    
     func fetchRandomPuzzle(current: Puzzle? = nil, encodingType: String = "Letters", selectedDifficulties: [String] = UserSettings.selectedDifficulties) -> Puzzle? {
-        guard let db = db else {
+        guard let db = _db else {
             print("Error: Database not initialized")
             return nil
         }
@@ -133,7 +119,7 @@ class DatabaseService {
     }
     
     func fetchPuzzleById(_ id: Int, encodingType: String = "Letters") -> Puzzle? {
-        guard let db = db else {
+        guard let db = _db else {
             print("Error: Database not initialized")
             return nil
         }
@@ -182,7 +168,7 @@ class DatabaseService {
     
     /// Fetch an Author record by name
     func fetchAuthor(byName name: String) async -> Author? {
-        guard let db = db else {
+        guard let db = _db else {
             print("Error: Database not initialized")
             return nil
         }

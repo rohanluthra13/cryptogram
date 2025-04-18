@@ -7,6 +7,7 @@ struct PuzzleView: View {
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
     @State private var showSettings = false
     @State private var showCompletionView = false
+    @State private var showStatsView = false
     @AppStorage("isDarkMode") private var isDarkMode = false
     
     // Create a custom binding for the layout
@@ -176,20 +177,33 @@ struct PuzzleView: View {
                         
                         Spacer()
                         
-                        // Settings button with matching fixed width container
-                        Button(action: { 
-                            // Print a debug message to verify the button is being pressed
-                            print("Settings button pressed, toggling showSettings to \(!showSettings)")
-                            showSettings.toggle() 
-                        }) {
-                            Image(systemName: "gearshape")
-                                .font(.title3)
-                                .foregroundColor(CryptogramTheme.Colors.text)
-                                .padding(.trailing, 16)
-                                .padding(.top, 8)
-                                .accessibilityLabel("Settings")
+                        // Settings and Stats buttons with matching fixed width container
+                        VStack(spacing: 2) {
+                            Button(action: {
+                                print("Settings button pressed, toggling showSettings to \(!showSettings)")
+                                showSettings.toggle()
+                            }) {
+                                Image(systemName: "gearshape")
+                                    .font(.title3)
+                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                    .padding(.trailing, 16)
+                                    .padding(.top, 8)
+                                    .accessibilityLabel("Settings")
+                            }
+                            .frame(width: 100, alignment: .trailing)
+                            // --- Stats Icon ---
+                            Button(action: {
+                                showStatsView = true
+                            }) {
+                                Image(systemName: "chart.bar.xaxis")
+                                    .font(.title3)
+                                    .foregroundColor(.accentColor)
+                                    .padding(.trailing, 16)
+                                    .padding(.top, 2)
+                                    .accessibilityLabel("Puzzle Stats")
+                            }
+                            .frame(width: 100, alignment: .trailing)
                         }
-                        .frame(width: 100, alignment: .trailing) // Fixed width container
                     }
                     
                     // Hints view under the mistakes
@@ -222,6 +236,10 @@ struct PuzzleView: View {
             }
         }
         .navigationBarHidden(true)
+        .sheet(isPresented: $showStatsView) {
+            UserStatsView(viewModel: viewModel)
+                .presentationDetents([.medium, .large])
+        }
     }
     
     private func formatTime(_ timeInterval: TimeInterval) -> String {

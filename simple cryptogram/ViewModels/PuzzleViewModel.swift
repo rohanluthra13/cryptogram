@@ -28,6 +28,9 @@ class PuzzleViewModel: ObservableObject {
     private let databaseService: DatabaseService
     private var cancellables = Set<AnyCancellable>()
     
+    // --- Progress Tracking Store ---
+    private let progressStore: PuzzleProgressStore
+
     // MARK: - Author Info
     @Published var currentAuthor: Author?
     private var lastAuthorName: String?
@@ -116,9 +119,45 @@ class PuzzleViewModel: ObservableObject {
         return groups
     }
     
-    init(initialPuzzle: Puzzle? = nil) {
+    // --- Stats for Current Puzzle ---
+    var completionCountForCurrentPuzzle: Int {
+        guard let puzzle = currentPuzzle else { return 0 }
+        return progressStore.attempts(for: puzzle.id, encodingType: encodingType).filter { $0.completedAt != nil }.count
+    }
+    var failureCountForCurrentPuzzle: Int {
+        guard let puzzle = currentPuzzle else { return 0 }
+        return progressStore.attempts(for: puzzle.id, encodingType: encodingType).filter { $0.failedAt != nil }.count
+    }
+    var bestTimeForCurrentPuzzle: TimeInterval? {
+        guard let puzzle = currentPuzzle else { return nil }
+        return progressStore.bestCompletionTime(for: puzzle.id, encodingType: encodingType)
+    }
+    
+    // --- Global Stats ---
+    var totalAttempts: Int {
+        progressStore.allAttempts().count
+    }
+    var totalCompletions: Int {
+        progressStore.allAttempts().filter { $0.completedAt != nil }.count
+    }
+    var totalFailures: Int {
+        progressStore.allAttempts().filter { $0.failedAt != nil }.count
+    }
+    var globalBestTime: TimeInterval? {
+        progressStore.allAttempts().compactMap { $0.completionTime }.min()
+    }
+    
+    init(initialPuzzle: Puzzle? = nil, progressStore: PuzzleProgressStore? = nil) {
         print("=== PuzzleViewModel Initialization ===")
         self.databaseService = DatabaseService.shared
+        // Use injected store or default to LocalPuzzleProgressStore
+        if let store = progressStore {
+            self.progressStore = store
+        } else if let db = DatabaseService.shared.db {
+            self.progressStore = LocalPuzzleProgressStore(database: db)
+        } else {
+            fatalError("Database connection not initialized for progress tracking!")
+        }
         
         if let puzzle = initialPuzzle {
             print("Using provided puzzle")
@@ -173,7 +212,6 @@ class PuzzleViewModel: ObservableObject {
         cells = puzzle.createCells(encodingType: encodingType)
         session = PuzzleSession()
         session = session
-        updateCompletedLetters() // Ensure completedLetters is up-to-date for pre-filled cells
         
         // Animate all completed cells on puzzle load
         cellsToAnimate = Set(cells.filter { completedLetters.contains($0.encodedChar) }.map { $0.id })
@@ -214,7 +252,7 @@ class PuzzleViewModel: ObservableObject {
             }
         }
         // --- End Difficulty Logic ---
-
+        
         // Clear letter mappings when starting a new puzzle
         letterMapping = [:]
         letterUsage = [:]
@@ -574,6 +612,33 @@ class PuzzleViewModel: ObservableObject {
     
     // MARK: - Private Methods
     
+    // --- Completion/Attempt Logging ---
+    func logPuzzleCompletion(timeTaken: TimeInterval) {
+        guard let puzzle = currentPuzzle else { return }
+        let attempt = PuzzleAttempt(
+            attemptID: UUID(),
+            puzzleID: puzzle.id,
+            encodingType: encodingType,
+            completedAt: Date(),
+            failedAt: nil,
+            completionTime: timeTaken
+        )
+        progressStore.logAttempt(attempt)
+    }
+
+    func logPuzzleFailure() {
+        guard let puzzle = currentPuzzle else { return }
+        let attempt = PuzzleAttempt(
+            attemptID: UUID(),
+            puzzleID: puzzle.id,
+            encodingType: encodingType,
+            completedAt: nil,
+            failedAt: Date(),
+            completionTime: nil
+        )
+        progressStore.logAttempt(attempt)
+    }
+
     private func checkPuzzleCompletion() {
         // Count how many non-symbol cells we have with correct inputs
         let correctCount = nonSymbolCells.filter { $0.isCorrect }.count
@@ -589,8 +654,12 @@ class PuzzleViewModel: ObservableObject {
         if allCorrect && !session.isComplete {
             session.markComplete()
             session = session
-            
-            // Save score or statistics here if needed
+            // --- Log completion attempt ---
+            if let start = session.startTime, let end = session.endTime {
+                logPuzzleCompletion(timeTaken: end.timeIntervalSince(start))
+            } else {
+                logPuzzleCompletion(timeTaken: 0)
+            }
         }
         
         // Also check if the game is failed due to mistake count
@@ -598,7 +667,8 @@ class PuzzleViewModel: ObservableObject {
             print("Game over: Too many mistakes!")
             session.markFailed()
             session = session
-            
+            // --- Log failed attempt ---
+            logPuzzleFailure()
             // Add haptic feedback for failure
             DispatchQueue.main.async {
                 let generator = UINotificationFeedbackGenerator()
@@ -662,5 +732,10 @@ class PuzzleViewModel: ObservableObject {
         print("[DEBUG] Pre-filled/revealed cell IDs to animate: \(preCompletedCellIDs)")
         cellsToAnimate.formUnion(preCompletedCellIDs)
         print("[DEBUG] cellsToAnimate after engagement: \(cellsToAnimate)")
+    }
+    
+    // --- Global Stats Reset ---
+    func resetAllProgress() {
+        progressStore.clearAllProgress()
     }
 }
