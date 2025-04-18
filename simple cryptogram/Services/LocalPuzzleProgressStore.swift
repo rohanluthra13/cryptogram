@@ -10,6 +10,9 @@ class LocalPuzzleProgressStore: PuzzleProgressStore {
     private let completedAt = Expression<String?>("completed_at")
     private let failedAt = Expression<String?>("failed_at")
     private let completionTime = Expression<Double?>("completion_time")
+    private let mode = Expression<String>("mode")
+    private let hintCount = Expression<Int>("hint_count")
+    private let mistakeCount = Expression<Int>("mistake_count")
 
     init(database: Connection) {
         self.db = database
@@ -20,6 +23,9 @@ class LocalPuzzleProgressStore: PuzzleProgressStore {
             t.column(completedAt)
             t.column(failedAt)
             t.column(completionTime)
+            t.column(mode)
+            t.column(hintCount)
+            t.column(mistakeCount)
         })
     }
 
@@ -31,7 +37,10 @@ class LocalPuzzleProgressStore: PuzzleProgressStore {
             self.encodingType <- attempt.encodingType,
             self.completedAt <- attempt.completedAt.map { formatter.string(from: $0) },
             self.failedAt <- attempt.failedAt.map { formatter.string(from: $0) },
-            self.completionTime <- attempt.completionTime
+            self.completionTime <- attempt.completionTime,
+            self.mode <- attempt.mode,
+            self.hintCount <- attempt.hintCount,
+            self.mistakeCount <- attempt.mistakeCount
         )
         _ = try? db.run(insert)
     }
@@ -48,7 +57,10 @@ class LocalPuzzleProgressStore: PuzzleProgressStore {
                 encodingType: row[self.encodingType],
                 completedAt: row[completedAt].flatMap { formatter.date(from: $0) },
                 failedAt: row[failedAt].flatMap { formatter.date(from: $0) },
-                completionTime: row[completionTime]
+                completionTime: row[completionTime],
+                mode: row[self.mode],
+                hintCount: row[self.hintCount],
+                mistakeCount: row[self.mistakeCount]
             )
         }) ?? []
     }
@@ -76,9 +88,12 @@ class LocalPuzzleProgressStore: PuzzleProgressStore {
                 attemptID: UUID(uuidString: row[attemptID])!,
                 puzzleID: UUID(uuidString: row[self.puzzleID])!,
                 encodingType: row[self.encodingType],
-                completedAt: row[self.completedAt].flatMap { formatter.date(from: $0) },
-                failedAt: row[self.failedAt].flatMap { formatter.date(from: $0) },
-                completionTime: row[self.completionTime]
+                completedAt: row[completedAt].flatMap { formatter.date(from: $0) },
+                failedAt: row[failedAt].flatMap { formatter.date(from: $0) },
+                completionTime: row[completionTime],
+                mode: row[self.mode],
+                hintCount: row[self.hintCount],
+                mistakeCount: row[self.mistakeCount]
             )
         }) ?? []
     }

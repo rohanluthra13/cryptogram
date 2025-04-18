@@ -7,4 +7,7 @@ struct PuzzleAttempt {
     let completedAt: Date?
     let failedAt: Date?
     let completionTime: TimeInterval?
+    let mode: String
+    let hintCount: Int
+    let mistakeCount: Int
 }

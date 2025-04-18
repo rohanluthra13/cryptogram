@@ -621,7 +621,10 @@ class PuzzleViewModel: ObservableObject {
             encodingType: encodingType,
             completedAt: Date(),
             failedAt: nil,
-            completionTime: timeTaken
+            completionTime: timeTaken,
+            mode: UserSettings.currentMode.rawValue,
+            hintCount: session.hintCount,
+            mistakeCount: session.mistakeCount
         )
         progressStore.logAttempt(attempt)
     }
@@ -634,7 +637,10 @@ class PuzzleViewModel: ObservableObject {
             encodingType: encodingType,
             completedAt: nil,
             failedAt: Date(),
-            completionTime: nil
+            completionTime: nil,
+            mode: UserSettings.currentMode.rawValue,
+            hintCount: session.hintCount,
+            mistakeCount: session.mistakeCount
         )
         progressStore.logAttempt(attempt)
     }
