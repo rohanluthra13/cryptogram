@@ -91,7 +91,7 @@ struct Puzzle: Identifiable {
             // Only assign a solution character for letter cells and if we have enough solution characters
             if !isSymbol && solutionIndex < solutionArray.count {
                 // Skip spaces and punctuation in the solution
-                while solutionIndex < solutionArray.count && !solutionArray[solutionIndex].isLetter && !solutionArray[solutionIndex].isNumber {
+                while solutionIndex < solutionArray.count && !solutionArray[solutionIndex].isLetter {
                     solutionIndex += 1
                 }
                 
@@ -120,7 +120,7 @@ struct Puzzle: Identifiable {
                 // Find the position of this solution character
                 while solutionIndex < solutionArray.count && solutionArray[solutionIndex] != cell.solutionChar {
                     // Add a cell for any non-alphanumeric character we encounter in the solution
-                    if !solutionArray[solutionIndex].isLetter && !solutionArray[solutionIndex].isNumber {
+                    if !solutionArray[solutionIndex].isLetter {
                         finalCells.append(CryptogramCell(
                             position: finalCells.count,
                             encodedChar: String(solutionArray[solutionIndex]),
@@ -139,7 +139,7 @@ struct Puzzle: Identifiable {
         
         // Check if there are any remaining non-alphanumeric characters in the solution
         while solutionIndex < solutionArray.count {
-            if !solutionArray[solutionIndex].isLetter && !solutionArray[solutionIndex].isNumber {
+            if !solutionArray[solutionIndex].isLetter {
                 finalCells.append(CryptogramCell(
                     position: finalCells.count,
                     encodedChar: String(solutionArray[solutionIndex]),
@@ -194,9 +194,7 @@ struct Puzzle: Identifiable {
             if component.allSatisfy({ $0.isNumber }) {
                 // This is a number representing a letter in the solution
                 // Skip spaces and punctuation in the solution to find the next letter
-                while solutionIndex < solutionArray.count && 
-                      !solutionArray[solutionIndex].isLetter && 
-                      !solutionArray[solutionIndex].isNumber {
+                while solutionIndex < solutionArray.count && !solutionArray[solutionIndex].isLetter {
                     solutionIndex += 1
                 }
                 
@@ -219,9 +217,7 @@ struct Puzzle: Identifiable {
                 
                 if hasNumbers {
                     // Skip spaces and punctuation in the solution
-                    while solutionIndex < solutionArray.count && 
-                          !solutionArray[solutionIndex].isLetter && 
-                          !solutionArray[solutionIndex].isNumber {
+                    while solutionIndex < solutionArray.count && !solutionArray[solutionIndex].isLetter {
                         solutionIndex += 1
                     }
                 
@@ -249,7 +245,7 @@ struct Puzzle: Identifiable {
                 // Find this character in the solution
                 while solutionIndex < solutionArray.count && solutionArray[solutionIndex] != cell.solutionChar {
                     // Add cell for any non-alphanumeric character we encounter in the solution
-                    if !solutionArray[solutionIndex].isLetter && !solutionArray[solutionIndex].isNumber {
+                    if !solutionArray[solutionIndex].isLetter {
                         finalCells.append(CryptogramCell(
                             position: finalCells.count,
                             encodedChar: String(solutionArray[solutionIndex]),
@@ -269,7 +265,7 @@ struct Puzzle: Identifiable {
         
         // Check if there are any remaining non-alphanumeric characters in the solution
         while solutionIndex < solutionArray.count {
-            if !solutionArray[solutionIndex].isLetter && !solutionArray[solutionIndex].isNumber {
+            if !solutionArray[solutionIndex].isLetter {
                 finalCells.append(CryptogramCell(
                     position: finalCells.count,
                     encodedChar: String(solutionArray[solutionIndex]),

@@ -23,22 +23,8 @@ struct PuzzleView: View {
         ZStack {
             // --- Persistent Top Bar (always visible) ---
             VStack {
-                HStack(alignment: .top) {
-                    // Left column: Mistakes above Hints
-                    VStack(alignment: .leading, spacing: 4) {
-                        MistakesView(mistakeCount: viewModel.mistakeCount)
-                        HintsView(
-                            hintCount: viewModel.hintCount,
-                            onRequestHint: { viewModel.revealCell() },
-                            maxHints: viewModel.nonSymbolCells.count / 4
-                        )
-                    }
-                    .padding(.leading, 16)
-                    .padding(.top, 8)
-
+                HStack {
                     Spacer()
-
-                    // Right column: Settings above Stats
                     VStack(alignment: .trailing, spacing: 2) {
                         Button(action: {
                             withAnimation {
@@ -67,16 +53,15 @@ struct PuzzleView: View {
                             }
                         }) {
                             Image(systemName: "chart.bar")
-                                .font(.system(size: 17)) // 0.9x of .title3 (19)
+                                .font(.system(size: 17))
                                 .foregroundColor(CryptogramTheme.Colors.text)
                                 .frame(width: 44, height: 44)
                                 .accessibilityLabel("Puzzle Stats")
                         }
                     }
+                    .padding(.top, 8)
                     .padding(.trailing, 16)
-                    .padding(.top, 2)
                 }
-                .padding(.top, 8)
                 Spacer()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -85,6 +70,19 @@ struct PuzzleView: View {
             // --- Main Content ---
             if viewModel.currentPuzzle != nil {
                 VStack(spacing: 0) {
+                    HStack(alignment: .top) {
+                        VStack(alignment: .leading, spacing: 4) {
+                            MistakesView(mistakeCount: viewModel.mistakeCount)
+                            HintsView(
+                                hintCount: viewModel.hintCount,
+                                onRequestHint: { viewModel.revealCell() },
+                                maxHints: viewModel.nonSymbolCells.count / 4
+                            )
+                        }
+                        .padding(.leading, 16)
+                        .padding(.top, 8)
+                        Spacer()
+                    }
                     // Timer moved to top bar, no longer needed here
                     // Puzzle Grid in ScrollView with flexible height
                     ScrollView {

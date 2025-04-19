@@ -532,40 +532,70 @@ class PuzzleViewModel: ObservableObject {
     }
     
     func refreshPuzzleWithCurrentSettings() {
-        guard let currentPuzzle = currentPuzzle else {
-            // If current puzzle is not valid, fetch a new random one
-            if let puzzle = databaseService.fetchRandomPuzzle(encodingType: encodingType) {
-                startNewPuzzle(puzzle: puzzle)
+        // Exclude puzzles already completed by user
+        let completedIDs = Set(progressStore.allAttempts().filter { $0.completedAt != nil }.map { $0.puzzleID })
+        var nextPuzzle: Puzzle?
+        let maxTries = 10
+        var tries = 0
+        repeat {
+            if let candidate = databaseService.fetchRandomPuzzle(current: currentPuzzle, encodingType: encodingType) {
+                if !completedIDs.contains(candidate.id) {
+                    nextPuzzle = candidate
+                    break
+                }
+            } else {
+                break
             }
-            return
+            tries += 1
+        } while tries < maxTries
+        // If no new unique puzzle found, allow any
+        if nextPuzzle == nil {
+            nextPuzzle = databaseService.fetchRandomPuzzle(encodingType: encodingType)
         }
-        
-        // Extract the first part of the UUID string and try to convert to Int
-        // Or just fetch a random puzzle regardless of the current one
-        if let puzzle = databaseService.fetchRandomPuzzle(current: currentPuzzle, encodingType: encodingType) {
+        if let puzzle = nextPuzzle {
             startNewPuzzle(puzzle: puzzle)
         }
     }
-    
+
     func loadNewPuzzle() {
         completedLetters = [] // Reset completed letters
         print("Loading new puzzle...")
-        // Get selected difficulties from UserSettings
         let selectedDifficulties = UserSettings.selectedDifficulties
-        
-        if let puzzle = databaseService.fetchRandomPuzzle(
-            current: currentPuzzle,
-            encodingType: encodingType,
-            selectedDifficulties: selectedDifficulties
-        ) {
-            // Restart the game with the new puzzle
+        // Exclude puzzles already completed by user
+        let completedIDs = Set(progressStore.allAttempts().filter { $0.completedAt != nil }.map { $0.puzzleID })
+        var nextPuzzle: Puzzle?
+        let maxTries = 10
+        var tries = 0
+        repeat {
+            if let candidate = databaseService.fetchRandomPuzzle(
+                current: currentPuzzle,
+                encodingType: encodingType,
+                selectedDifficulties: selectedDifficulties
+            ) {
+                if !completedIDs.contains(candidate.id) {
+                    nextPuzzle = candidate
+                    break
+                }
+            } else {
+                break
+            }
+            tries += 1
+        } while tries < maxTries
+        // If no new unique puzzle found, allow any
+        if nextPuzzle == nil {
+            nextPuzzle = databaseService.fetchRandomPuzzle(
+                encodingType: encodingType,
+                selectedDifficulties: selectedDifficulties
+            )
+        }
+        // Load or fallback
+        if let puzzle = nextPuzzle {
             startNewPuzzle(puzzle: puzzle)
         } else {
             print("Error: Failed to load a new puzzle")
         }
-        updateCompletedLetters() // Ensure completedLetters is up-to-date for pre-filled cells
-        
-        // Animate all completed cells on load
+        updateCompletedLetters() // Ensure state for pre-filled cells
+        // Animate any completed cells
         cellsToAnimate = Set(cells.filter { completedLetters.contains($0.encodedChar) }.map { $0.id })
     }
     
