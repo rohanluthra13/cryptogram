@@ -11,6 +11,7 @@ struct SettingsContentView: View {
     // State properties for info panels
     @State private var showDifficultyInfo = false
     @State private var showLengthSelector = false
+    @State private var showTextSizeSelector = false
     
     // Info text for difficulty
     private let difficultyInfoText = "normal mode gives you some starting letters.\nexpert mode does not."
@@ -178,6 +179,44 @@ struct SettingsContentView: View {
                             Spacer()
                         }
                         .padding(.top, 15)
+                        
+                        // Text Size Dropdown
+                        VStack(spacing: 8) {
+                            Button {
+                                withAnimation(.easeInOut) { showTextSizeSelector.toggle() }
+                            } label: {
+                                HStack {
+                                    Spacer()
+                                    Text("text size:")
+                                        .font(.footnote)
+                                        .foregroundColor(CryptogramTheme.Colors.text)
+                                    Text(settingsViewModel.textSize.displayName)
+                                        .font(.footnote).fontWeight(.bold)
+                                        .foregroundColor(CryptogramTheme.Colors.text)
+                                    Image(systemName: showTextSizeSelector ? "chevron.up" : "chevron.down")
+                                        .font(.system(size:12, weight:.medium))
+                                        .foregroundColor(CryptogramTheme.Colors.text)
+                                    Spacer()
+                                }
+                                .padding(.vertical, 10).padding(.horizontal, 16)
+                                .background(RoundedRectangle(cornerRadius:8)
+                                              .fill(CryptogramTheme.Colors.surface))
+                            }
+                            .buttonStyle(PlainButtonStyle())
+
+                            if showTextSizeSelector {
+                                Picker("", selection: $settingsViewModel.textSize) {
+                                    ForEach(TextSizeOption.allCases) { opt in
+                                        Text(opt.displayName).tag(opt)
+                                    }
+                                }
+                                .pickerStyle(.segmented)
+                                .padding(.vertical, 8).padding(.horizontal, 16)
+                                .background(RoundedRectangle(cornerRadius:8)
+                                              .fill(CryptogramTheme.Colors.surface))
+                                .transition(.move(edge: .top).combined(with: .opacity))
+                            }
+                        }
                         
                         // Layout selection with visual previews
                         NavBarLayoutSelector(selection: $settingsViewModel.selectedNavBarLayout)

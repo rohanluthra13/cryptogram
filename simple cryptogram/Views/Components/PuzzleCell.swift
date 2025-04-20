@@ -11,6 +11,7 @@ struct PuzzleCell: View {
     @AppStorage("encodingType") private var encodingType = "Letters"
     @State private var cellHighlightAmount: CGFloat = 0.0
     @EnvironmentObject private var viewModel: PuzzleViewModel
+    @EnvironmentObject private var settingsViewModel: SettingsViewModel
     
     var body: some View {
         Button(action: {
@@ -42,7 +43,7 @@ struct PuzzleCell: View {
                             .cornerRadius(2)
                     }
                     Text(cell.userInput)
-                        .font(.system(size: 13, weight: .medium, design: .monospaced))
+                        .font(.system(size: settingsViewModel.textSize.inputSize, weight: .medium, design: .monospaced))
                         .foregroundColor(userInputColor)
                         .frame(height: 30)
                         .frame(width: 28)
@@ -54,7 +55,7 @@ struct PuzzleCell: View {
                 }
                 // Encoded value (letter or number)
                 Text(cell.encodedChar)
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .font(.system(size: settingsViewModel.textSize.encodedSize, weight: .medium, design: .monospaced))
                     .foregroundColor(textColor)
             }
             .padding(.horizontal, 0)

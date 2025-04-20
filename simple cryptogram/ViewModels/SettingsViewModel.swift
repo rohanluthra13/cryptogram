@@ -5,6 +5,9 @@ class SettingsViewModel: ObservableObject {
     @Published var selectedMode: DifficultyMode = UserSettings.currentMode
     @Published var selectedNavBarLayout: NavigationBarLayout = UserSettings.navigationBarLayout
     @Published var selectedLengths: [String] = UserSettings.selectedDifficulties
+    @AppStorage("textSize") private var textSizeRaw: String = TextSizeOption.medium.rawValue
+    @Published var textSize: TextSizeOption = .medium
+    private var textSizeCancellable: AnyCancellable?
     
     private var modeCancellable: AnyCancellable?
     private var navBarLayoutCancellable: AnyCancellable?
@@ -75,6 +78,14 @@ class SettingsViewModel: ObservableObject {
                 UserSettings.selectedDifficulties = newLengths
                 // Post notification when difficulty selection changes
                 NotificationCenter.default.post(name: Self.difficultySelectionChangedNotification, object: nil)
+            }
+        
+        // Sync textSize changes from textSizeRaw and persist changes
+        textSize = TextSizeOption(rawValue: textSizeRaw) ?? .medium
+        textSizeCancellable = $textSize
+            .dropFirst()
+            .sink { [unowned self] newSize in
+                self.textSizeRaw = newSize.rawValue
             }
     }
     
