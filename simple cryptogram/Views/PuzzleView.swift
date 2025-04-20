@@ -23,12 +23,12 @@ struct PuzzleView: View {
         ZStack {
             // --- Persistent Top Bar (always visible) ---
             VStack {
-                ZStack {
+                ZStack(alignment: .top) {
                     // Centered timer
                     TimerView(startTime: viewModel.startTime ?? Date.distantFuture, isPaused: viewModel.isPaused)
                         .font(.subheadline)
                         .foregroundColor(CryptogramTheme.Colors.text)
-                        .padding(.top, 8)
+                        .padding(.top, 10)
                     // Settings and stats buttons on the right
                     HStack {
                         Spacer()
