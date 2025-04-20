@@ -25,10 +25,12 @@ struct PuzzleView: View {
             VStack {
                 ZStack(alignment: .top) {
                     // Centered timer
-                    TimerView(startTime: viewModel.startTime ?? Date.distantFuture, isPaused: viewModel.isPaused)
-                        .font(.subheadline)
-                        .foregroundColor(CryptogramTheme.Colors.text)
-                        .padding(.top, 10)
+                    if viewModel.currentPuzzle != nil && !showSettings && !showStatsOverlay && !showCompletionView {
+                        TimerView(startTime: viewModel.startTime ?? Date.distantFuture, isPaused: viewModel.isPaused)
+                            .font(.subheadline)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                            .padding(.top, 10)
+                    }
                     // Settings and stats buttons on the right
                     HStack {
                         Spacer()
