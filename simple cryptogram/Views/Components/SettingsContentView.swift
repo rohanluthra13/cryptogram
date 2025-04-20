@@ -178,7 +178,7 @@ struct SettingsContentView: View {
                             
                             Spacer()
                         }
-                        .padding(.top, 15)
+                        .padding(.vertical, 15)
                         
                         // Text Size Dropdown
                         VStack(spacing: 8) {
@@ -190,7 +190,7 @@ struct SettingsContentView: View {
                                     Text("text size:")
                                         .font(.footnote)
                                         .foregroundColor(CryptogramTheme.Colors.text)
-                                    Text(settingsViewModel.textSize.displayName)
+                                    Text(settingsViewModel.textSize.displayName.lowercased())
                                         .font(.footnote).fontWeight(.bold)
                                         .foregroundColor(CryptogramTheme.Colors.text)
                                     Image(systemName: showTextSizeSelector ? "chevron.up" : "chevron.down")
@@ -205,22 +205,40 @@ struct SettingsContentView: View {
                             .buttonStyle(PlainButtonStyle())
 
                             if showTextSizeSelector {
-                                Picker("", selection: $settingsViewModel.textSize) {
+                                HStack(spacing: 16) {
                                     ForEach(TextSizeOption.allCases) { opt in
-                                        Text(opt.displayName).tag(opt)
+                                        Button {
+                                            settingsViewModel.textSize = opt
+                                        } label: {
+                                            VStack(spacing: 4) {
+                                                Text("A")
+                                                    .font(.system(size: opt.inputSize,
+                                                                  weight: settingsViewModel.textSize == opt ? .bold : .thin,
+                                                                  design: .monospaced))
+                                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                                Rectangle()
+                                                    .frame(height: 1)
+                                                    .foregroundColor(CryptogramTheme.Colors.border)
+                                                Text(opt == .small ? "4" : opt == .medium ? "2" : "0")
+                                                    .font(.system(size: opt.encodedSize,
+                                                                  weight: settingsViewModel.textSize == opt ? .bold : .thin,
+                                                                  design: .monospaced))
+                                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                            }
+                                            .frame(width: 28)
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
                                     }
                                 }
-                                .pickerStyle(.segmented)
-                                .padding(.vertical, 8).padding(.horizontal, 16)
-                                .background(RoundedRectangle(cornerRadius:8)
-                                              .fill(CryptogramTheme.Colors.surface))
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
                                 .transition(.move(edge: .top).combined(with: .opacity))
                             }
                         }
                         
                         // Layout selection with visual previews
                         NavBarLayoutSelector(selection: $settingsViewModel.selectedNavBarLayout)
-                            .padding(.top, 10)
+                        
                     }
                 }
                 .transition(.opacity)
