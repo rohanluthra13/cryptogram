@@ -8,6 +8,9 @@ struct PuzzleView: View {
     @State private var showSettings = false
     @State private var showCompletionView = false
     @State private var showStatsOverlay = false
+    @State private var displayedGameOver = ""
+    private let fullGameOverText = "game over"
+    @State private var isSwitchingPuzzle = false
     @Namespace private var statsOverlayNamespace
     @AppStorage("isDarkMode") private var isDarkMode = false
     
@@ -80,44 +83,52 @@ struct PuzzleView: View {
             // --- Main Content ---
             if viewModel.currentPuzzle != nil {
                 VStack(spacing: 0) {
-                    HStack(alignment: .top) {
-                        VStack(alignment: .leading, spacing: 4) {
-                            MistakesView(mistakeCount: viewModel.mistakeCount)
-                            HintsView(
-                                hintCount: viewModel.hintCount,
-                                onRequestHint: { viewModel.revealCell() },
-                                maxHints: viewModel.nonSymbolCells.count / 4
-                            )
+                    Group {
+                        HStack(alignment: .top) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                MistakesView(mistakeCount: viewModel.mistakeCount)
+                                HintsView(
+                                    hintCount: viewModel.hintCount,
+                                    onRequestHint: { viewModel.revealCell() },
+                                    maxHints: viewModel.nonSymbolCells.count / 4
+                                )
+                            }
+                            .padding(.leading, 16)
+                            .padding(.top, 8)
+                            Spacer()
                         }
-                        .padding(.leading, 16)
-                        .padding(.top, 8)
-                        Spacer()
-                    }
-                    // Puzzle Grid in ScrollView with flexible height
-                    ScrollView {
-                        WordAwarePuzzleGrid()
-                            .environmentObject(viewModel)
-                            .padding(.horizontal, 16)
-                    }
-                    .layoutPriority(1)
-                    .frame(maxWidth: .infinity)
-                    .frame(maxHeight: UIScreen.main.bounds.height * 0.45)
-                    .padding(.horizontal, 12)
-                    .padding(.top, 40) // Increased top padding to account for hints/mistakes views
-                    .padding(.bottom, 12)
+                        ScrollView {
+                            WordAwarePuzzleGrid()
+                                .environmentObject(viewModel)
+                                .padding(.horizontal, 16)
+                        }
+                        .layoutPriority(1)
+                        .frame(maxWidth: .infinity)
+                        .frame(maxHeight: UIScreen.main.bounds.height * 0.405)
+                        .padding(.horizontal, 12)
+                        .padding(.top, 40)
+                        .padding(.bottom, 12)
 
-                    // Fixed height spacer (modern approach - non-collapsible)
-                    Rectangle()
-                        .fill(Color.clear)
-                        .frame(height: 20) // Adjust this value to control spacing precisely
-                        .allowsHitTesting(false) // Ensures touches pass through
+                        Rectangle()
+                            .fill(Color.clear)
+                            .frame(height: 20)
+                            .allowsHitTesting(false)
+                    }
+                    .opacity(isSwitchingPuzzle ? 0 : 1)
+                    .animation(.easeInOut(duration: 0.5), value: isSwitchingPuzzle)
 
                     // Navigation Bar with all controls in a single layer
                     NavigationBarView(
                         onMoveLeft: { viewModel.moveToAdjacentCell(direction: -1) },
                         onMoveRight: { viewModel.moveToAdjacentCell(direction: 1) },
                         onTogglePause: viewModel.togglePause,
-                        onNextPuzzle: { viewModel.refreshPuzzleWithCurrentSettings() },
+                        onNextPuzzle: {
+                            withAnimation(.easeInOut(duration: 0.5)) { isSwitchingPuzzle = true }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                viewModel.refreshPuzzleWithCurrentSettings()
+                                withAnimation(.easeInOut(duration: 0.5)) { isSwitchingPuzzle = false }
+                            }
+                        },
                         onTryAgain: { 
                             viewModel.reset()
                             // Re-apply difficulty settings to the same puzzle
@@ -147,7 +158,7 @@ struct PuzzleView: View {
                     .padding(.bottom, 4)
                     .padding(.horizontal, 4)
                     .frame(maxWidth: .infinity)
-                    .disabled(viewModel.isPaused || viewModel.isComplete) // Disable keyboard when game is paused or complete
+                    .disabled(viewModel.isPaused || viewModel.isComplete)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(CryptogramTheme.Colors.background)
@@ -169,21 +180,26 @@ struct PuzzleView: View {
                                         .foregroundColor(CryptogramTheme.Colors.text)
                                 }
                                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                                .padding(.bottom, 265)
+                                .padding(.bottom, 240)
                             }
+                            .transition(.opacity)
                         } else if viewModel.isFailed && !showSettings {
                             ZStack {
                                 // Semi-transparent overlay for game over
                                 Color.black.opacity(0.5)
                                     .edgesIgnoringSafeArea(.all)
                                     .allowsHitTesting(false)  // This lets clicks pass through to navigation bar
-                                // Game over text - without dedicated icon
-                                Text("game over")
+                                // Game over text - with typing animation
+                                Text(displayedGameOver)
                                     .font(.headline)
                                     .foregroundColor(CryptogramTheme.Colors.text)
                                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                                    .padding(.bottom, 265)
+                                    .padding(.bottom, 240)
+                                    .onAppear {
+                                        startTypewriterWithDelay(1.2)
+                                    }
                             }
+                            .transition(.opacity)
                         } else if showSettings {
                             // Full-screen settings overlay
                             ZStack {
@@ -257,12 +273,24 @@ struct PuzzleView: View {
             }
         }
         .navigationBarHidden(true)
+        .animation(.easeIn(duration: 1.0), value: viewModel.isFailed)
+        .animation(.easeIn(duration: 0.6), value: viewModel.isPaused)
     }
     
     private func formatTime(_ timeInterval: TimeInterval) -> String {
         let minutes = Int(timeInterval) / 60
         let seconds = Int(timeInterval) % 60
         return String(format: "%02d:%02d", minutes, seconds)
+    }
+    
+    // MARK: - Typewriter effect
+    private func startTypewriterWithDelay(_ delay: TimeInterval = 1.2) {
+        displayedGameOver = ""
+        for (i, ch) in fullGameOverText.enumerated() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay + Double(i) * 0.2) {
+                displayedGameOver.append(ch)
+            }
+        }
     }
 }
 
