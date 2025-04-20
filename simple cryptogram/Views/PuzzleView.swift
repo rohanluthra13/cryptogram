@@ -23,44 +23,52 @@ struct PuzzleView: View {
         ZStack {
             // --- Persistent Top Bar (always visible) ---
             VStack {
-                HStack {
-                    Spacer()
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Button(action: {
-                            withAnimation {
-                                if showStatsOverlay {
-                                    showStatsOverlay = false
-                                    showSettings = true
-                                } else {
-                                    showSettings.toggle()
+                ZStack {
+                    // Centered timer
+                    TimerView(startTime: viewModel.startTime ?? Date.distantFuture, isPaused: viewModel.isPaused)
+                        .font(.subheadline)
+                        .foregroundColor(CryptogramTheme.Colors.text)
+                        .padding(.top, 8)
+                    // Settings and stats buttons on the right
+                    HStack {
+                        Spacer()
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Button(action: {
+                                withAnimation {
+                                    if showStatsOverlay {
+                                        showStatsOverlay = false
+                                        showSettings = true
+                                    } else {
+                                        showSettings.toggle()
+                                    }
                                 }
+                            }) {
+                                Image(systemName: "gearshape")
+                                    .font(.title3)
+                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                    .frame(width: 44, height: 44)
+                                    .accessibilityLabel("Settings")
                             }
-                        }) {
-                            Image(systemName: "gearshape")
-                                .font(.title3)
-                                .foregroundColor(CryptogramTheme.Colors.text)
-                                .frame(width: 44, height: 44)
-                                .accessibilityLabel("Settings")
-                        }
-                        Button(action: {
-                            withAnimation {
-                                if showSettings {
-                                    showSettings = false
-                                    showStatsOverlay = true
-                                } else {
-                                    showStatsOverlay.toggle()
+                            Button(action: {
+                                withAnimation {
+                                    if showSettings {
+                                        showSettings = false
+                                        showStatsOverlay = true
+                                    } else {
+                                        showStatsOverlay.toggle()
+                                    }
                                 }
+                            }) {
+                                Image(systemName: "chart.bar")
+                                    .font(.system(size: 17))
+                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                    .frame(width: 44, height: 44)
+                                    .accessibilityLabel("Puzzle Stats")
                             }
-                        }) {
-                            Image(systemName: "chart.bar")
-                                .font(.system(size: 17))
-                                .foregroundColor(CryptogramTheme.Colors.text)
-                                .frame(width: 44, height: 44)
-                                .accessibilityLabel("Puzzle Stats")
                         }
+                        .padding(.top, 8)
+                        .padding(.trailing, 16)
                     }
-                    .padding(.top, 8)
-                    .padding(.trailing, 16)
                 }
                 Spacer()
             }
@@ -83,7 +91,6 @@ struct PuzzleView: View {
                         .padding(.top, 8)
                         Spacer()
                     }
-                    // Timer moved to top bar, no longer needed here
                     // Puzzle Grid in ScrollView with flexible height
                     ScrollView {
                         WordAwarePuzzleGrid()
