@@ -213,17 +213,17 @@ struct SettingsContentView: View {
                                             VStack(spacing: 4) {
                                                 Text("A")
                                                     .font(.system(size: opt.inputSize,
-                                                                  weight: settingsViewModel.textSize == opt ? .bold : .thin,
+                                                                  weight: settingsViewModel.textSize == opt ? .bold : .regular,
                                                                   design: .monospaced))
-                                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(settingsViewModel.textSize == opt ? 1 : 0.4))
                                                 Rectangle()
                                                     .frame(height: 1)
                                                     .foregroundColor(CryptogramTheme.Colors.border)
                                                 Text(opt == .small ? "4" : opt == .medium ? "2" : "0")
                                                     .font(.system(size: opt.encodedSize,
-                                                                  weight: settingsViewModel.textSize == opt ? .bold : .thin,
+                                                                  weight: settingsViewModel.textSize == opt ? .bold : .regular,
                                                                   design: .monospaced))
-                                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(settingsViewModel.textSize == opt ? 1 : 0.4))
                                             }
                                             .frame(width: 28)
                                         }

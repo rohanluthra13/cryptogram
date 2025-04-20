@@ -12,12 +12,10 @@ struct MultiCheckboxRow: View {
             action()
         }) {
             Text(title)
-                .font(.footnote)
-                .fontWeight(isSelected ? .bold : .medium)
-                .foregroundColor(CryptogramTheme.Colors.text)
-            .padding(.horizontal, 6)
-            .contentShape(Rectangle())
-            .frame(height: 44)
+                .settingsToggleStyle(isSelected: isSelected)
+                .padding(.horizontal, 6)
+                .contentShape(Rectangle())
+                .frame(height: 44)
         }
         .buttonStyle(PlainButtonStyle())
         .accessibilityLabel("\(title) quote length")
