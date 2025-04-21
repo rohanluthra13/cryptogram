@@ -129,8 +129,6 @@ struct PuzzleCell: View {
             return CryptogramTheme.Colors.error
         } else if animateCompletionBorder {
             return CryptogramTheme.Colors.success  // flash green on completion
-        } else if effectiveCompleted {
-            return CryptogramTheme.Colors.success
         } else {
             return CryptogramTheme.Colors.border
         }
