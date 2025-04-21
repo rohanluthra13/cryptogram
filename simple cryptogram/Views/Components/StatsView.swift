@@ -54,6 +54,8 @@ struct MistakesView: View {
             }
         }
         .padding(8)
+        .padding(.top, 10)
+        .frame(width: 125, height: 32, alignment: .leading)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Mistakes: \(mistakeCount) of \(maxMistakes)")
     }
@@ -65,29 +67,47 @@ struct HintsView: View {
     var onRequestHint: () -> Void
     var maxHints: Int = Int.max  // Set to essentially unlimited
     
-    // Create a custom muted green color that's darker than the cell highlight
     private let hintIconColor = Color.green.opacity(0.4)
     
     var body: some View {
-        HStack(spacing: 6) {
-            // Show lightbulbs representing used hints - show max 5
-            ForEach(0..<min(5, hintCount + 1), id: \.self) { index in
+        HStack(alignment: .center, spacing: 6) {
+            if hintCount == 0 {
                 Image(systemName: "lightbulb.fill")
                     .rotationEffect(.degrees(45))
-                    .foregroundColor(index < hintCount 
-                                    ? hintIconColor 
-                                    : CryptogramTheme.Colors.secondary.opacity(0.3))
+                    .foregroundColor(CryptogramTheme.Colors.secondary.opacity(0.3))
                     .font(.system(size: 16))
-            }
-            
-            // If more than 5 hints used, show a count
-            if hintCount >= 5 {
-                Text("+\(hintCount - 4)")
-                    .font(.system(size: 12, weight: .bold))
+            } else if hintCount == 1 {
+                Image(systemName: "lightbulb.fill")
+                    .rotationEffect(.degrees(45))
                     .foregroundColor(hintIconColor)
+                    .font(.system(size: 16))
+            } else if hintCount == 2 {
+                ForEach(0..<2, id: \.self) { _ in
+                    Image(systemName: "lightbulb.fill")
+                        .rotationEffect(.degrees(45))
+                        .foregroundColor(hintIconColor)
+                        .font(.system(size: 16))
+                }
+            } else if hintCount == 3 {
+                ForEach(0..<3, id: \.self) { _ in
+                    Image(systemName: "lightbulb.fill")
+                        .rotationEffect(.degrees(45))
+                        .foregroundColor(hintIconColor)
+                        .font(.system(size: 16))
+                }
+            } else if hintCount > 3 {
+                ForEach(0..<3, id: \.self) { _ in
+                    Image(systemName: "lightbulb.fill")
+                        .rotationEffect(.degrees(45))
+                        .foregroundColor(hintIconColor)
+                        .font(.system(size: 16))
+                }
+                Text("+\(hintCount - 3)")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundColor(hintIconColor)
+                    .frame(minWidth: 18, maxWidth: 32, alignment: .leading)
+                    .lineLimit(1)
             }
-            
-            // Plus button to request a hint - always enabled
             Button(action: onRequestHint) {
                 Image(systemName: "plus")
                     .foregroundColor(CryptogramTheme.Colors.text)
@@ -95,6 +115,8 @@ struct HintsView: View {
             }
         }
         .padding(8)
+        .padding(.top, 28)
+        .frame(width: 125, height: 32, alignment: .leading)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Hints used: \(hintCount)")
         .accessibilityAddTraits(.isButton)
@@ -109,24 +131,38 @@ struct StatsView: View {
     let startTime: Date
     var onRequestHint: () -> Void = {}
     var isPaused: Bool = false
-    
+    @ObservedObject var viewModel: PuzzleViewModel // required for UserStatsView
+
     var body: some View {
         VStack(spacing: 0) {
-            HStack(alignment: .top) {
+            // Row 1: Mistakes | Timer | Settings (gear icon)
+            HStack(alignment: .center) {
                 MistakesView(mistakeCount: mistakeCount)
-                
                 Spacer()
+                TimerView(startTime: startTime, isPaused: isPaused)
+                Spacer()
+                Button(action: { /* settings action here */ }) {
+                    Image(systemName: "gearshape")
+                        .font(.system(size: 20, weight: .regular))
+                        .foregroundColor(CryptogramTheme.Colors.text)
+                }
+                .accessibilityLabel("Settings")
             }
-            
-            HStack {
+            // Row 2: Hints | (empty center) | User Stats (chart icon)
+            HStack(alignment: .center) {
                 HintsView(hintCount: hintCount, onRequestHint: onRequestHint)
-                
                 Spacer()
+                // (empty center)
+                Spacer()
+                Button(action: { /* user stats action here */ }) {
+                    Image(systemName: "chart.bar.xaxis")
+                        .font(.system(size: 20, weight: .regular))
+                        .foregroundColor(CryptogramTheme.Colors.text)
+                }
+                .accessibilityLabel("User Stats")
+                // Or, to show the full stats view as a sheet:
+                // UserStatsView(viewModel: viewModel)
             }
-            
-            TimerView(startTime: startTime, isPaused: isPaused)
-                .frame(maxWidth: .infinity, alignment: .center)
-                .padding(.top, 8)
         }
     }
 }
@@ -139,7 +175,8 @@ struct StatsView: View {
             mistakeCount: 1,
             startTime: Date().addingTimeInterval(-125), // 2 minutes and 5 seconds ago
             onRequestHint: {},
-            isPaused: false
+            isPaused: false,
+            viewModel: PuzzleViewModel() // required for UserStatsView
         )
         
         Text("Preview of individual components:").padding(.top, 20)

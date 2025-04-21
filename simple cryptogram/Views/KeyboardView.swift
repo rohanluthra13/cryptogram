@@ -9,6 +9,9 @@ struct KeyboardView: View {
     @AppStorage("encodingType") private var encodingType = "Letters"
     @EnvironmentObject private var viewModel: PuzzleViewModel
 
+    // New state for showing/hiding remaining letters (session only, defaults to hide)
+    @State private var showRemainingLetters = false
+
     private let topRow: [Character] = ["Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P"]
     private let middleRow: [Character] = ["A", "S", "D", "F", "G", "H", "J", "K", "L"]
     private let bottomRow: [Character] = ["Z", "X", "C", "V", "B", "N", "M"]
@@ -39,7 +42,7 @@ struct KeyboardView: View {
             // Bottom row with backspace
             HStack(spacing: 2) {
                 Spacer(minLength: 0)
-                toggleHighlightsButton.frame(width: keyHeight)
+                toggleRemainingLettersButton.frame(width: keyHeight)
                 ForEach(bottomRow, id: \.self) { key in
                     keyButton(for: key)
                 }
@@ -68,12 +71,31 @@ struct KeyboardView: View {
             baseLocked = mappedNumbers.contains(where: { completedLetters.contains($0) })
         }
         let isLocked = baseLocked  // always lock keys based on completion, independent of toggle
+
+        // Determine if this key is a remaining letter (in puzzle, not completed)
+        let isInPuzzle: Bool = {
+            if encodingType == "Letters" {
+                // Any cell in the puzzle with this solutionChar
+                return viewModel.cells.contains { cell in
+                    guard let solutionChar = cell.solutionChar else { return false }
+                    return String(solutionChar).uppercased() == String(key).uppercased() && !cell.isSymbol
+                }
+            } else {
+                // For number encoding, similar logic, but solutionChar
+                return viewModel.cells.contains { cell in
+                    guard let solutionChar = cell.solutionChar else { return false }
+                    return String(solutionChar).uppercased() == String(key).uppercased() && !cell.isSymbol
+                }
+            }
+        }()
+        let isRemaining = isInPuzzle && !isLocked && showRemainingLetters
+
         return Button(action: { onLetterPress(key) }) {
             Text(String(key))
                 .font(.system(size: 16, weight: .medium))
                 .frame(height: keyHeight)
                 .frame(minWidth: 0, maxWidth: .infinity)
-                .foregroundColor(isLocked ? Color.gray : CryptogramTheme.Colors.text)
+                .foregroundColor(isLocked ? Color.gray : (isRemaining ? .green : CryptogramTheme.Colors.text))
                 .cornerRadius(5)
                 .accessibilityLabel("Key \(key)")
         }
@@ -94,10 +116,10 @@ struct KeyboardView: View {
         }
     }
     
-    // Toggle button for completed‑letter highlights
-    private var toggleHighlightsButton: some View {
+    // Toggle button for remaining letters (repurposed magnifying glass)
+    private var toggleRemainingLettersButton: some View {
         Button {
-            viewModel.showCompletedHighlights.toggle()
+            showRemainingLetters.toggle()
         } label: {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 16, weight: .light))
@@ -105,11 +127,11 @@ struct KeyboardView: View {
                 .frame(minWidth: 0, maxWidth: .infinity)
                 .foregroundColor(Color(hex: "555555")) // Always gray
                 .cornerRadius(5)
-                .accessibilityLabel("Toggle Completed Highlights")
+                .accessibilityLabel("Show/Hide Letters Remaining")
         }
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(viewModel.showCompletedHighlights ? CryptogramTheme.Colors.success.opacity(0.15) : Color(.systemGray5))
+                .fill(showRemainingLetters ? Color.green.opacity(0.15) : Color(.systemGray5))
                 .frame(width: keyHeight * 0.55, height: keyHeight * 0.7)
                 .shadow(color: Color.black.opacity(0.13), radius: 2, x: 0, y: 1)
         )

@@ -16,7 +16,7 @@ struct PuzzleCell: View {
     
     // Combine completion state with toggle
     private var effectiveCompleted: Bool {
-        isCompleted && viewModel.showCompletedHighlights
+        isCompleted // Always show highlights for completed letters
     }
 
     var body: some View {
