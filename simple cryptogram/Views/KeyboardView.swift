@@ -39,6 +39,7 @@ struct KeyboardView: View {
             // Bottom row with backspace
             HStack(spacing: 2) {
                 Spacer(minLength: 0)
+                toggleHighlightsButton.frame(width: keyHeight)
                 ForEach(bottomRow, id: \.self) { key in
                     keyButton(for: key)
                 }
@@ -55,17 +56,18 @@ struct KeyboardView: View {
     
     // Helper method to create a key button
     private func keyButton(for key: Character) -> some View {
-        let isLocked: Bool
+        let baseLocked: Bool
         if encodingType == "Letters" {
-            isLocked = completedLetters.contains(String(key).uppercased())
+            baseLocked = completedLetters.contains(String(key).uppercased())
         } else {
             // For number encoding, lock the key if ANY encodedChar for this letter is in completedLetters
             let mappedNumbers = viewModel.cells.filter { cell in
                 guard let solutionChar = cell.solutionChar else { return false }
                 return String(solutionChar).uppercased() == String(key).uppercased() && !cell.isSymbol
             }.map { $0.encodedChar }
-            isLocked = mappedNumbers.contains(where: { completedLetters.contains($0) })
+            baseLocked = mappedNumbers.contains(where: { completedLetters.contains($0) })
         }
+        let isLocked = baseLocked  // always lock keys based on completion, independent of toggle
         return Button(action: { onLetterPress(key) }) {
             Text(String(key))
                 .font(.system(size: 16, weight: .medium))
@@ -89,6 +91,21 @@ struct KeyboardView: View {
                 .foregroundColor(CryptogramTheme.Colors.text)
                 .cornerRadius(5)
                 .accessibilityLabel("Backspace")
+        }
+    }
+    
+    // Toggle button for completed‑letter highlights
+    private var toggleHighlightsButton: some View {
+        Button {
+            viewModel.showCompletedHighlights.toggle()
+        } label: {
+            Image(systemName: viewModel.showCompletedHighlights ? "eye" : "eye.slash")
+                .font(.system(size: 18, weight: .light))
+                .frame(height: keyHeight)
+                .frame(minWidth: 0, maxWidth: .infinity)
+                .foregroundColor(CryptogramTheme.Colors.text)
+                .cornerRadius(5)
+                .accessibilityLabel("Toggle Completed Highlights")
         }
     }
 }

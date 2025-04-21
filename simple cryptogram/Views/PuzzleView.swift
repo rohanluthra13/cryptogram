@@ -26,55 +26,78 @@ struct PuzzleView: View {
         ZStack {
             // --- Persistent Top Bar (always visible) ---
             VStack {
-                ZStack(alignment: .top) {
-                    // Centered timer
+                HStack(alignment: .top) {
+                    // Left: mistakes & hints
                     if viewModel.currentPuzzle != nil && !showSettings && !showStatsOverlay && !showCompletionView {
-                        TimerView(startTime: viewModel.startTime ?? Date.distantFuture, isPaused: viewModel.isPaused)
-                            .font(.subheadline)
-                            .foregroundColor(CryptogramTheme.Colors.text)
-                            .padding(.top, 10)
-                    }
-                    // Settings and stats buttons on the right
-                    HStack {
-                        Spacer()
-                        VStack(alignment: .trailing, spacing: 2) {
-                            Button(action: {
-                                withAnimation {
-                                    if showStatsOverlay {
-                                        showStatsOverlay = false
-                                        showSettings = true
-                                    } else {
-                                        showSettings.toggle()
-                                    }
-                                }
-                            }) {
-                                Image(systemName: "gearshape")
-                                    .font(.title3)
-                                    .foregroundColor(CryptogramTheme.Colors.text)
-                                    .frame(width: 44, height: 44)
-                                    .accessibilityLabel("Settings")
+                        VStack(spacing: 2) {
+                            HStack {
+                                MistakesView(mistakeCount: viewModel.mistakeCount)
+                                Spacer()
                             }
-                            Button(action: {
-                                withAnimation {
-                                    if showSettings {
-                                        showSettings = false
-                                        showStatsOverlay = true
-                                    } else {
-                                        showStatsOverlay.toggle()
-                                    }
-                                }
-                            }) {
-                                Image(systemName: "chart.bar")
-                                    .font(.system(size: 17))
-                                    .foregroundColor(CryptogramTheme.Colors.text)
-                                    .frame(width: 44, height: 44)
-                                    .accessibilityLabel("Puzzle Stats")
+                            HStack {
+                                HintsView(
+                                    hintCount: viewModel.hintCount,
+                                    onRequestHint: { viewModel.revealCell() },
+                                    maxHints: viewModel.nonSymbolCells.count / 4
+                                )
+                                Spacer()
                             }
                         }
-                        .padding(.top, 8)
-                        .padding(.trailing, 16)
+                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
                     }
+                    
+                    // Center: timer
+                    ZStack {
+                        if viewModel.currentPuzzle != nil && !showSettings && !showStatsOverlay && !showCompletionView {
+                            let timerInactive = (viewModel.startTime ?? Date.distantFuture) > Date()
+                            TimerView(startTime: viewModel.startTime ?? Date.distantFuture, isPaused: viewModel.isPaused)
+                                .font(.caption)
+                                .foregroundColor(timerInactive ? CryptogramTheme.Colors.secondary : CryptogramTheme.Colors.text)
+                                .opacity(timerInactive ? 0.5 : 1.0)
+                        }
+                    }
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
+                    
+                    // Right: settings & stats buttons
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Button(action: {
+                            withAnimation {
+                                if showStatsOverlay {
+                                    showStatsOverlay = false
+                                    showSettings = true
+                                } else {
+                                    showSettings.toggle()
+                                }
+                            }
+                        }) {
+                            Image(systemName: "gearshape")
+                                .font(.title3)
+                                .foregroundColor(CryptogramTheme.Colors.text)
+                                .frame(width: 44, height: 44)
+                                .accessibilityLabel("Settings")
+                        }
+                        Button(action: {
+                            withAnimation {
+                                if showSettings {
+                                    showSettings = false
+                                    showStatsOverlay = true
+                                } else {
+                                    showStatsOverlay.toggle()
+                                }
+                            }
+                        }) {
+                            Image(systemName: "chart.bar")
+                                .font(.system(size: 17))
+                                .foregroundColor(CryptogramTheme.Colors.text)
+                                .frame(width: 44, height: 44)
+                                .accessibilityLabel("Puzzle Stats")
+                        }
+                    }
+                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .trailing)
                 }
+                .padding(.top, 8)
+                .padding(.horizontal, 16)
+                .frame(maxWidth: .infinity)
                 Spacer()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
@@ -84,19 +107,6 @@ struct PuzzleView: View {
             if viewModel.currentPuzzle != nil {
                 VStack(spacing: 0) {
                     Group {
-                        HStack(alignment: .top) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                MistakesView(mistakeCount: viewModel.mistakeCount)
-                                HintsView(
-                                    hintCount: viewModel.hintCount,
-                                    onRequestHint: { viewModel.revealCell() },
-                                    maxHints: viewModel.nonSymbolCells.count / 4
-                                )
-                            }
-                            .padding(.leading, 16)
-                            .padding(.top, 8)
-                            Spacer()
-                        }
                         ScrollView {
                             WordAwarePuzzleGrid()
                                 .environmentObject(viewModel)
@@ -104,9 +114,9 @@ struct PuzzleView: View {
                         }
                         .layoutPriority(1)
                         .frame(maxWidth: .infinity)
-                        .frame(maxHeight: UIScreen.main.bounds.height * 0.405)
+                        .frame(maxHeight: UIScreen.main.bounds.height * 0.45)
                         .padding(.horizontal, 12)
-                        .padding(.top, 40)
+                        .padding(.top, 60)
                         .padding(.bottom, 12)
 
                         Rectangle()

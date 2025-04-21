@@ -10,9 +10,15 @@ struct PuzzleCell: View {
     
     @AppStorage("encodingType") private var encodingType = "Letters"
     @State private var cellHighlightAmount: CGFloat = 0.0
+    @State private var animateCompletionBorder: Bool = false  // flash border on group completion
     @EnvironmentObject private var viewModel: PuzzleViewModel
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
     
+    // Combine completion state with toggle
+    private var effectiveCompleted: Bool {
+        isCompleted && viewModel.showCompletedHighlights
+    }
+
     var body: some View {
         Button(action: {
             onTap()
@@ -39,7 +45,7 @@ struct PuzzleCell: View {
                     if cellHighlightAmount > 0 {
                         Rectangle()
                             .frame(width: 24, height: 28)
-                            .foregroundColor(CryptogramTheme.Colors.selectedBorder.opacity(0.2 * cellHighlightAmount))
+                            .foregroundColor(CryptogramTheme.Colors.success.opacity(0.2 * cellHighlightAmount))
                             .cornerRadius(2)
                     }
                     Text(cell.userInput)
@@ -62,30 +68,18 @@ struct PuzzleCell: View {
         }
         .buttonStyle(PlainButtonStyle())
         .disabled(cell.isRevealed)
-        .onChange(of: cell.wasJustFilled) { oldValue, newValue in
-            if newValue {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    cellHighlightAmount = 1.0
-                }
-                
-                // Reset after animation
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    withAnimation {
-                        cellHighlightAmount = 0.0
-                    }
-                }
-            }
-        }
         .onChange(of: shouldAnimate) { _, animate in
             if animate {
                 print("[DEBUG] shouldAnimate triggered for cell ID: \(cell.id)")
-                // Only animate color changes, not wiggle
+                // Flash background and border
                 withAnimation(.easeInOut(duration: 0.3)) {
                     cellHighlightAmount = 1.0
+                    animateCompletionBorder = true
                 }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                     withAnimation {
                         cellHighlightAmount = 0.0
+                        animateCompletionBorder = false
                     }
                     onAnimationComplete?()
                 }
@@ -107,18 +101,22 @@ struct PuzzleCell: View {
     private var userInputColor: Color {
         if cell.isError {
             return CryptogramTheme.Colors.error
-        } else if isCompleted {
-            return .gray // Or use CryptogramTheme.Colors.text.opacity(0.5) for a muted effect
+        } else if animateCompletionBorder {
+            return CryptogramTheme.Colors.success  // flash green on completion
+        } else if effectiveCompleted {
+            return .gray // muted when completed
         } else {
             return CryptogramTheme.Colors.text
         }
     }
-    
+
     private var textColor: Color {
         if cell.isError {
             return CryptogramTheme.Colors.error
-        } else if isCompleted {
-            return CryptogramTheme.Colors.success
+        } else if animateCompletionBorder {
+            return CryptogramTheme.Colors.success  // flash green on completion
+        } else if effectiveCompleted {
+            return CryptogramTheme.Colors.success // steady green when completed
         } else {
             return CryptogramTheme.Colors.text
         }
@@ -129,7 +127,9 @@ struct PuzzleCell: View {
             return CryptogramTheme.Colors.selectedBorder
         } else if cell.isError {
             return CryptogramTheme.Colors.error
-        } else if isCompleted {
+        } else if animateCompletionBorder {
+            return CryptogramTheme.Colors.success  // flash green on completion
+        } else if effectiveCompleted {
             return CryptogramTheme.Colors.success
         } else {
             return CryptogramTheme.Colors.border
