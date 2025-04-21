@@ -19,7 +19,7 @@ class PuzzleViewModel: ObservableObject {
     @Published var completedLetters: Set<String> = [] // Set of encoded letters that are completed (all cells filled, normal mode only)
     @Published var cellsToAnimate: Set<UUID> = [] // Set of cell IDs to animate completion for
     @Published var hasUserEngaged: Bool = false // Track if the user has interacted with the puzzle yet
-    @Published var showCompletedHighlights: Bool = true // Toggle for displaying completed‑letter highlights
+    @Published var showCompletedHighlights: Bool = false // Toggle for displaying completed‑letter highlights
     
     // Add letter mapping to track and enforce cryptogram rules
     private var letterMapping: [String: String] = [:]

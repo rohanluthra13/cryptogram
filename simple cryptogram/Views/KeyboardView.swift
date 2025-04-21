@@ -99,14 +99,21 @@ struct KeyboardView: View {
         Button {
             viewModel.showCompletedHighlights.toggle()
         } label: {
-            Image(systemName: viewModel.showCompletedHighlights ? "eye" : "eye.slash")
-                .font(.system(size: 18, weight: .light))
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 16, weight: .light))
                 .frame(height: keyHeight)
                 .frame(minWidth: 0, maxWidth: .infinity)
-                .foregroundColor(CryptogramTheme.Colors.text)
+                .foregroundColor(Color(hex: "555555")) // Always gray
                 .cornerRadius(5)
                 .accessibilityLabel("Toggle Completed Highlights")
         }
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(viewModel.showCompletedHighlights ? CryptogramTheme.Colors.success.opacity(0.15) : Color(.systemGray5))
+                .frame(width: keyHeight * 0.55, height: keyHeight * 0.7)
+                .shadow(color: Color.black.opacity(0.13), radius: 2, x: 0, y: 1)
+        )
+        .frame(width: keyHeight * 0.7, height: keyHeight * 0.7)
     }
 }
 

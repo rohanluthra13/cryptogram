@@ -190,7 +190,7 @@ struct PuzzleView: View {
                                         .foregroundColor(CryptogramTheme.Colors.text)
                                 }
                                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                                .padding(.bottom, 240)
+                                .padding(.bottom, 250)
                             }
                             .transition(.opacity)
                         } else if viewModel.isFailed && !showSettings {

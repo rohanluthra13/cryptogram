@@ -259,11 +259,12 @@ struct HStackWidthPreferenceKey: PreferenceKey {
     }
 }
 
-#Preview {
-    SettingsContentView()
-        .padding()
-        .background(Color(hex: "#f8f8f8"))
-        .environmentObject(PuzzleViewModel())
-        .environmentObject(ThemeManager())
-        .environmentObject(SettingsViewModel())
-}
+// Replace #Preview with @Preview if using the standard SwiftUI preview provider, or comment/remove if ambiguous or unsupported.
+// #Preview {
+//     SettingsContentView()
+//         .padding()
+//         .background(Color(hex: "#f8f8f8"))
+//         .environmentObject(PuzzleViewModel())
+//         .environmentObject(ThemeManager())
+//         .environmentObject(SettingsViewModel())
+// }
