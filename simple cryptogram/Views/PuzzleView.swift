@@ -60,39 +60,21 @@ struct PuzzleView: View {
                     
                     // Right: settings & stats buttons
                     VStack(alignment: .trailing, spacing: 2) {
-                        Button(action: {
-                            withAnimation {
-                                if showStatsOverlay {
-                                    showStatsOverlay = false
-                                    showSettings = true
-                                } else {
-                                    showSettings.toggle()
-                                }
-                            }
-                        }) {
-                            Image(systemName: "gearshape")
+                        Button(action: {}) {
+                            Image(systemName: "calendar")
                                 .font(.title3)
                                 .foregroundColor(CryptogramTheme.Colors.text)
                                 .opacity(0.7)
                                 .frame(width: 44, height: 44)
-                                .accessibilityLabel("Settings")
+                                .accessibilityLabel("Calendar")
                         }
-                        Button(action: {
-                            withAnimation {
-                                if showSettings {
-                                    showSettings = false
-                                    showStatsOverlay = true
-                                } else {
-                                    showStatsOverlay.toggle()
-                                }
-                            }
-                        }) {
-                            Image(systemName: "chart.bar")
-                                .font(.system(size: 17))
+                        Button(action: {}) {
+                            Image(systemName: "questionmark.circle")
+                                .font(.system(size: 20))
                                 .foregroundColor(CryptogramTheme.Colors.text)
                                 .opacity(0.7)
                                 .frame(width: 44, height: 44)
-                                .accessibilityLabel("Puzzle Stats")
+                                .accessibilityLabel("Help")
                         }
                     }
                     .frame(minWidth: 0, maxWidth: .infinity, alignment: .trailing)
