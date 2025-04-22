@@ -60,7 +60,9 @@ struct PuzzleView: View {
                     
                     // Right: settings & stats buttons
                     VStack(alignment: .trailing, spacing: 2) {
-                        Button(action: {}) {
+                        Button(action: {
+                            viewModel.loadDailyPuzzle()
+                        }) {
                             Image(systemName: "calendar")
                                 .font(.title3)
                                 .foregroundColor(CryptogramTheme.Colors.text)

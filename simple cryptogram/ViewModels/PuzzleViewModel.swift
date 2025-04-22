@@ -790,4 +790,13 @@ class PuzzleViewModel: ObservableObject {
     func resetAllProgress() {
         progressStore.clearAllProgress()
     }
+    
+    /// Loads today's daily puzzle from the database and starts it (if available)
+    func loadDailyPuzzle() {
+        if let puzzle = databaseService.fetchDailyPuzzle(encodingType: encodingType) {
+            startNewPuzzle(puzzle: puzzle)
+        } else {
+            print("No daily puzzle found for today.")
+        }
+    }
 }

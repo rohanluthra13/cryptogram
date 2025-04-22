@@ -16,6 +16,7 @@ class DatabaseService {
         let databaseFileName = "quotes.db"
         // Path to the app's Documents directory
         let documentsURL = try! fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        print("[DatabaseService] Documents directory: \(documentsURL.path)")
         let destinationURL = documentsURL.appendingPathComponent(databaseFileName)
 
         // Path to the bundled database in the app bundle
@@ -201,6 +202,59 @@ class DatabaseService {
             }
         } catch {
             print("Error fetching author: \(error)")
+        }
+        return nil
+    }
+    
+    /// Fetch the daily puzzle for a given date (default: today)
+    func fetchDailyPuzzle(for date: Date = Date(), encodingType: String = "Letters") -> Puzzle? {
+        guard let db = _db else {
+            print("Error: Database not initialized")
+            return nil
+        }
+        // Format date as yyyy-MM-dd
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let dateString = dateFormatter.string(from: date)
+        do {
+            let dailyPuzzlesTable = Table("daily_puzzles")
+            let quotesTable = Table("quotes")
+            let encodedQuotesTable = Table("encoded_quotes")
+            let id = Expression<Int>("id")
+            let quoteId = Expression<Int>("quote_id")
+            let puzzleDate = Expression<String>("puzzle_date")
+            let quoteText = Expression<String>("quote_text")
+            let author = Expression<String>("author")
+            let length = Expression<Int>("length")
+            let difficulty = Expression<String>("difficulty")
+            let createdAt = Expression<String>("created_at")
+            let encodedQuoteId = Expression<Int>("quote_id")
+            let letterEncoded = Expression<String>("letter_encoded")
+            let _ = Expression<String>("letter_key")
+            let numberEncoded = Expression<String>("number_encoded")
+            let _ = Expression<String>("number_key")
+
+            // Find the daily puzzle for the specified date
+            if let dailyRow = try db.pluck(dailyPuzzlesTable.filter(puzzleDate == dateString)) {
+                let qid = dailyRow[quoteId]
+                // Get the quote row
+                if let quoteRow = try db.pluck(quotesTable.filter(id == qid)),
+                   let encodedRow = try db.pluck(encodedQuotesTable.filter(encodedQuoteId == qid)) {
+                    // Select the encoded text based on encoding type
+                    let encodedText = encodingType == "Numbers" ? encodedRow[numberEncoded] : encodedRow[letterEncoded]
+                    return Puzzle(
+                        id: UUID(uuidString: String(qid)) ?? UUID(),
+                        encodedText: encodedText,
+                        solution: quoteRow[quoteText],
+                        hint: "Author: \(quoteRow[author])",
+                        author: quoteRow[author],
+                        difficulty: quoteRow[difficulty],
+                        length: quoteRow[length]
+                    )
+                }
+            }
+        } catch {
+            print("Error fetching daily puzzle: \(error.localizedDescription)")
         }
         return nil
     }
