@@ -53,7 +53,7 @@ struct KeyboardView: View {
         .padding(.horizontal, 4)
         .frame(maxWidth: .infinity)  // Use all available width
         .frame(height: keyHeight * 3 + rowSpacing * 2 + 8) // Fixed height based on contents
-        .padding(.bottom, 4)
+        .padding(.bottom, 0)
         .animation(.easeInOut(duration: 0.25), value: completedLetters) // Animate changes to completedLetters
     }
     

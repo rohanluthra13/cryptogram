@@ -97,7 +97,7 @@ struct NavigationBarView: View {
         .padding(.top, 8)
         .padding(.bottom, 4)
         .frame(maxWidth: .infinity)
-        .background(CryptogramTheme.Colors.background)
+        // .background(CryptogramTheme.Colors.background) // Removed explicit background for system default
     }
     
     // Center layout (current implementation)
@@ -163,7 +163,7 @@ struct NavigationBarView: View {
         .padding(.top, 8)
         .padding(.bottom, 4)
         .frame(maxWidth: .infinity)
-        .background(CryptogramTheme.Colors.background)
+        // .background(CryptogramTheme.Colors.background) // Removed explicit background for system default
     }
     
     // Right layout (initially identical to current/center layout)
@@ -232,7 +232,7 @@ struct NavigationBarView: View {
         .padding(.top, 8)
         .padding(.bottom, 4)
         .frame(maxWidth: .infinity)
-        .background(CryptogramTheme.Colors.background)
+        // .background(CryptogramTheme.Colors.background) // Removed explicit background for system default
     }
 }
 

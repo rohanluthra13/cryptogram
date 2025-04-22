@@ -73,6 +73,7 @@ struct PuzzleView: View {
                             Image(systemName: "gearshape")
                                 .font(.title3)
                                 .foregroundColor(CryptogramTheme.Colors.text)
+                                .opacity(0.7)
                                 .frame(width: 44, height: 44)
                                 .accessibilityLabel("Settings")
                         }
@@ -89,6 +90,7 @@ struct PuzzleView: View {
                             Image(systemName: "chart.bar")
                                 .font(.system(size: 17))
                                 .foregroundColor(CryptogramTheme.Colors.text)
+                                .opacity(0.7)
                                 .frame(width: 44, height: 44)
                                 .accessibilityLabel("Puzzle Stats")
                         }
@@ -98,150 +100,114 @@ struct PuzzleView: View {
                 .padding(.top, 8)
                 .padding(.horizontal, 16)
                 .frame(maxWidth: .infinity)
-                Spacer()
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .zIndex(100)
 
-            // --- Main Content ---
-            if viewModel.currentPuzzle != nil {
-                VStack(spacing: 0) {
-                    Group {
-                        ScrollView {
-                            WordAwarePuzzleGrid()
-                                .environmentObject(viewModel)
-                                .padding(.horizontal, 16)
-                        }
-                        .layoutPriority(1)
-                        .frame(maxWidth: .infinity)
-                        .frame(maxHeight: UIScreen.main.bounds.height * 0.45)
-                        .padding(.horizontal, 12)
-                        .padding(.top, 60)
-                        .padding(.bottom, 12)
-
-                        Rectangle()
-                            .fill(Color.clear)
-                            .frame(height: 20)
-                            .allowsHitTesting(false)
-                    }
-                    .opacity(isSwitchingPuzzle ? 0 : 1)
-                    .animation(.easeInOut(duration: 0.5), value: isSwitchingPuzzle)
-
-                    // Navigation Bar with all controls in a single layer
-                    NavigationBarView(
-                        onMoveLeft: { viewModel.moveToAdjacentCell(direction: -1) },
-                        onMoveRight: { viewModel.moveToAdjacentCell(direction: 1) },
-                        onTogglePause: viewModel.togglePause,
-                        onNextPuzzle: {
-                            withAnimation(.easeInOut(duration: 0.5)) { isSwitchingPuzzle = true }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                                viewModel.refreshPuzzleWithCurrentSettings()
-                                withAnimation(.easeInOut(duration: 0.5)) { isSwitchingPuzzle = false }
-                            }
-                        },
-                        onTryAgain: { 
-                            viewModel.reset()
-                            // Re-apply difficulty settings to the same puzzle
-                            if let currentPuzzle = viewModel.currentPuzzle {
-                                viewModel.startNewPuzzle(puzzle: currentPuzzle)
-                            }
-                        },
-                        isPaused: viewModel.isPaused,
-                        isFailed: viewModel.isFailed,
-                        showCenterButtons: true, // Show all buttons in the nav bar
-                        layout: layoutBinding
-                    )
-                    // Keyboard View - fixed at bottom
-                    KeyboardView(
-                        onLetterPress: { letter in
-                            if let index = viewModel.selectedCellIndex {
-                                viewModel.inputLetter(String(letter), at: index)
-                            }
-                        },
-                        onBackspacePress: { 
-                            if let index = viewModel.selectedCellIndex {
-                                viewModel.handleDelete(at: index)
-                            }
-                        },
-                        completedLetters: viewModel.completedLetters
-                    )
-                    .padding(.bottom, 4)
-                    .padding(.horizontal, 4)
-                    .frame(maxWidth: .infinity)
-                    .disabled(viewModel.isPaused || viewModel.isComplete)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(CryptogramTheme.Colors.background)
-                .opacity(showCompletionView ? 0 : 1)
-                .zIndex(10)
-                .overlay(
-                    // Overlay for paused state (not completion which is handled separately)
-                    Group {
-                        if viewModel.isPaused && !showSettings {
-                            ZStack {
-                                // Semi-transparent overlay that allows clicks to pass through to navigation bar
-                                Color.black.opacity(0.5)
-                                    .edgesIgnoringSafeArea(.all)
-                                    .allowsHitTesting(false)  // This lets clicks pass through
-                                // Pause text
-                                Button(action: { viewModel.togglePause() }) {
-                                    Text("paused")
-                                        .font(.headline)
-                                        .foregroundColor(CryptogramTheme.Colors.text)
-                                }
-                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                                .padding(.bottom, 250)
-                            }
-                            .transition(.opacity)
-                        } else if viewModel.isFailed && !showSettings {
-                            ZStack {
-                                // Semi-transparent overlay for game over
-                                Color.black.opacity(0.5)
-                                    .edgesIgnoringSafeArea(.all)
-                                    .allowsHitTesting(false)  // This lets clicks pass through to navigation bar
-                                // Game over text - with typing animation
-                                Text(displayedGameOver)
-                                    .font(.headline)
-                                    .foregroundColor(CryptogramTheme.Colors.text)
-                                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                                    .padding(.bottom, 240)
-                                    .onAppear {
-                                        startTypewriterWithDelay(1.2)
-                                    }
-                            }
-                            .transition(.opacity)
-                        } else if showSettings {
-                            // Full-screen settings overlay
-                            ZStack {
-                                // Background that covers the entire screen and can be tapped to dismiss
-                                CryptogramTheme.Colors.surface
-                                    .opacity(0.95) // Same opacity for both modes
-                                    .edgesIgnoringSafeArea(.all)
-                                    .onTapGesture {
-                                        print("Tapped background, closing settings")
-                                        showSettings = false
-                                    }
-                                    .zIndex(10) // Ensure overlay is above other elements
-                                // Settings content centered on the overlay
-                                SettingsContentView()
-                                    .padding(.horizontal, 24)
-                                    .padding(.vertical, 20)
-                                    .contentShape(Rectangle()) // Prevent dismissal when tapping content
-                                    .onTapGesture { 
-                                        print("Tapped settings content")
-                                    }
+            // --- Main Content Block (puzzle, nav bar, keyboard) pushed to bottom ---
+            VStack(spacing: 0) {
+                Spacer(minLength: 0)
+                if viewModel.currentPuzzle != nil {
+                    VStack(spacing: 0) {
+                        Group {
+                            ScrollView {
+                                WordAwarePuzzleGrid()
                                     .environmentObject(viewModel)
-                                    .environmentObject(themeManager)
-                                    .environmentObject(settingsViewModel)
-                                    .zIndex(11) // Above the background
+                                    .padding(.horizontal, 16)
                             }
-                            .zIndex(50) // Below top bar
+                            .layoutPriority(1)
+                            .frame(maxWidth: .infinity)
+                            .frame(maxHeight: UIScreen.main.bounds.height * 0.45)
+                            .padding(.horizontal, 12)
+                            .padding(.top, 60)
+                            .padding(.bottom, 12)
+
+                            Rectangle()
+                                .fill(Color.clear)
+                                .frame(height: 20)
+                                .allowsHitTesting(false)
                         }
+                        .opacity(isSwitchingPuzzle ? 0 : 1)
+                        .animation(.easeInOut(duration: 0.5), value: isSwitchingPuzzle)
+
+                        // Navigation Bar with all controls in a single layer
+                        NavigationBarView(
+                            onMoveLeft: { viewModel.moveToAdjacentCell(direction: -1) },
+                            onMoveRight: { viewModel.moveToAdjacentCell(direction: 1) },
+                            onTogglePause: viewModel.togglePause,
+                            onNextPuzzle: {
+                                withAnimation(.easeInOut(duration: 0.5)) { isSwitchingPuzzle = true }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                                    viewModel.refreshPuzzleWithCurrentSettings()
+                                    withAnimation(.easeInOut(duration: 0.5)) { isSwitchingPuzzle = false }
+                                }
+                            },
+                            onTryAgain: { 
+                                viewModel.reset()
+                                // Re-apply difficulty settings to the same puzzle
+                                if let currentPuzzle = viewModel.currentPuzzle {
+                                    viewModel.startNewPuzzle(puzzle: currentPuzzle)
+                                }
+                            },
+                            isPaused: viewModel.isPaused,
+                            isFailed: viewModel.isFailed,
+                            showCenterButtons: true, // Show all buttons in the nav bar
+                            layout: layoutBinding
+                        )
+                        // Keyboard View
+                        KeyboardView(
+                            onLetterPress: { letter in
+                                if let index = viewModel.selectedCellIndex {
+                                    viewModel.inputLetter(String(letter), at: index)
+                                }
+                            },
+                            onBackspacePress: { 
+                                if let index = viewModel.selectedCellIndex {
+                                    viewModel.handleDelete(at: index)
+                                }
+                            },
+                            completedLetters: viewModel.completedLetters
+                        )
+                        .padding(.bottom, 0)
+                        .padding(.horizontal, 4)
+                        .frame(maxWidth: .infinity)
                     }
-                )
-            } else {
-                LoadingView(message: "Loading your puzzle...")
+                    .frame(maxWidth: .infinity)
+                }
+                // --- Bottom Banner: Settings and Chart Icons ---
+                HStack {
+                    Button(action: {
+                        // TODO: Hook up to stats/chart action
+                        print("Chart icon tapped")
+                    }) {
+                        Image(systemName: "chart.bar")
+                            .font(.system(size: 20))
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                            .opacity(0.7)
+                            .frame(width: 44, height: 44)
+                            .accessibilityLabel("Stats/Chart")
+                    }
+                    Spacer()
+                    Button(action: {
+                        // TODO: Hook up to settings action
+                        print("Settings icon tapped")
+                    }) {
+                        Image(systemName: "gearshape")
+                            .font(.system(size:24))
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                            .opacity(0.7)
+                            .frame(width: 44, height: 44)
+                            .accessibilityLabel("Settings")
+                    }
+                }
+                .frame(height: 48, alignment: .bottom)
+                .padding(.horizontal, 64)
+                .frame(maxWidth: .infinity)
+                .ignoresSafeArea(edges: .bottom)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            .zIndex(10)
+
             // Completion overlay - conditionally shown
             if showCompletionView {
                 PuzzleCompletionView(showCompletionView: $showCompletionView)
@@ -265,6 +231,69 @@ struct PuzzleView: View {
                 .transition(.opacity)
                 .zIndex(50) // Below top bar
                 .animation(.easeInOut(duration: 0.3), value: showStatsOverlay)
+            }
+            // Overlay for paused state (not completion which is handled separately)
+            Group {
+                if viewModel.isPaused && !showSettings {
+                    ZStack {
+                        // Semi-transparent overlay that allows clicks to pass through to navigation bar
+                        Color.black.opacity(0.5)
+                            .edgesIgnoringSafeArea(.all)
+                            .allowsHitTesting(false)  // This lets clicks pass through
+                        // Pause text
+                        Button(action: { viewModel.togglePause() }) {
+                            Text("paused")
+                                .font(.headline)
+                                .foregroundColor(CryptogramTheme.Colors.text)
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                        .padding(.bottom, 250)
+                    }
+                    .transition(.opacity)
+                } else if viewModel.isFailed && !showSettings {
+                    ZStack {
+                        // Semi-transparent overlay for game over
+                        Color.black.opacity(0.5)
+                            .edgesIgnoringSafeArea(.all)
+                            .allowsHitTesting(false)  // This lets clicks pass through to navigation bar
+                        // Game over text - with typing animation
+                        Text(displayedGameOver)
+                            .font(.headline)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                            .padding(.bottom, 240)
+                            .onAppear {
+                                startTypewriterWithDelay(1.2)
+                            }
+                    }
+                    .transition(.opacity)
+                } else if showSettings {
+                    // Full-screen settings overlay
+                    ZStack {
+                        // Background that covers the entire screen and can be tapped to dismiss
+                        CryptogramTheme.Colors.surface
+                            .opacity(0.95) // Same opacity for both modes
+                            .edgesIgnoringSafeArea(.all)
+                            .onTapGesture {
+                                print("Tapped background, closing settings")
+                                showSettings = false
+                            }
+                            .zIndex(10) // Ensure overlay is above other elements
+                        // Settings content centered on the overlay
+                        SettingsContentView()
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 20)
+                            .contentShape(Rectangle()) // Prevent dismissal when tapping content
+                            .onTapGesture { 
+                                print("Tapped settings content")
+                            }
+                            .environmentObject(viewModel)
+                            .environmentObject(themeManager)
+                            .environmentObject(settingsViewModel)
+                            .zIndex(11) // Above the background
+                    }
+                    .zIndex(50) // Below top bar
+                }
             }
         }
         .onChange(of: viewModel.isComplete) { oldValue, isComplete in
