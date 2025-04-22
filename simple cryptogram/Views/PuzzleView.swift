@@ -174,36 +174,11 @@ struct PuzzleView: View {
                     }
                     .frame(maxWidth: .infinity)
                 }
-                // --- Bottom Banner: Settings and Chart Icons ---
-                HStack {
-                    Button(action: {
-                        // TODO: Hook up to stats/chart action
-                        print("Chart icon tapped")
-                    }) {
-                        Image(systemName: "chart.bar")
-                            .font(.system(size: 20))
-                            .foregroundColor(CryptogramTheme.Colors.text)
-                            .opacity(0.7)
-                            .frame(width: 44, height: 44)
-                            .accessibilityLabel("Stats/Chart")
-                    }
-                    Spacer()
-                    Button(action: {
-                        // TODO: Hook up to settings action
-                        print("Settings icon tapped")
-                    }) {
-                        Image(systemName: "gearshape")
-                            .font(.system(size:24))
-                            .foregroundColor(CryptogramTheme.Colors.text)
-                            .opacity(0.7)
-                            .frame(width: 44, height: 44)
-                            .accessibilityLabel("Settings")
-                    }
-                }
-                .frame(height: 48, alignment: .bottom)
-                .padding(.horizontal, 64)
-                .frame(maxWidth: .infinity)
-                .ignoresSafeArea(edges: .bottom)
+                // --- Bottom Banner Placeholder (for keyboard spacing) ---
+                Color.clear
+                    .frame(height: 48)
+                    .frame(maxWidth: .infinity)
+                    .ignoresSafeArea(edges: .bottom)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             .zIndex(10)
@@ -295,6 +270,54 @@ struct PuzzleView: View {
                     .zIndex(50) // Below top bar
                 }
             }
+            // --- Persistent Bottom Banner Above All Overlays (with icons) ---
+            VStack {
+                Spacer()
+                HStack {
+                    Button(action: {
+                        withAnimation {
+                            if showStatsOverlay {
+                                showStatsOverlay = false
+                                showSettings = false
+                            } else {
+                                showStatsOverlay.toggle()
+                                showSettings = false
+                            }
+                        }
+                    }) {
+                        Image(systemName: "chart.bar")
+                            .font(.system(size: 20))
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                            .opacity(0.7)
+                            .frame(width: 44, height: 44)
+                            .accessibilityLabel("Stats/Chart")
+                    }
+                    Spacer()
+                    Button(action: {
+                        withAnimation {
+                            if showSettings {
+                                showSettings = false
+                                showStatsOverlay = false
+                            } else {
+                                showSettings.toggle()
+                                showStatsOverlay = false
+                            }
+                        }
+                    }) {
+                        Image(systemName: "gearshape")
+                            .font(.system(size:24))
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                            .opacity(0.7)
+                            .frame(width: 44, height: 44)
+                            .accessibilityLabel("Settings")
+                    }
+                }
+                .frame(height: 48, alignment: .bottom)
+                .padding(.horizontal, 64)
+                .frame(maxWidth: .infinity)
+                .ignoresSafeArea(edges: .bottom)
+            }
+            .zIndex(200)
         }
         .onChange(of: viewModel.isComplete) { oldValue, isComplete in
             if isComplete {
