@@ -59,6 +59,7 @@ class DatabaseService {
         do {
             let quotesTable = Table("quotes")
             let encodedQuotesTable = Table("encoded_quotes")
+            let dailyPuzzlesTable = Table("daily_puzzles")
             
             let id = Expression<Int>("id")
             let quoteText = Expression<String>("quote_text")
@@ -71,10 +72,13 @@ class DatabaseService {
             let _ = Expression<String>("letter_key")
             let numberEncoded = Expression<String>("number_encoded")
             let _ = Expression<String>("number_key")
-            
-            // Start with a random query
-            var randomQuery = quotesTable.select(id, quoteText, author, length, difficulty, createdAt)
-            
+            let dailyQuoteId = Expression<Int>("quote_id")
+
+            // Start with a random query, excluding daily puzzle quotes
+            var randomQuery = quotesTable
+                .select(id, quoteText, author, length, difficulty, createdAt)
+                .filter(!Expression<Bool>("id IN (SELECT quote_id FROM daily_puzzles)"))
+
             // Apply difficulty filter if any are selected, otherwise don't filter (show all)
             if !selectedDifficulties.isEmpty {
                 randomQuery = randomQuery.filter(selectedDifficulties.contains(difficulty))
