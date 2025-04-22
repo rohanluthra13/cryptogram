@@ -95,10 +95,19 @@ struct KeyboardView: View {
                 .font(.system(size: 16, weight: .medium))
                 .frame(height: keyHeight)
                 .frame(minWidth: 0, maxWidth: .infinity)
-                .foregroundColor(isLocked ? Color.gray : (isRemaining ? .green : CryptogramTheme.Colors.text))
+                .foregroundColor(isLocked ? Color.gray : CryptogramTheme.Colors.text)
                 .cornerRadius(5)
                 .accessibilityLabel("Key \(key)")
         }
+        .background(
+            isRemaining ? AnyView(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(CryptogramTheme.Colors.success.opacity(0.15))
+                    .frame(width: keyHeight * 0.55, height: keyHeight * 0.7)
+                    .shadow(color: Color.black.opacity(0.13), radius: 2, x: 0, y: 1)
+            ) : AnyView(Color.clear)
+        )
+        .cornerRadius(5)
         .disabled(isLocked)
         .scaleEffect(isLocked ? 0.95 : 1.0) // Subtle scale animation for lock
         .animation(.easeInOut(duration: 0.25), value: isLocked)
@@ -125,13 +134,13 @@ struct KeyboardView: View {
                 .font(.system(size: 16, weight: .light))
                 .frame(height: keyHeight)
                 .frame(minWidth: 0, maxWidth: .infinity)
-                .foregroundColor(Color(hex: "555555")) // Always gray
+                .foregroundColor(Color(hex: "555555")) // Always gray text
                 .cornerRadius(5)
                 .accessibilityLabel("Show/Hide Letters Remaining")
         }
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(showRemainingLetters ? Color.green.opacity(0.15) : Color(.systemGray5))
+                .fill(showRemainingLetters ? CryptogramTheme.Colors.success.opacity(0.15) : Color(.systemGray5))
                 .frame(width: keyHeight * 0.55, height: keyHeight * 0.7)
                 .shadow(color: Color.black.opacity(0.13), radius: 2, x: 0, y: 1)
         )
