@@ -173,7 +173,7 @@ struct StatsView: View {
             hintCount: 2,
             maxHints: 5,
             mistakeCount: 1,
-            startTime: Date().addingTimeInterval(-125), // 2 minutes and 5 seconds ago
+            startTime: Date(),
             onRequestHint: {},
             isPaused: false,
             viewModel: PuzzleViewModel() // required for UserStatsView
@@ -181,7 +181,7 @@ struct StatsView: View {
         
         Text("Preview of individual components:").padding(.top, 20)
         
-        TimerView(startTime: Date().addingTimeInterval(-125), isPaused: false)
+        TimerView(startTime: Date(), isPaused: false)
             .padding()
         
         MistakesView(mistakeCount: 2)

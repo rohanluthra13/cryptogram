@@ -321,6 +321,12 @@ struct PuzzleView: View {
         .navigationBarHidden(true)
         .animation(.easeIn(duration: 1.0), value: viewModel.isFailed)
         .animation(.easeIn(duration: 0.6), value: viewModel.isPaused)
+        .onAppear {
+            // viewModel.resumeTimer()
+        }
+        .onDisappear {
+            // viewModel.pauseTimer()
+        }
     }
     
     private func formatTime(_ timeInterval: TimeInterval) -> String {

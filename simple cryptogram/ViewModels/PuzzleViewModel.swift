@@ -545,6 +545,7 @@ class PuzzleViewModel: ObservableObject {
     }
     
     func refreshPuzzleWithCurrentSettings() {
+        isDailyPuzzle = false
         // Exclude puzzles already completed by user
         let completedIDs = Set(progressStore.allAttempts().filter { $0.completedAt != nil }.map { $0.puzzleID })
         var nextPuzzle: Puzzle?
@@ -571,6 +572,7 @@ class PuzzleViewModel: ObservableObject {
     }
 
     func loadNewPuzzle() {
+        isDailyPuzzle = false
         completedLetters = [] // Reset completed letters
         print("Loading new puzzle...")
         let selectedDifficulties = UserSettings.selectedDifficulties
@@ -806,23 +808,27 @@ class PuzzleViewModel: ObservableObject {
     
     /// Loads today's daily puzzle from the database and starts it (if available)
     func loadDailyPuzzle() {
+        isDailyPuzzle = true
         let dateStr = Self.currentDateString()
         if let data = UserDefaults.standard.data(forKey: dailyProgressKey(for: dateStr)),
            let progress = try? JSONDecoder().decode(DailyPuzzleProgress.self, from: data),
            let puzzle = databaseService.fetchPuzzleById(progress.quoteId, encodingType: encodingType) {
+            // Saved progress exists: restore from progress, skip animation/pre-fill
             startNewPuzzle(puzzle: puzzle, skipAnimationInit: true)
             loadDailyPuzzleProgress(for: puzzle)
             return
         }
+        // No saved progress: run normal pre-fill logic
         if let puzzle = databaseService.fetchDailyPuzzle(encodingType: encodingType) {
-            startNewPuzzle(puzzle: puzzle, skipAnimationInit: true)
-            loadDailyPuzzleProgress(for: puzzle)
+            startNewPuzzle(puzzle: puzzle, skipAnimationInit: false) // allow pre-fill
+            // Do NOT call loadDailyPuzzleProgress here
         } else {
             print("No daily puzzle found for today.")
         }
     }
     
     // MARK: - Daily Puzzle Progress Persistence
+    private var isDailyPuzzle: Bool = false
     private func dailyProgressKey(for date: String) -> String {
         return "dailyPuzzleProgress-\(date)"
     }
@@ -862,6 +868,7 @@ class PuzzleViewModel: ObservableObject {
         session.mistakeCount = progress.mistakeCount
         session.startTime = progress.startTime
         session.endTime = progress.endTime
+        session.isComplete = progress.isCompleted
         if progress.isCompleted {
             session.markComplete()
         }
@@ -885,6 +892,8 @@ class PuzzleViewModel: ObservableObject {
     
     // Call this after every relevant user action (input, hint, etc.)
     private func handleUserAction() {
-        saveDailyPuzzleProgress()
+        if isDailyPuzzle {
+            saveDailyPuzzleProgress()
+        }
     }
 }
