@@ -105,6 +105,7 @@ struct Puzzle: Identifiable {
             }
             
             let cell = CryptogramCell(
+                quoteId: quoteId,
                 position: processedCells.count,
                 encodedChar: encodedChar,
                 solutionChar: solutionChar,
@@ -125,8 +126,10 @@ struct Puzzle: Identifiable {
                     // Add a cell for any non-alphanumeric character we encounter in the solution
                     if !solutionArray[solutionIndex].isLetter {
                         finalCells.append(CryptogramCell(
+                            quoteId: quoteId,
                             position: finalCells.count,
                             encodedChar: String(solutionArray[solutionIndex]),
+                            solutionChar: nil,
                             isSymbol: true
                         ))
                     }
@@ -144,8 +147,10 @@ struct Puzzle: Identifiable {
         while solutionIndex < solutionArray.count {
             if !solutionArray[solutionIndex].isLetter {
                 finalCells.append(CryptogramCell(
+                    quoteId: quoteId,
                     position: finalCells.count,
                     encodedChar: String(solutionArray[solutionIndex]),
+                    solutionChar: nil,
                     isSymbol: true
                 ))
             }
@@ -203,6 +208,7 @@ struct Puzzle: Identifiable {
                 
                 if solutionIndex < solutionArray.count {
                     cells.append(CryptogramCell(
+                        quoteId: quoteId,
                         position: position,
                         encodedChar: component,
                         solutionChar: solutionArray[solutionIndex],
@@ -225,6 +231,7 @@ struct Puzzle: Identifiable {
                     }
                 
                     cells.append(CryptogramCell(
+                        quoteId: quoteId,
                         position: position,
                         encodedChar: component,
                         solutionChar: hasNumbers && solutionIndex < solutionArray.count ? solutionArray[solutionIndex] : nil,
@@ -250,8 +257,10 @@ struct Puzzle: Identifiable {
                     // Add cell for any non-alphanumeric character we encounter in the solution
                     if !solutionArray[solutionIndex].isLetter {
                         finalCells.append(CryptogramCell(
+                            quoteId: quoteId,
                             position: finalCells.count,
                             encodedChar: String(solutionArray[solutionIndex]),
+                            solutionChar: nil,
                             isSymbol: true
                         ))
                     }
@@ -270,8 +279,10 @@ struct Puzzle: Identifiable {
         while solutionIndex < solutionArray.count {
             if !solutionArray[solutionIndex].isLetter {
                 finalCells.append(CryptogramCell(
+                    quoteId: quoteId,
                     position: finalCells.count,
                     encodedChar: String(solutionArray[solutionIndex]),
+                    solutionChar: nil,
                     isSymbol: true
                 ))
             }

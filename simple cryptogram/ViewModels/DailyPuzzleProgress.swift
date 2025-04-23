@@ -9,6 +9,7 @@ struct DailyPuzzleProgress: Codable {
     var startTime: Date?        // Track session start time
     var endTime: Date?          // Track session end time (if complete)
     var isCompleted: Bool
+    var blueShadedCellIDs: [UUID]? // Persist blue-shaded (animated) cell IDs
     
     var elapsedTime: TimeInterval? {
         guard let start = startTime else { return nil }

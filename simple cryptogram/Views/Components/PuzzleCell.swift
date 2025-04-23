@@ -40,6 +40,11 @@ struct PuzzleCell: View {
                             .frame(width: 24, height: 28)
                             .foregroundColor(Color.green.opacity(0.15))
                             .cornerRadius(2)
+                    } else if viewModel.cellsToAnimate.contains(cell.id) {
+                        Rectangle()
+                            .frame(width: 24, height: 28)
+                            .foregroundColor(CryptogramTheme.Colors.preFilledBackground)
+                            .cornerRadius(2)
                     }
                     // Fill animation background
                     if cellHighlightAmount > 0 {
@@ -139,6 +144,7 @@ struct PuzzleCell: View {
     VStack(spacing: 20) {
         PuzzleCell(
             cell: CryptogramCell(
+                quoteId: 0,
                 position: 0,
                 encodedChar: "A",
                 solutionChar: "X",
@@ -154,6 +160,7 @@ struct PuzzleCell: View {
         
         PuzzleCell(
             cell: CryptogramCell(
+                quoteId: 0,
                 position: 1,
                 encodedChar: "26",
                 solutionChar: "Y",
@@ -169,6 +176,7 @@ struct PuzzleCell: View {
         
         PuzzleCell(
             cell: CryptogramCell(
+                quoteId: 0,
                 position: 2,
                 encodedChar: "C",
                 solutionChar: "Z",
@@ -184,6 +192,7 @@ struct PuzzleCell: View {
         
         PuzzleCell(
             cell: CryptogramCell(
+                quoteId: 0,
                 position: 3,
                 encodedChar: "14",
                 solutionChar: "W",
@@ -199,6 +208,7 @@ struct PuzzleCell: View {
         
         PuzzleCell(
             cell: CryptogramCell(
+                quoteId: 0,
                 position: 4,
                 encodedChar: "14",
                 solutionChar: "W",

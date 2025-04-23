@@ -223,19 +223,26 @@ class PuzzleViewModel: ObservableObject {
     
     // MARK: - Public Methods
     
-    func startNewPuzzle(puzzle: Puzzle) {
+    func startNewPuzzle(puzzle: Puzzle, skipAnimationInit: Bool = false) {
+        print("[DEBUG] startNewPuzzle called, skipAnimationInit: \(skipAnimationInit)")
         completedLetters = [] // Reset completed letters
         currentPuzzle = puzzle
         cells = puzzle.createCells(encodingType: encodingType)
         session = PuzzleSession()
         session = session
         
-        // Animate all completed cells on puzzle load
-        cellsToAnimate = Set(cells.filter { completedLetters.contains($0.encodedChar) }.map { $0.id })
+        if !skipAnimationInit {
+            print("[DEBUG] Initializing cellsToAnimate for non-daily puzzle")
+            // Only randomize blue shading for non-daily puzzles
+            cellsToAnimate = Set(cells.filter { completedLetters.contains($0.encodedChar) }.map { $0.id })
+        } else {
+            print("[DEBUG] Skipping cellsToAnimate initialization for daily puzzle")
+            // For daily puzzle, do not add any new blue shading if restoring from progress
+        }
         
         // --- Add Difficulty-based reveal logic --- 
         let difficulty = UserSettings.currentMode
-        if difficulty == .normal {
+        if difficulty == .normal && !skipAnimationInit {
             let solution = puzzle.solution.uppercased()
             let uniqueLetters = Set(solution.filter { $0.isLetter })
 
@@ -803,12 +810,12 @@ class PuzzleViewModel: ObservableObject {
         if let data = UserDefaults.standard.data(forKey: dailyProgressKey(for: dateStr)),
            let progress = try? JSONDecoder().decode(DailyPuzzleProgress.self, from: data),
            let puzzle = databaseService.fetchPuzzleById(progress.quoteId, encodingType: encodingType) {
-            startNewPuzzle(puzzle: puzzle)
+            startNewPuzzle(puzzle: puzzle, skipAnimationInit: true)
             loadDailyPuzzleProgress(for: puzzle)
             return
         }
         if let puzzle = databaseService.fetchDailyPuzzle(encodingType: encodingType) {
-            startNewPuzzle(puzzle: puzzle)
+            startNewPuzzle(puzzle: puzzle, skipAnimationInit: true)
             loadDailyPuzzleProgress(for: puzzle)
         } else {
             print("No daily puzzle found for today.")
@@ -833,7 +840,8 @@ class PuzzleViewModel: ObservableObject {
             mistakeCount: session.mistakeCount,
             startTime: session.startTime,
             endTime: session.endTime,
-            isCompleted: session.isComplete
+            isCompleted: session.isComplete,
+            blueShadedCellIDs: Array(cellsToAnimate)
         )
         if let data = try? JSONEncoder().encode(progress) {
             UserDefaults.standard.set(data, forKey: dailyProgressKey(for: dateStr))
@@ -857,6 +865,15 @@ class PuzzleViewModel: ObservableObject {
         if progress.isCompleted {
             session.markComplete()
         }
+        // Restore blue shading state
+        if let blueIDs = progress.blueShadedCellIDs {
+            print("[DEBUG] Restoring cellsToAnimate from progress: \(blueIDs)")
+            cellsToAnimate = Set(blueIDs)
+        } else {
+            print("[DEBUG] No blueShadedCellIDs in progress, clearing cellsToAnimate")
+            cellsToAnimate = []
+        }
+        print("[DEBUG] cellsToAnimate after restore: \(cellsToAnimate)")
     }
 
     private static func currentDateString() -> String {
