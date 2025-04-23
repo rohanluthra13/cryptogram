@@ -5,6 +5,7 @@ import Foundation
 
 struct Puzzle: Identifiable {
     let id: UUID
+    let quoteId: Int // Database quote ID for daily puzzle progress
     let encodedText: String
     let solution: String
     let hint: String
@@ -14,6 +15,7 @@ struct Puzzle: Identifiable {
     
     init(
         id: UUID = UUID(),
+        quoteId: Int,
         encodedText: String,
         solution: String,
         hint: String,
@@ -22,6 +24,7 @@ struct Puzzle: Identifiable {
         length: Int? = nil
     ) {
         self.id = id
+        self.quoteId = quoteId
         self.encodedText = encodedText
         self.solution = solution
         self.hint = hint

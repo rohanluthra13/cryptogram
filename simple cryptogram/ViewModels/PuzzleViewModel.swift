@@ -190,6 +190,7 @@ class PuzzleViewModel: ObservableObject {
                 print("Failed to load puzzle from database, using fallback")
                 // Fallback to a default puzzle if database is not available
                 self.currentPuzzle = Puzzle(
+                    quoteId: 0,
                     encodedText: "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
                     solution: "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
                     hint: "A pangram containing every letter of the alphabet"
@@ -431,6 +432,7 @@ class PuzzleViewModel: ObservableObject {
         if modifyCells(at: index, operation: .input(letter)) {
             moveToNextCell()
         }
+        handleUserAction()
     }
 
     func handleDelete(at index: Int? = nil) {
@@ -439,6 +441,7 @@ class PuzzleViewModel: ObservableObject {
             _ = modifyCells(at: targetIndex, operation: .delete)
             updateCompletedLetters()
         }
+        handleUserAction()
     }
 
     func revealCell(at index: Int? = nil) {
@@ -471,6 +474,7 @@ class PuzzleViewModel: ObservableObject {
         
         _ = modifyCells(at: targetIndex, operation: .reveal)
         selectNextUnrevealedCell(after: targetIndex)
+        handleUserAction()
     }
     
     func reset() {
@@ -525,6 +529,7 @@ class PuzzleViewModel: ObservableObject {
             }
         }
         // --- End Difficulty Logic ---
+        handleUserAction()
     }
     
     func togglePause() {
@@ -727,6 +732,7 @@ class PuzzleViewModel: ObservableObject {
                 generator.notificationOccurred(.error)
             }
         }
+        handleUserAction()
     }
     
     private func updateCompletedLetters() {
@@ -793,10 +799,75 @@ class PuzzleViewModel: ObservableObject {
     
     /// Loads today's daily puzzle from the database and starts it (if available)
     func loadDailyPuzzle() {
+        let dateStr = Self.currentDateString()
+        if let data = UserDefaults.standard.data(forKey: dailyProgressKey(for: dateStr)),
+           let progress = try? JSONDecoder().decode(DailyPuzzleProgress.self, from: data),
+           let puzzle = databaseService.fetchPuzzleById(progress.quoteId, encodingType: encodingType) {
+            startNewPuzzle(puzzle: puzzle)
+            loadDailyPuzzleProgress(for: puzzle)
+            return
+        }
         if let puzzle = databaseService.fetchDailyPuzzle(encodingType: encodingType) {
             startNewPuzzle(puzzle: puzzle)
+            loadDailyPuzzleProgress(for: puzzle)
         } else {
             print("No daily puzzle found for today.")
         }
+    }
+    
+    // MARK: - Daily Puzzle Progress Persistence
+    private func dailyProgressKey(for date: String) -> String {
+        return "dailyPuzzleProgress-\(date)"
+    }
+
+    private func saveDailyPuzzleProgress() {
+        guard let puzzle = currentPuzzle else { return }
+        let dateStr = Self.currentDateString()
+        let userInputs = cells.map { $0.userInput }
+        let quoteId = puzzle.quoteId
+        let progress = DailyPuzzleProgress(
+            date: dateStr,
+            quoteId: quoteId,
+            userInputs: userInputs,
+            hintCount: session.hintCount,
+            mistakeCount: session.mistakeCount,
+            startTime: session.startTime,
+            endTime: session.endTime,
+            isCompleted: session.isComplete
+        )
+        if let data = try? JSONEncoder().encode(progress) {
+            UserDefaults.standard.set(data, forKey: dailyProgressKey(for: dateStr))
+        }
+    }
+
+    private func loadDailyPuzzleProgress(for puzzle: Puzzle) {
+        let dateStr = Self.currentDateString()
+        let quoteId = puzzle.quoteId
+        guard let data = UserDefaults.standard.data(forKey: dailyProgressKey(for: dateStr)),
+              let progress = try? JSONDecoder().decode(DailyPuzzleProgress.self, from: data),
+              progress.quoteId == quoteId else { return }
+        // Restore state
+        for (i, input) in progress.userInputs.enumerated() where i < cells.count {
+            cells[i].userInput = input
+        }
+        session.hintCount = progress.hintCount
+        session.mistakeCount = progress.mistakeCount
+        session.startTime = progress.startTime
+        session.endTime = progress.endTime
+        if progress.isCompleted {
+            session.markComplete()
+        }
+    }
+
+    private static func currentDateString() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone.current
+        return formatter.string(from: Date())
+    }
+    
+    // Call this after every relevant user action (input, hint, etc.)
+    private func handleUserAction() {
+        saveDailyPuzzleProgress()
     }
 }

@@ -56,12 +56,9 @@ class DatabaseService {
             print("Error: Database not initialized")
             return nil
         }
-        
         do {
             let quotesTable = Table("quotes")
             let encodedQuotesTable = Table("encoded_quotes")
-            let dailyPuzzlesTable = Table("daily_puzzles")
-            
             let id = Expression<Int>("id")
             let quoteText = Expression<String>("quote_text")
             let author = Expression<String>("author")
@@ -73,42 +70,24 @@ class DatabaseService {
             let _ = Expression<String>("letter_key")
             let numberEncoded = Expression<String>("number_encoded")
             let _ = Expression<String>("number_key")
-            let dailyQuoteId = Expression<Int>("quote_id")
-
             // Start with a random query, excluding daily puzzle quotes
             var randomQuery = quotesTable
                 .select(id, quoteText, author, length, difficulty, createdAt)
                 .filter(!Expression<Bool>("id IN (SELECT quote_id FROM daily_puzzles)"))
-
-            // Apply difficulty filter if any are selected, otherwise don't filter (show all)
             if !selectedDifficulties.isEmpty {
                 randomQuery = randomQuery.filter(selectedDifficulties.contains(difficulty))
             }
-            
-            // Order randomly
             randomQuery = randomQuery.order(Expression<Int>.random())
-            
-            // If we have a current puzzle, exclude it from the results
-            if let currentPuzzle = current,
-               let currentId = Int(currentPuzzle.id.uuidString) {
-                randomQuery = randomQuery.filter(id != currentId)
+            if let currentPuzzle = current {
+                randomQuery = randomQuery.filter(id != currentPuzzle.quoteId)
             }
-            
-            // Limit to 1 result
             randomQuery = randomQuery.limit(1)
-            
             if let quoteRow = try db.pluck(randomQuery),
                let encodedRow = try db.pluck(encodedQuotesTable.filter(quoteId == quoteRow[id])) {
-                
-                let dateFormatter = DateFormatter()
-                dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-                _ = dateFormatter.date(from: quoteRow[createdAt])
-                
-                // Select the encoded text based on encoding type
                 let encodedText = encodingType == "Numbers" ? encodedRow[numberEncoded] : encodedRow[letterEncoded]
-                
                 return Puzzle(
                     id: UUID(uuidString: String(quoteRow[id])) ?? UUID(),
+                    quoteId: quoteRow[id],
                     encodedText: encodedText,
                     solution: quoteRow[quoteText],
                     hint: "Author: \(quoteRow[author])",
@@ -128,11 +107,9 @@ class DatabaseService {
             print("Error: Database not initialized")
             return nil
         }
-        
         do {
             let quotesTable = Table("quotes")
             let encodedQuotesTable = Table("encoded_quotes")
-            
             let quoteId = Expression<Int>("id")
             let quoteText = Expression<String>("quote_text")
             let author = Expression<String>("author")
@@ -144,19 +121,12 @@ class DatabaseService {
             let _ = Expression<String>("letter_key")
             let numberEncoded = Expression<String>("number_encoded")
             let _ = Expression<String>("number_key")
-            
             if let quoteRow = try db.pluck(quotesTable.filter(quoteId == id)),
                let encodedRow = try db.pluck(encodedQuotesTable.filter(encodedQuoteId == id)) {
-                
-                let dateFormatter = DateFormatter()
-                dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-                _ = dateFormatter.date(from: quoteRow[createdAt])
-                
-                // Select the encoded text based on encoding type
                 let encodedText = encodingType == "Numbers" ? encodedRow[numberEncoded] : encodedRow[letterEncoded]
-                
                 return Puzzle(
-                    id: UUID(uuidString: String(quoteRow[quoteId])) ?? UUID(),
+                    id: UUID(uuidString: String(id)) ?? UUID(),
+                    quoteId: id,
                     encodedText: encodedText,
                     solution: quoteRow[quoteText],
                     hint: "Author: \(quoteRow[author])",
@@ -244,6 +214,7 @@ class DatabaseService {
                     let encodedText = encodingType == "Numbers" ? encodedRow[numberEncoded] : encodedRow[letterEncoded]
                     return Puzzle(
                         id: UUID(uuidString: String(qid)) ?? UUID(),
+                        quoteId: qid,
                         encodedText: encodedText,
                         solution: quoteRow[quoteText],
                         hint: "Author: \(quoteRow[author])",

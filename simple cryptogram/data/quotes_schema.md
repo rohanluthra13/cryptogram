@@ -10,6 +10,8 @@ CREATE TABLE quotes (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE sqlite_sequence(name,seq);
+
 CREATE TABLE encoded_quotes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     quote_id INTEGER NOT NULL,
@@ -30,6 +32,14 @@ CREATE TABLE authors (
     place_of_death TEXT,
     summary TEXT
 );
+
+CREATE TABLE daily_puzzles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    quote_id INTEGER NOT NULL,
+    puzzle_date DATE NOT NULL UNIQUE,
+    FOREIGN KEY (quote_id) REFERENCES quotes(id)
+);
+
 ```
 
 Note: The table `sqlite_sequence` is an internal SQLite table for AUTOINCREMENT values and is not part of the user-defined schema.
