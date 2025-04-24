@@ -93,6 +93,7 @@ struct PuzzleView: View {
                                 WordAwarePuzzleGrid()
                                     .environmentObject(viewModel)
                                     .padding(.horizontal, 16)
+                                    .allowsHitTesting(!viewModel.isPaused)
                             }
                             .layoutPriority(1)
                             .frame(maxWidth: .infinity)
@@ -150,6 +151,7 @@ struct PuzzleView: View {
                         .padding(.bottom, 0)
                         .padding(.horizontal, 4)
                         .frame(maxWidth: .infinity)
+                        .allowsHitTesting(!viewModel.isPaused)
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -217,6 +219,32 @@ struct PuzzleView: View {
                     Spacer()
                 }
                 .zIndex(110)
+            }
+
+            // --- Pause Overlay (modal, animates, semi-transparent background) ---
+            if viewModel.isPaused && !showCompletionView && !showSettings && !showStatsOverlay {
+                ZStack {
+                    Color.black.opacity(0.5)
+                        .ignoresSafeArea()
+                        .allowsHitTesting(false)
+                    VStack {
+                        Spacer(minLength: 490)
+                        Text("paused")
+                            .font(CryptogramTheme.Typography.body)
+                            .fontWeight(.bold)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                            .padding(.horizontal, 32)
+                            .padding(.vertical, 12)
+                            .onTapGesture {
+                                viewModel.togglePause()
+                            }
+                            .allowsHitTesting(true)
+                        Spacer()
+                    }
+                }
+                .zIndex(120)
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.3), value: viewModel.isPaused)
             }
 
             // --- Stats Overlay (custom ZStack, slides from top) ---
