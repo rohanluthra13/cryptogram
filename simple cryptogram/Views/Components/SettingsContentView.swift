@@ -21,7 +21,7 @@ struct SettingsContentView: View {
         VStack(spacing: 20) {
             // Top spacing to position content as needed
             Spacer()
-                .frame(height: 100)
+                .frame(height: 60)
             
             // Gameplay Section
             SettingsSection(title: "gameplay") {
@@ -83,6 +83,8 @@ struct SettingsContentView: View {
                                         
                                         Spacer()
                                     }
+                                    .padding(.horizontal, 16)
+                                    .padding(.vertical, 10)
                                     .background(Color.clear) // Ensure no background
                                 }
                                 .buttonStyle(PlainButtonStyle())
@@ -195,6 +197,8 @@ struct SettingsContentView: View {
                                         .padding(.leading, 4)
                                     Spacer()
                                 }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
                                 .background(Color.clear) // Ensure no background
                             }
                             .buttonStyle(PlainButtonStyle())

@@ -246,6 +246,38 @@ class PuzzleViewModel: ObservableObject {
         }
         print("=== End Cell Debug ===")
         #endif
+        
+        // --- Restore pre-fill logic for normal mode ---
+        let difficulty = UserSettings.currentMode
+        if difficulty == .normal {
+            let solution = puzzle.solution.uppercased()
+            let uniqueLetters = Set(solution.filter { $0.isLetter })
+
+            if !uniqueLetters.isEmpty {
+                let revealPercentage = 0.20 // 20% reveal
+                let numToReveal = max(1, Int(ceil(Double(uniqueLetters.count) * revealPercentage)))
+                let lettersToReveal = uniqueLetters.shuffled().prefix(numToReveal)
+                var revealedIndices = Set<Int>()
+
+                for letter in lettersToReveal {
+                    let letterString = String(letter)
+                    // Find indices for this letter that haven't been revealed yet
+                    let matchingIndices = cells.indices.filter {
+                        cells[$0].solutionChar == letter && !revealedIndices.contains($0) && !cells[$0].isRevealed
+                    }
+                    if let indexToReveal = matchingIndices.randomElement() {
+                        // Mark the cell as pre-filled
+                        cells[indexToReveal].userInput = letterString
+                        cells[indexToReveal].isRevealed = true
+                        cells[indexToReveal].isError = false
+                        cells[indexToReveal].isPreFilled = true
+                        revealedIndices.insert(indexToReveal)
+                    }
+                }
+                print("Normal mode: Revealed \(revealedIndices.count) cells for letters: \(lettersToReveal.map { String($0) }.joined())")
+            }
+        }
+        // --- End pre-fill logic ---
     }
     
     func selectCell(at index: Int) {
