@@ -134,7 +134,7 @@ struct KeyboardView: View {
                 .font(.system(size: 16, weight: .light))
                 .frame(height: keyHeight)
                 .frame(minWidth: 0, maxWidth: .infinity)
-                .foregroundColor(Color(hex: "555555")) // Always gray text
+                .foregroundColor(CryptogramTheme.Colors.text) // Always gray text
                 .cornerRadius(5)
                 .accessibilityLabel("Show/Hide Letters Remaining")
         }
