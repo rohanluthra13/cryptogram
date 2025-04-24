@@ -17,7 +17,6 @@ class PuzzleViewModel: ObservableObject {
     @Published private(set) var currentPuzzle: Puzzle?
     @Published var isWiggling = false // Animation state for completion celebrations
     @Published var completedLetters: Set<String> = [] // Set of encoded letters that are completed (all cells filled, normal mode only)
-    @Published var cellsToAnimate: Set<UUID> = [] // Set of cell IDs to animate completion for
     @Published var hasUserEngaged: Bool = false // Track if the user has interacted with the puzzle yet
     @Published var showCompletedHighlights: Bool = false // Toggle for displaying completed‑letter highlights
     
@@ -230,52 +229,6 @@ class PuzzleViewModel: ObservableObject {
         cells = puzzle.createCells(encodingType: encodingType)
         session = PuzzleSession()
         session = session
-        
-        if !skipAnimationInit {
-            print("[DEBUG] Initializing cellsToAnimate for non-daily puzzle")
-            // Only randomize blue shading for non-daily puzzles
-            cellsToAnimate = Set(cells.filter { completedLetters.contains($0.encodedChar) }.map { $0.id })
-        } else {
-            print("[DEBUG] Skipping cellsToAnimate initialization for daily puzzle")
-            // For daily puzzle, do not add any new blue shading if restoring from progress
-        }
-        
-        // --- Add Difficulty-based reveal logic --- 
-        let difficulty = UserSettings.currentMode
-        if difficulty == .normal && !skipAnimationInit {
-            let solution = puzzle.solution.uppercased()
-            let uniqueLetters = Set(solution.filter { $0.isLetter })
-
-            if !uniqueLetters.isEmpty {
-                let revealPercentage = 0.20 // 20% reveal
-                let numToReveal = max(1, Int(ceil(Double(uniqueLetters.count) * revealPercentage)))
-                let lettersToReveal = uniqueLetters.shuffled().prefix(numToReveal)
-                
-                var revealedIndices = Set<Int>() // Track revealed indices to ensure one per letter
-
-                for letter in lettersToReveal {
-                    let letterString = String(letter)
-                    // Find indices for this letter that haven't been revealed yet
-                    let matchingIndices = cells.indices.filter { 
-                        cells[$0].solutionChar == letter && !revealedIndices.contains($0) && !cells[$0].isRevealed
-                    }
-
-                    if let indexToReveal = matchingIndices.randomElement() {
-                        // Mark the cell as revealed
-                        cells[indexToReveal].userInput = letterString
-                        cells[indexToReveal].isRevealed = true
-                        cells[indexToReveal].isError = false // Ensure no error state
-                        cells[indexToReveal].isPreFilled = true // Mark as pre-filled for Normal mode
-                        
-                        // Track the index to prevent revealing the same cell for another letter if counts overlap
-                        revealedIndices.insert(indexToReveal)
-                    }
-                }
-                // Convert Character sequence to String for printing
-                print("Normal mode: Revealed \(revealedIndices.count) cells for letters: \(lettersToReveal.map { String($0) }.joined())")
-            }
-        }
-        // --- End Difficulty Logic ---
         
         // Clear letter mappings when starting a new puzzle
         letterMapping = [:]
@@ -497,9 +450,6 @@ class PuzzleViewModel: ObservableObject {
         }
         updateCompletedLetters() // Ensure completedLetters is up-to-date for pre-filled cells
         
-        // Animate all completed cells on reset
-        cellsToAnimate = Set(cells.filter { completedLetters.contains($0.encodedChar) }.map { $0.id })
-        
         // --- Add Difficulty-based reveal logic --- 
         let difficulty = UserSettings.currentMode
         if difficulty == .normal {
@@ -610,8 +560,7 @@ class PuzzleViewModel: ObservableObject {
             print("Error: Failed to load a new puzzle")
         }
         updateCompletedLetters() // Ensure state for pre-filled cells
-        // Animate any completed cells
-        cellsToAnimate = Set(cells.filter { completedLetters.contains($0.encodedChar) }.map { $0.id })
+        handleUserAction()
     }
     
     func moveToNextCell() {
@@ -765,17 +714,6 @@ class PuzzleViewModel: ObservableObject {
             generator.impactOccurred()
         }
         completedLetters = newCompleted
-        
-        // Animate only newly completed cells on user input
-        let newCellIDs = cells.filter { added.contains($0.encodedChar) }.map { $0.id }
-        if !newCellIDs.isEmpty {
-            cellsToAnimate.formUnion(newCellIDs)
-        }
-    }
-    
-    // Called by PuzzleCell when its animation completes
-    func markCellAnimationComplete(_ cellID: UUID) {
-        cellsToAnimate.remove(cellID)
     }
     
     // MARK: - Completion Animations
@@ -794,11 +732,7 @@ class PuzzleViewModel: ObservableObject {
         guard !hasUserEngaged else { return }
         print("[DEBUG] userEngaged() called")
         hasUserEngaged = true
-        // Animate all pre-filled or revealed cells on first engagement
-        let preCompletedCellIDs = cells.filter { $0.isPreFilled || $0.isRevealed }.map { $0.id }
-        print("[DEBUG] Pre-filled/revealed cell IDs to animate: \(preCompletedCellIDs)")
-        cellsToAnimate.formUnion(preCompletedCellIDs)
-        print("[DEBUG] cellsToAnimate after engagement: \(cellsToAnimate)")
+        handleUserAction()
     }
     
     // --- Global Stats Reset ---
@@ -846,8 +780,7 @@ class PuzzleViewModel: ObservableObject {
             mistakeCount: session.mistakeCount,
             startTime: session.startTime,
             endTime: session.endTime,
-            isCompleted: session.isComplete,
-            blueShadedCellIDs: Array(cellsToAnimate)
+            isCompleted: session.isComplete
         )
         if let data = try? JSONEncoder().encode(progress) {
             UserDefaults.standard.set(data, forKey: dailyProgressKey(for: dateStr))
@@ -872,17 +805,8 @@ class PuzzleViewModel: ObservableObject {
         if progress.isCompleted {
             session.markComplete()
         }
-        // Restore blue shading state
-        if let blueIDs = progress.blueShadedCellIDs {
-            print("[DEBUG] Restoring cellsToAnimate from progress: \(blueIDs)")
-            cellsToAnimate = Set(blueIDs)
-        } else {
-            print("[DEBUG] No blueShadedCellIDs in progress, clearing cellsToAnimate")
-            cellsToAnimate = []
-        }
-        print("[DEBUG] cellsToAnimate after restore: \(cellsToAnimate)")
     }
-
+    
     private static func currentDateString() -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"

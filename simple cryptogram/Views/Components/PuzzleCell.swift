@@ -40,11 +40,6 @@ struct PuzzleCell: View {
                             .frame(width: 24, height: 28)
                             .foregroundColor(Color.green.opacity(0.15))
                             .cornerRadius(2)
-                    } else if viewModel.cellsToAnimate.contains(cell.id) && !isCompleted {
-                        Rectangle()
-                            .frame(width: 24, height: 28)
-                            .foregroundColor(CryptogramTheme.Colors.preFilledBackground)
-                            .cornerRadius(2)
                     }
                     // Fill animation background - REMOVED for completed letters
                     if !effectiveCompleted && cellHighlightAmount > 0 {
