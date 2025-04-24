@@ -80,6 +80,18 @@ struct SettingsSectionStyle: ViewModifier {
     }
 }
 
+// MARK: - Info Overlay Modifier
+struct InfoOverlayTextStyle: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .font(.subheadline)
+            .foregroundColor(CryptogramTheme.Colors.text)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 16)
+            .lineSpacing(8)
+    }
+}
+
 // MARK: - View Extensions
 extension View {
     func cryptogramButton(isSelected: Bool = false, isEnabled: Bool = true) -> some View {
@@ -101,4 +113,8 @@ extension View {
     func settingsSectionStyle() -> some View {
         modifier(SettingsSectionStyle())
     }
-} 
+    
+    func infoOverlayTextStyle() -> some View {
+        modifier(InfoOverlayTextStyle())
+    }
+}

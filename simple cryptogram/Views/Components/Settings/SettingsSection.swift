@@ -10,7 +10,7 @@ struct SettingsSection<Content: View>: View {
     }
     
     var body: some View {
-        VStack(alignment: .center, spacing: 12) {
+        VStack(alignment: .center, spacing: 20) {
             Text(title)
                 .settingsSectionStyle()
                 .padding(.bottom, 5)
