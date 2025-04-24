@@ -40,6 +40,7 @@ struct AuthorInfoView_Previews: PreviewProvider {
     static var previews: some View {
         AuthorInfoView(author: Author(id: 1, name: "Jane Doe", fullName: "Jane A. Doe", birthDate: "1900-01-01", deathDate: "1980-12-31", placeOfBirth: "London", placeOfDeath: "Paris", summary: "A famous author."))
             .previewLayout(.sizeThatFits)
+            .environmentObject(PuzzleViewModel())
     }
 }
 #endif

@@ -21,7 +21,7 @@ struct SettingsContentView: View {
         VStack(spacing: 20) {
             // Top spacing to position content as needed
             Spacer()
-                .frame(height: 160)
+                .frame(height: 120)
             
             // Gameplay Section
             SettingsSection(title: "gameplay") {
