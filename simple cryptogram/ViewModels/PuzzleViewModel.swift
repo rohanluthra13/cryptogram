@@ -836,6 +836,7 @@ class PuzzleViewModel: ObservableObject {
             cells[i].isPreFilled = progress.isPreFilled?[i] ?? false
             cells[i].isRevealed = progress.isRevealed?[i] ?? false
         }
+        updateCompletedLetters() // Ensure completed letters are recalculated after restoring inputs
         session.hintCount = progress.hintCount
         session.mistakeCount = progress.mistakeCount
         session.startTime = progress.startTime
