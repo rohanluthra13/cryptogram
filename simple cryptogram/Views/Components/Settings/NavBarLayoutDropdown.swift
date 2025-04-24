@@ -46,6 +46,7 @@ struct NavBarLayoutDropdown: View {
                     .foregroundColor(CryptogramTheme.Colors.text)
                     .rotationEffect(isDropdownOpen ? .degrees(180) : .degrees(0))
             }
+            .background(Color.clear) // Ensure no background
         }
         .buttonStyle(PlainButtonStyle())
         .padding(.vertical, 6)
@@ -89,5 +90,5 @@ struct NavBarLayoutDropdown: View {
     
     return NavBarLayoutDropdown(selection: $selection)
         .padding()
-        .background(CryptogramTheme.Colors.background)
+        // .background(CryptogramTheme.Colors.background)
 } 

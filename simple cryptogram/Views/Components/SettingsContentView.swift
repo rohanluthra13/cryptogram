@@ -83,12 +83,7 @@ struct SettingsContentView: View {
                                         
                                         Spacer()
                                     }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 10)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(CryptogramTheme.Colors.surface)
-                                    )
+                                    .background(Color.clear) // Ensure no background
                                 }
                                 .buttonStyle(PlainButtonStyle())
                                 
@@ -187,20 +182,20 @@ struct SettingsContentView: View {
                             } label: {
                                 HStack {
                                     Spacer()
-                                    Text("text size:")
+                                    Text("text size: ")
                                         .font(.footnote)
                                         .foregroundColor(CryptogramTheme.Colors.text)
                                     Text(settingsViewModel.textSize.displayName.lowercased())
-                                        .font(.footnote).fontWeight(.bold)
+                                        .font(.footnote)
+                                        .fontWeight(.bold)
                                         .foregroundColor(CryptogramTheme.Colors.text)
                                     Image(systemName: showTextSizeSelector ? "chevron.up" : "chevron.down")
-                                        .font(.system(size:12, weight:.medium))
+                                        .font(.system(size: 12, weight: .medium))
                                         .foregroundColor(CryptogramTheme.Colors.text)
+                                        .padding(.leading, 4)
                                     Spacer()
                                 }
-                                .padding(.vertical, 10).padding(.horizontal, 16)
-                                .background(RoundedRectangle(cornerRadius:8)
-                                              .fill(CryptogramTheme.Colors.surface))
+                                .background(Color.clear) // Ensure no background
                             }
                             .buttonStyle(PlainButtonStyle())
 

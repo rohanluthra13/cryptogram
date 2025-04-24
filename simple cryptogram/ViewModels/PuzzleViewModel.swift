@@ -820,4 +820,17 @@ class PuzzleViewModel: ObservableObject {
             saveDailyPuzzleProgress()
         }
     }
+    
+    // --- Animation Support ---
+    /// Returns the IDs of cells that were just filled and should animate
+    var cellsToAnimate: [UUID] {
+        cells.filter { $0.wasJustFilled }.map { $0.id }
+    }
+
+    /// Mark cell animation as complete by resetting the wasJustFilled flag
+    func markCellAnimationComplete(_ cellId: UUID) {
+        if let idx = cells.firstIndex(where: { $0.id == cellId }) {
+            cells[idx].wasJustFilled = false
+        }
+    }
 }

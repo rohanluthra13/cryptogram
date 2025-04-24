@@ -9,33 +9,8 @@ struct WordAwarePuzzleGrid: View {
                 ForEach(viewModel.wordGroups) { wordGroup in
                     HStack(spacing: 0) {
                         ForEach(wordGroup.indices, id: \.self) { index in
-                            let cell = viewModel.cells[index]
-                            
-                            if cell.isSymbol && cell.encodedChar == " " {
-                                // Display space
-                                Spacer()
-                                    .frame(width: 10, height: 20)
-                            } else if cell.isSymbol {
-                                // Display punctuation
-                                Text(cell.encodedChar)
-                                    .font(.system(size: 16, weight: .medium, design: .monospaced))
-                                    .foregroundColor(CryptogramTheme.Colors.text)
-                                    .frame(width: 10, height: 20)
-                            } else {
-                                // Display puzzle cell
-                                PuzzleCell(
-                                    cell: cell,
-                                    isSelected: viewModel.selectedCellIndex == index,
-                                    onTap: { viewModel.selectCell(at: index) },
-                                    isCompleted: viewModel.completedLetters.contains(cell.encodedChar),
-                                    shouldAnimate: viewModel.cellsToAnimate.contains(cell.id),
-                                    onAnimationComplete: { viewModel.markCellAnimationComplete(cell.id) }
-                                )
-                                .id("\(viewModel.currentPuzzle?.id ?? UUID())-\(cell.id)")
-                                .aspectRatio(1, contentMode: .fit)
-                            }
+                            cellView(for: index)
                         }
-                        
                         if wordGroup.includesSpace {
                             Spacer()
                                 .frame(width: 10, height: 20)
@@ -45,6 +20,30 @@ struct WordAwarePuzzleGrid: View {
             }
             .padding(CryptogramTheme.Layout.gridPadding)
             .frame(maxWidth: .infinity, alignment: .center)
+        }
+    }
+
+    @ViewBuilder
+    private func cellView(for index: Int) -> some View {
+        let cell = viewModel.cells[index]
+        if cell.isSymbol && cell.encodedChar == " " {
+            Spacer().frame(width: 10, height: 20)
+        } else if cell.isSymbol {
+            Text(cell.encodedChar)
+                .font(.system(size: 16, weight: .medium, design: .monospaced))
+                .foregroundColor(CryptogramTheme.Colors.text)
+                .frame(width: 10, height: 20)
+        } else {
+            PuzzleCell(
+                cell: cell,
+                isSelected: viewModel.selectedCellIndex == index,
+                onTap: { viewModel.selectCell(at: index) },
+                isCompleted: viewModel.completedLetters.contains(cell.encodedChar),
+                shouldAnimate: viewModel.cellsToAnimate.contains(cell.id),
+                onAnimationComplete: { viewModel.markCellAnimationComplete(cell.id) }
+            )
+            .id("\(viewModel.currentPuzzle?.id ?? UUID())-\(cell.id)")
+            .aspectRatio(1, contentMode: .fit)
         }
     }
 }

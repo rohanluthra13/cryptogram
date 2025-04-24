@@ -35,14 +35,11 @@ struct NavBarLayoutSelector: View {
                     
                     Spacer()
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(CryptogramTheme.Colors.surface)
-                )
+                .background(Color.clear) // Ensure no background
             }
             .buttonStyle(PlainButtonStyle())
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
             
             // Expanded options
             if isExpanded {
@@ -71,5 +68,5 @@ struct NavBarLayoutSelector: View {
     
     return NavBarLayoutSelector(selection: $selection)
         .padding()
-        .background(CryptogramTheme.Colors.background)
+        // .background(CryptogramTheme.Colors.background)
 } 

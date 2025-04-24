@@ -23,6 +23,7 @@ struct MultiOptionRow<T: Hashable & Identifiable>: View {
                     }) {
                         Text(labelProvider(option))
                             .settingsToggleStyle(isSelected: selection.id == option.id)
+                            .background(Color.clear) // Remove fill/background
                     }
                     .buttonStyle(PlainButtonStyle())
                     .accessibilityLabel("Switch to \(labelProvider(option))")
@@ -66,6 +67,7 @@ struct DropdownOptionRow<T: Hashable & Identifiable>: View {
                 ForEach(options) { option in
                     Text(labelProvider(option))
                         .tag(option)
+                        .background(Color.clear) // Ensure no background for dropdown buttons
                 }
             }
             .pickerStyle(SegmentedPickerStyle())
