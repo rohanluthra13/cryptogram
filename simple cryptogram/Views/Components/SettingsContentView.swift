@@ -21,7 +21,7 @@ struct SettingsContentView: View {
         VStack(spacing: 20) {
             // Top spacing to position content as needed
             Spacer()
-                .frame(height: 120)
+                .frame(height: 100)
             
             // Gameplay Section
             SettingsSection(title: "gameplay") {
@@ -245,6 +245,9 @@ struct SettingsContentView: View {
             }
             
             Spacer() // Fill remaining space
+            
+            // Reset account section at the bottom, no header
+            ResetAccountSection(viewModel: puzzleViewModel)
         }
         .animation(.easeInOut(duration: 0.3), value: showDifficultyInfo)
         .animation(.easeInOut(duration: 0.3), value: showLengthSelector)
