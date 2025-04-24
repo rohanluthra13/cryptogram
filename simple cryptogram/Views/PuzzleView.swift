@@ -247,6 +247,32 @@ struct PuzzleView: View {
                 .animation(.easeInOut(duration: 0.3), value: viewModel.isPaused)
             }
 
+            // --- Game Over Overlay (modal, animates, semi-transparent background, mimics pause overlay) ---
+            if viewModel.isFailed && !showCompletionView && !showSettings && !showStatsOverlay {
+                ZStack {
+                    Color.black.opacity(0.5)
+                        .ignoresSafeArea()
+                        .allowsHitTesting(false)
+                    VStack {
+                        Spacer(minLength: 490)
+                        Text("game over")
+                            .font(CryptogramTheme.Typography.body)
+                            .fontWeight(.bold)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                            .padding(.horizontal, 32)
+                            .padding(.vertical, 12)
+                            .onTapGesture {
+                                // Optionally, you might want to trigger try again here, or leave as non-tappable
+                            }
+                            .allowsHitTesting(false) // Not tappable by default, nav bar handles retry
+                        Spacer()
+                    }
+                }
+                .zIndex(120)
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.3), value: viewModel.isFailed)
+            }
+
             // --- Stats Overlay (custom ZStack, slides from top) ---
             if showStatsOverlay {
                 ZStack(alignment: .top) {
