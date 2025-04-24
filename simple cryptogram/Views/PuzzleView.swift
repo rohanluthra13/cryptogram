@@ -8,6 +8,7 @@ struct PuzzleView: View {
     @State private var showSettings = false
     @State private var showCompletionView = false
     @State private var showStatsOverlay = false
+    @State private var showInfoOverlay = false
     @State private var displayedGameOver = ""
     private let fullGameOverText = "game over"
     @State private var isSwitchingPuzzle = false
@@ -71,14 +72,6 @@ struct PuzzleView: View {
                                     .frame(width: 44, height: 44)
                                     .accessibilityLabel("Calendar")
                             }
-                            Button(action: {}) {
-                                Image(systemName: "questionmark.circle")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(CryptogramTheme.Colors.text)
-                                    .opacity(0.7)
-                                    .frame(width: 44, height: 44)
-                                    .accessibilityLabel("Help")
-                            }
                         }
                         .frame(minWidth: 0, maxWidth: .infinity, alignment: .trailing)
                     }
@@ -88,6 +81,7 @@ struct PuzzleView: View {
                 .frame(maxWidth: .infinity)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .zIndex(0)
 
             // --- Main Content Block (puzzle, nav bar, keyboard) pushed to bottom ---
             VStack(spacing: 0) {
@@ -166,13 +160,65 @@ struct PuzzleView: View {
                     .ignoresSafeArea(edges: .bottom)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+            .zIndex(0)
 
-            // Completion overlay - conditionally shown
-            if showCompletionView {
-                PuzzleCompletionView(showCompletionView: $showCompletionView)
-                    .environmentObject(themeManager)
-                    .environmentObject(viewModel)
+            // --- Info Overlay (modal, animates, scrollable, uses SettingsSection style) ---
+            if showInfoOverlay {
+                ZStack(alignment: .top) {
+                    CryptogramTheme.Colors.background
+                        .ignoresSafeArea()
+                        .opacity(0.98)
+                    VStack {
+                        Spacer(minLength: 120)
+                        ScrollView {
+                            SettingsSection(title: "about") {
+                                Text("just play, it's pretty self-explanatory")
+                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 16)
+                            }
+                            .padding(.horizontal, 24)
+                        }
+                        Spacer()
+                    }
+                    .allowsHitTesting(false)
+                }
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    withAnimation {
+                        showInfoOverlay = false
+                    }
+                }
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.3), value: showInfoOverlay)
+                .zIndex(100) // Info overlay
             }
+
+            // --- Floating Question Mark Button (above info, below stats/settings/completion) ---
+            if viewModel.currentPuzzle != nil && !showSettings && !showStatsOverlay && !showCompletionView {
+                VStack {
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            withAnimation {
+                                showInfoOverlay.toggle()
+                            }
+                        }) {
+                            Image(systemName: "questionmark")
+                                .font(.system(size: 13))
+                                .foregroundColor(CryptogramTheme.Colors.text)
+                                .opacity(showInfoOverlay ? 1.0 : 0.7)
+                                .frame(width: 24, height: 24)
+                                .accessibilityLabel("About / Info")
+                        }
+                        .offset(x: -10, y: 60)
+                        .padding(.trailing, 16)
+                    }
+                    Spacer()
+                }
+                .zIndex(110)
+            }
+
             // --- Stats Overlay (custom ZStack, slides from top) ---
             if showStatsOverlay {
                 ZStack(alignment: .top) {
@@ -189,70 +235,40 @@ struct PuzzleView: View {
                 .matchedGeometryEffect(id: "statsOverlay", in: statsOverlayNamespace)
                 .transition(.opacity)
                 .animation(.easeInOut(duration: 0.3), value: showStatsOverlay)
+                .zIndex(150)
             }
-            // Overlay for paused state (not completion which is handled separately)
-            Group {
-                if viewModel.isPaused && !showSettings {
-                    ZStack {
-                        // Semi-transparent overlay that allows clicks to pass through to navigation bar
-                        Color.black.opacity(0.5)
-                            .edgesIgnoringSafeArea(.all)
-                            .allowsHitTesting(false)  // This lets clicks pass through
-                        // Pause text
-                        Button(action: { viewModel.togglePause() }) {
-                            Text("paused")
-                                .font(.headline)
-                                .foregroundColor(CryptogramTheme.Colors.text)
+
+            // --- Settings Overlay ---
+            if showSettings {
+                ZStack {
+                    CryptogramTheme.Colors.surface
+                        .opacity(0.95)
+                        .edgesIgnoringSafeArea(.all)
+                        .onTapGesture {
+                            showSettings = false
                         }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                        .padding(.bottom, 250)
-                    }
-                    .transition(.opacity)
-                } else if viewModel.isFailed && !showSettings {
-                    ZStack {
-                        // Semi-transparent overlay for game over
-                        Color.black.opacity(0.5)
-                            .edgesIgnoringSafeArea(.all)
-                            .allowsHitTesting(false)  // This lets clicks pass through to navigation bar
-                        // Game over text - with typing animation
-                        Text(displayedGameOver)
-                            .font(.headline)
-                            .foregroundColor(CryptogramTheme.Colors.text)
-                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                            .padding(.bottom, 240)
-                            .onAppear {
-                                startTypewriterWithDelay(1.2)
-                            }
-                    }
-                    .transition(.opacity)
-                } else if showSettings {
-                    // Full-screen settings overlay
-                    ZStack {
-                        // Background that covers the entire screen and can be tapped to dismiss
-                        CryptogramTheme.Colors.surface
-                            .opacity(0.95) // Same opacity for both modes
-                            .edgesIgnoringSafeArea(.all)
-                            .onTapGesture {
-                                print("Tapped background, closing settings")
-                                showSettings = false
-                            }
-                            .zIndex(10) // Ensure overlay is above other elements
-                        // Settings content centered on the overlay
-                        SettingsContentView()
-                            .padding(.horizontal, 24)
-                            .padding(.vertical, 20)
-                            .contentShape(Rectangle()) // Prevent dismissal when tapping content
-                            .onTapGesture { 
-                                print("Tapped settings content")
-                            }
-                            .environmentObject(viewModel)
-                            .environmentObject(themeManager)
-                            .environmentObject(settingsViewModel)
-                            .zIndex(11) // Above the background
-                    }
-                    .zIndex(50) // Below top bar
+                        .zIndex(10)
+                    SettingsContentView()
+                        .padding(.horizontal, 24)
+                        .padding(.vertical, 20)
+                        .contentShape(Rectangle())
+                        .onTapGesture { }
+                        .environmentObject(viewModel)
+                        .environmentObject(themeManager)
+                        .environmentObject(settingsViewModel)
+                        .zIndex(11)
                 }
+                .zIndex(150)
             }
+
+            // --- Completion overlay - conditionally shown ---
+            if showCompletionView {
+                PuzzleCompletionView(showCompletionView: $showCompletionView)
+                    .environmentObject(themeManager)
+                    .environmentObject(viewModel)
+                    .zIndex(200)
+            }
+
             // --- Persistent Bottom Banner Above All Overlays (with icons) ---
             VStack {
                 Spacer()
