@@ -59,34 +59,35 @@ struct PuzzleView: View {
                     .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
                     
                     // Right: settings & stats buttons
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Button(action: {
-                            viewModel.loadDailyPuzzle()
-                        }) {
-                            Image(systemName: "calendar")
-                                .font(.title3)
-                                .foregroundColor(CryptogramTheme.Colors.text)
-                                .opacity(0.7)
-                                .frame(width: 44, height: 44)
-                                .accessibilityLabel("Calendar")
+                    if viewModel.currentPuzzle != nil && !showSettings && !showStatsOverlay && !showCompletionView {
+                        VStack(alignment: .trailing, spacing: 2) {
+                            Button(action: {
+                                viewModel.loadDailyPuzzle()
+                            }) {
+                                Image(systemName: "calendar")
+                                    .font(.title3)
+                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                    .opacity(0.7)
+                                    .frame(width: 44, height: 44)
+                                    .accessibilityLabel("Calendar")
+                            }
+                            Button(action: {}) {
+                                Image(systemName: "questionmark.circle")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                    .opacity(0.7)
+                                    .frame(width: 44, height: 44)
+                                    .accessibilityLabel("Help")
+                            }
                         }
-                        Button(action: {}) {
-                            Image(systemName: "questionmark.circle")
-                                .font(.system(size: 20))
-                                .foregroundColor(CryptogramTheme.Colors.text)
-                                .opacity(0.7)
-                                .frame(width: 44, height: 44)
-                                .accessibilityLabel("Help")
-                        }
+                        .frame(minWidth: 0, maxWidth: .infinity, alignment: .trailing)
                     }
-                    .frame(minWidth: 0, maxWidth: .infinity, alignment: .trailing)
                 }
                 .padding(.top, 8)
                 .padding(.horizontal, 16)
                 .frame(maxWidth: .infinity)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .zIndex(100)
 
             // --- Main Content Block (puzzle, nav bar, keyboard) pushed to bottom ---
             VStack(spacing: 0) {
@@ -165,7 +166,6 @@ struct PuzzleView: View {
                     .ignoresSafeArea(edges: .bottom)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-            .zIndex(10)
 
             // Completion overlay - conditionally shown
             if showCompletionView {
@@ -188,7 +188,6 @@ struct PuzzleView: View {
                 }
                 .matchedGeometryEffect(id: "statsOverlay", in: statsOverlayNamespace)
                 .transition(.opacity)
-                .zIndex(50) // Below top bar
                 .animation(.easeInOut(duration: 0.3), value: showStatsOverlay)
             }
             // Overlay for paused state (not completion which is handled separately)
