@@ -804,6 +804,8 @@ class PuzzleViewModel: ObservableObject {
         let dateStr = Self.currentDateString()
         let userInputs = cells.map { $0.userInput }
         let quoteId = puzzle.quoteId
+        let isPreFilled = cells.map { $0.isPreFilled }
+        let isRevealed = cells.map { $0.isRevealed }
         let progress = DailyPuzzleProgress(
             date: dateStr,
             quoteId: quoteId,
@@ -812,7 +814,10 @@ class PuzzleViewModel: ObservableObject {
             mistakeCount: session.mistakeCount,
             startTime: session.startTime,
             endTime: session.endTime,
-            isCompleted: session.isComplete
+            isCompleted: session.isComplete,
+            blueShadedCellIDs: nil,
+            isPreFilled: isPreFilled,
+            isRevealed: isRevealed
         )
         if let data = try? JSONEncoder().encode(progress) {
             UserDefaults.standard.set(data, forKey: dailyProgressKey(for: dateStr))
@@ -828,6 +833,8 @@ class PuzzleViewModel: ObservableObject {
         // Restore state
         for (i, input) in progress.userInputs.enumerated() where i < cells.count {
             cells[i].userInput = input
+            cells[i].isPreFilled = progress.isPreFilled?[i] ?? false
+            cells[i].isRevealed = progress.isRevealed?[i] ?? false
         }
         session.hintCount = progress.hintCount
         session.mistakeCount = progress.mistakeCount
