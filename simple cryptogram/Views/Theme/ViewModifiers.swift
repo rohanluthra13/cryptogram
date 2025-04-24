@@ -84,9 +84,9 @@ struct SettingsSectionStyle: ViewModifier {
 struct InfoOverlayTextStyle: ViewModifier {
     func body(content: Content) -> some View {
         content
-            .font(.subheadline)
+            .font(.system(size: 13, weight: .medium))
             .foregroundColor(CryptogramTheme.Colors.text)
-            .multilineTextAlignment(.center)
+            .multilineTextAlignment(.leading)
             .padding(.horizontal, 16)
             .lineSpacing(8)
     }

@@ -173,26 +173,9 @@ struct PuzzleView: View {
                     VStack {
                         Spacer(minLength: 120)
                         ScrollView {
-                            SettingsSection(title: "solve the cryptogram to reveal the quote") {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    Text("you get 3 mistakes")
-                                    Text("you can use as many hints as you want")
-                                    Text("each day has a new exclusive daily puzzle")
-                                    Text("use settings to customise gameplay, theme and layout to your liking")
-                                    HStack(alignment: .center, spacing: 6) {
-                                        Image(systemName: "chart.bar.xaxis")
-                                            .font(.subheadline)
-                                            .foregroundColor(CryptogramTheme.Colors.text)
-                                        Text("view your stats and progression")
-                                    }
-                                }
-                                .infoOverlayTextStyle()
-                                .foregroundColor(CryptogramTheme.Colors.text)
-                                .multilineTextAlignment(.leading)
-                                .padding(.horizontal, 16)
-                            }
-                            .padding(.horizontal, 24)
+                            InfoOverlayView()
                         }
+                        .padding(.horizontal, 24)
                         Spacer()
                     }
                     .allowsHitTesting(false)
