@@ -40,14 +40,14 @@ struct PuzzleCell: View {
                             .frame(width: 24, height: 28)
                             .foregroundColor(Color.green.opacity(0.15))
                             .cornerRadius(2)
-                    } else if viewModel.cellsToAnimate.contains(cell.id) {
+                    } else if viewModel.cellsToAnimate.contains(cell.id) && !isCompleted {
                         Rectangle()
                             .frame(width: 24, height: 28)
                             .foregroundColor(CryptogramTheme.Colors.preFilledBackground)
                             .cornerRadius(2)
                     }
-                    // Fill animation background
-                    if cellHighlightAmount > 0 {
+                    // Fill animation background - REMOVED for completed letters
+                    if !effectiveCompleted && cellHighlightAmount > 0 {
                         Rectangle()
                             .frame(width: 24, height: 28)
                             .foregroundColor(CryptogramTheme.Colors.success.opacity(0.2 * cellHighlightAmount))
@@ -76,14 +76,18 @@ struct PuzzleCell: View {
         .onChange(of: shouldAnimate) { _, animate in
             if animate {
                 print("[DEBUG] shouldAnimate triggered for cell ID: \(cell.id)")
-                // Flash background and border
+                // Only animate border/text color, no background highlight
                 withAnimation(.easeInOut(duration: 0.3)) {
-                    cellHighlightAmount = 1.0
+                    if !effectiveCompleted {
+                        cellHighlightAmount = 1.0
+                    }
                     animateCompletionBorder = true
                 }
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                     withAnimation {
-                        cellHighlightAmount = 0.0
+                        if !effectiveCompleted {
+                            cellHighlightAmount = 0.0
+                        }
                         animateCompletionBorder = false
                     }
                     onAnimationComplete?()
