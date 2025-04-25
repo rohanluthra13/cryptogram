@@ -46,6 +46,8 @@ struct InfoOverlayView: View {
             .foregroundColor(CryptogramTheme.Colors.text)
             .multilineTextAlignment(.leading)
             .padding(.horizontal, 24)
+            Spacer(minLength: 0)
+            DisclaimersSection()
         }
         .padding(.horizontal, 24)
     }

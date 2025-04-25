@@ -167,9 +167,17 @@ struct PuzzleView: View {
             // --- Info Overlay (modal, animates, scrollable, uses SettingsSection style) ---
             if showInfoOverlay {
                 ZStack(alignment: .top) {
+                    // Background layer that dismisses overlay on tap
                     CryptogramTheme.Colors.background
                         .ignoresSafeArea()
                         .opacity(0.98)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            withAnimation {
+                                showInfoOverlay = false
+                            }
+                        }
+                    // Foreground overlay content - interactive
                     VStack {
                         Spacer(minLength: 120)
                         ScrollView {
@@ -178,17 +186,11 @@ struct PuzzleView: View {
                         .padding(.horizontal, 24)
                         Spacer()
                     }
-                    .allowsHitTesting(false)
-                }
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    withAnimation {
-                        showInfoOverlay = false
-                    }
+                    // DO NOT block hit testing here; allow interaction
                 }
                 .transition(.opacity)
                 .animation(.easeInOut(duration: 0.3), value: showInfoOverlay)
-                .zIndex(100) // Info overlay
+                .zIndex(125) // Info overlay now above pause overlay
             }
 
             // --- Floating Question Mark Button (above info, below stats/settings/completion) ---
@@ -213,7 +215,7 @@ struct PuzzleView: View {
                     }
                     Spacer()
                 }
-                .zIndex(110)
+                .zIndex(130)
             }
 
             // --- Pause Overlay (modal, animates, semi-transparent background) ---
