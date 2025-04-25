@@ -4,8 +4,8 @@ struct CompletionStatsView: View {
     @EnvironmentObject private var viewModel: PuzzleViewModel
     let maxMistakes: Int = 3
     
-    // Dark muted green color for checkmark icons - using a more muted green directly
-    private let checkmarkColor = Color(red: 0.2, green: 0.5, blue: 0.3)
+    // Green color for checkmark icons, matching hint icon color
+    private let checkmarkColor = Color.green.opacity(0.4)
     
     var body: some View {
         HStack {

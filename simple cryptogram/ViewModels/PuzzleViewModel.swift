@@ -794,7 +794,7 @@ class PuzzleViewModel: ObservableObject {
     }
     
     // MARK: - Daily Puzzle Progress Persistence
-    private var isDailyPuzzle: Bool = false
+    @Published var isDailyPuzzle: Bool = false
     private func dailyProgressKey(for date: String) -> String {
         return "dailyPuzzleProgress-\(date)"
     }
