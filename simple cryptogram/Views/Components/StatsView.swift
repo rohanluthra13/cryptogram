@@ -5,11 +5,12 @@ struct TimerView: View {
     let startTime: Date
     @State private var displayTime: TimeInterval = 0
     var isPaused: Bool = false
+    @ObservedObject var settingsViewModel: SettingsViewModel
     
     var body: some View {
         VStack {
             Text(timeFormatted)
-                .font(CryptogramTheme.Typography.body)
+                .font(.system(size: settingsViewModel.textSize.timerSize, design: .rounded))
                 .foregroundColor(CryptogramTheme.Colors.text)
                 .padding(.vertical, 8)
                 .padding(.horizontal, 16)
@@ -132,14 +133,15 @@ struct StatsView: View {
     var onRequestHint: () -> Void = {}
     var isPaused: Bool = false
     @ObservedObject var viewModel: PuzzleViewModel // required for UserStatsView
-
+    @ObservedObject var settingsViewModel: SettingsViewModel
+    
     var body: some View {
         VStack(spacing: 0) {
             // Row 1: Mistakes | Timer | Settings (gear icon)
             HStack(alignment: .center) {
                 MistakesView(mistakeCount: mistakeCount)
                 Spacer()
-                TimerView(startTime: startTime, isPaused: isPaused)
+                TimerView(startTime: startTime, isPaused: isPaused, settingsViewModel: settingsViewModel)
                 Spacer()
                 Button(action: { /* settings action here */ }) {
                     Image(systemName: "gearshape")
@@ -176,12 +178,13 @@ struct StatsView: View {
             startTime: Date(),
             onRequestHint: {},
             isPaused: false,
-            viewModel: PuzzleViewModel() // required for UserStatsView
+            viewModel: PuzzleViewModel(), // required for UserStatsView
+            settingsViewModel: SettingsViewModel()
         )
         
         Text("Preview of individual components:").padding(.top, 20)
         
-        TimerView(startTime: Date(), isPaused: false)
+        TimerView(startTime: Date(), isPaused: false, settingsViewModel: SettingsViewModel())
             .padding()
         
         MistakesView(mistakeCount: 2)

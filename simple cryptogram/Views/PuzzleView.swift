@@ -53,8 +53,7 @@ struct PuzzleView: View {
                     ZStack {
                         if viewModel.currentPuzzle != nil && !showSettings && !showStatsOverlay && !showCompletionView {
                             let timerInactive = (viewModel.startTime ?? Date.distantFuture) > Date()
-                            TimerView(startTime: viewModel.startTime ?? Date.distantFuture, isPaused: viewModel.isPaused)
-                                .font(.caption)
+                            TimerView(startTime: viewModel.startTime ?? Date.distantFuture, isPaused: viewModel.isPaused, settingsViewModel: settingsViewModel)
                                 .foregroundColor(timerInactive ? CryptogramTheme.Colors.secondary : CryptogramTheme.Colors.text)
                                 .opacity(timerInactive ? 0.5 : 1.0)
                         }

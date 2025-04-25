@@ -18,4 +18,11 @@ enum TextSizeOption: String, CaseIterable, Identifiable {
         case .large: return 14
         }
     }
+    var timerSize: CGFloat {
+        switch self {
+        case .small: return 14
+        case .medium: return 17
+        case .large: return 20
+        }
+    }
 }
