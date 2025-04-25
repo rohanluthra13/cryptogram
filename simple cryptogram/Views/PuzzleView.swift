@@ -83,7 +83,7 @@ struct PuzzleView: View {
                         .frame(minWidth: 0, maxWidth: .infinity, alignment: .trailing)
                     }
                 }
-                .padding(.top, 8)
+                .padding(.top, 0)
                 .padding(.horizontal, 16)
                 .frame(maxWidth: .infinity)
             }
