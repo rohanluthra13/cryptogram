@@ -2,7 +2,7 @@ import SwiftUI
 
 struct InfoOverlayView: View {
     var body: some View {
-        SettingsSection(title: "solve the cryptogram to reveal the quote") {
+        SettingsSection(title: "SOLVE THE ENCODED PUZZLE TO REVEAL THE QUOTE") {
             VStack(alignment: .leading, spacing: 26) {
                 HStack(alignment: .top, spacing: 12) {
                     Text("X")
@@ -20,6 +20,13 @@ struct InfoOverlayView: View {
                     Text("but you can use as many hints as you want")
                 }
                 HStack(alignment: .top, spacing: 12) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.subheadline)
+                        .foregroundColor(CryptogramTheme.Colors.text)
+                        .frame(width: 22, height: 22, alignment: .center)
+                    Text("and the magnifying glass shows your remaining letters")
+                }
+                HStack(alignment: .top, spacing: 12) {
                     Image(systemName: "calendar")
                         .font(.subheadline)
                         .foregroundColor(CryptogramTheme.Colors.text)
@@ -31,14 +38,14 @@ struct InfoOverlayView: View {
                         .font(.subheadline)
                         .foregroundColor(CryptogramTheme.Colors.text)
                         .frame(width: 22, height: 22, alignment: .center)
-                    Text("use settings to customise gameplay, theme and layout")
+                    Text("settings lets you customise gameplay, theme and layout")
                 }
                 HStack(alignment: .top, spacing: 12) {
                     Image(systemName: "chart.bar")
                         .font(.subheadline)
                         .foregroundColor(CryptogramTheme.Colors.text)
                         .frame(width: 22, height: 22, alignment: .center)
-                    Text("see your stats and track your progress")
+                    Text("and you can see your stats as you go")
                 }
             }
             .padding(.top, 20)

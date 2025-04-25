@@ -14,6 +14,8 @@ struct PuzzleView: View {
     @State private var isSwitchingPuzzle = false
     @Namespace private var statsOverlayNamespace
     @AppStorage("isDarkMode") private var isDarkMode = false
+    @State private var isBottomBarVisible = true
+    @State private var bottomBarHideWorkItem: DispatchWorkItem?
     
     // Create a custom binding for the layout
     private var layoutBinding: Binding<NavigationBarLayout> {
@@ -321,53 +323,76 @@ struct PuzzleView: View {
             }
 
             // --- Persistent Bottom Banner Above All Overlays (with icons) ---
-            VStack {
-                Spacer()
-                HStack {
-                    Button(action: {
-                        withAnimation {
-                            if showStatsOverlay {
-                                showStatsOverlay = false
-                                showSettings = false
-                            } else {
-                                showStatsOverlay.toggle()
-                                showSettings = false
-                            }
-                        }
-                    }) {
-                        Image(systemName: "chart.bar")
-                            .font(.system(size: 20))
-                            .foregroundColor(CryptogramTheme.Colors.text)
-                            .opacity(0.7)
-                            .frame(width: 44, height: 44)
-                            .accessibilityLabel("Stats/Chart")
-                    }
+            if !showInfoOverlay && (isBottomBarVisible || showSettings || showStatsOverlay) {
+                VStack {
                     Spacer()
-                    Button(action: {
-                        withAnimation {
-                            if showSettings {
-                                showSettings = false
-                                showStatsOverlay = false
-                            } else {
-                                showSettings.toggle()
-                                showStatsOverlay = false
+                    HStack {
+                        Button(action: {
+                            withAnimation {
+                                if showStatsOverlay {
+                                    showStatsOverlay = false
+                                    showSettings = false
+                                } else {
+                                    showStatsOverlay.toggle()
+                                    showSettings = false
+                                }
+                                showBottomBarTemporarily()
                             }
+                        }) {
+                            Image(systemName: "chart.bar")
+                                .font(.system(size: 20))
+                                .foregroundColor(CryptogramTheme.Colors.text)
+                                .opacity(0.7)
+                                .frame(width: 44, height: 44)
+                                .accessibilityLabel("Stats/Chart")
                         }
-                    }) {
-                        Image(systemName: "gearshape")
-                            .font(.system(size:24))
-                            .foregroundColor(CryptogramTheme.Colors.text)
-                            .opacity(0.7)
-                            .frame(width: 44, height: 44)
-                            .accessibilityLabel("Settings")
+                        Spacer()
+                        Button(action: {
+                            withAnimation {
+                                if showSettings {
+                                    showSettings = false
+                                    showStatsOverlay = false
+                                } else {
+                                    showSettings.toggle()
+                                    showStatsOverlay = false
+                                }
+                                showBottomBarTemporarily()
+                            }
+                        }) {
+                            Image(systemName: "gearshape")
+                                .font(.system(size:24))
+                                .foregroundColor(CryptogramTheme.Colors.text)
+                                .opacity(0.7)
+                                .frame(width: 44, height: 44)
+                                .accessibilityLabel("Settings")
+                        }
+                    }
+                    .frame(height: 48, alignment: .bottom)
+                    .padding(.horizontal, 64)
+                    .frame(maxWidth: .infinity)
+                    .ignoresSafeArea(edges: .bottom)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        showBottomBarTemporarily()
                     }
                 }
-                .frame(height: 48, alignment: .bottom)
-                .padding(.horizontal, 64)
-                .frame(maxWidth: .infinity)
-                .ignoresSafeArea(edges: .bottom)
+                .zIndex(190)
+            } else if !showInfoOverlay && !(isBottomBarVisible || showSettings || showStatsOverlay) {
+                // Invisible tappable area to bring back bottom bar
+                VStack {
+                    Spacer()
+                    Rectangle()
+                        .fill(Color.clear)
+                        .frame(height: 48)
+                        .frame(maxWidth: .infinity)
+                        .ignoresSafeArea(edges: .bottom)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            showBottomBarTemporarily()
+                        }
+                }
+                .zIndex(189)
             }
-            .zIndex(200)
         }
         .onChange(of: viewModel.isComplete) { oldValue, isComplete in
             if isComplete {
@@ -388,7 +413,7 @@ struct PuzzleView: View {
         .animation(.easeIn(duration: 1.0), value: viewModel.isFailed)
         .animation(.easeIn(duration: 0.6), value: viewModel.isPaused)
         .onAppear {
-            // viewModel.resumeTimer()
+            showBottomBarTemporarily()
         }
         .onDisappear {
             // viewModel.pauseTimer()
@@ -409,6 +434,18 @@ struct PuzzleView: View {
                 displayedGameOver.append(ch)
             }
         }
+    }
+    
+    private func showBottomBarTemporarily() {
+        isBottomBarVisible = true
+        bottomBarHideWorkItem?.cancel()
+        let workItem = DispatchWorkItem {
+            withAnimation {
+                isBottomBarVisible = false
+            }
+        }
+        bottomBarHideWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: workItem)
     }
 }
 
