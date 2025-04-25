@@ -74,7 +74,7 @@ struct PuzzleView: View {
                             }) {
                                 Image(systemName: "calendar")
                                     .font(.title3)
-                                    .foregroundColor(viewModel.isDailyPuzzle ? Color.green.opacity(0.4) : CryptogramTheme.Colors.text)
+                                    .foregroundColor(viewModel.isDailyPuzzle ? Color(hex: "#01780F").opacity(0.8) : CryptogramTheme.Colors.text)
                                     .opacity(0.7)
                                     .frame(width: 44, height: 44)
                                     .accessibilityLabel("Calendar")

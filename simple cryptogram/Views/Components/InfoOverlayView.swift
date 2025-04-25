@@ -14,7 +14,7 @@ struct InfoOverlayView: View {
                 HStack(alignment: .top, spacing: 12) {
                     Image(systemName: "lightbulb.fill")
                         .rotationEffect(.degrees(45))
-                        .foregroundColor(Color.green.opacity(0.4))
+                        .foregroundColor(Color(hex: "#01780F").opacity(0.5))
                         .font(.system(size: 16))
                         .frame(width: 22, height: 22, alignment: .center)
                     Text("but you can use as many hints as you want")

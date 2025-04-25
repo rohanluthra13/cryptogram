@@ -795,6 +795,7 @@ class PuzzleViewModel: ObservableObject {
     
     // MARK: - Daily Puzzle Progress Persistence
     @Published var isDailyPuzzle: Bool = false
+    @Published var isDailyPuzzleCompletedPublished: Bool = false
     private func dailyProgressKey(for date: String) -> String {
         return "dailyPuzzleProgress-\(date)"
     }
@@ -871,5 +872,29 @@ class PuzzleViewModel: ObservableObject {
         if let idx = cells.firstIndex(where: { $0.id == cellId }) {
             cells[idx].wasJustFilled = false
         }
+    }
+    
+    // MARK: - Daily Puzzle Completion
+    /// Returns true if the current puzzle is the daily puzzle and has been completed today
+    var isDailyPuzzleCompleted: Bool {
+        guard isDailyPuzzle, let puzzle = currentPuzzle else { return false }
+        let dateStr = Self.currentDateString()
+        if let data = UserDefaults.standard.data(forKey: dailyProgressKey(for: dateStr)),
+           let progress = try? JSONDecoder().decode(DailyPuzzleProgress.self, from: data),
+           progress.quoteId == puzzle.quoteId {
+            let completed = progress.isCompleted
+            if isDailyPuzzleCompletedPublished != completed {
+                DispatchQueue.main.async {
+                    self.isDailyPuzzleCompletedPublished = completed
+                }
+            }
+            return completed
+        }
+        if isDailyPuzzleCompletedPublished != false {
+            DispatchQueue.main.async {
+                self.isDailyPuzzleCompletedPublished = false
+            }
+        }
+        return false
     }
 }

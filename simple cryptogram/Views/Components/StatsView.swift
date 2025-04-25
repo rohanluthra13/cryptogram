@@ -68,7 +68,7 @@ struct HintsView: View {
     var onRequestHint: () -> Void
     var maxHints: Int = Int.max  // Set to essentially unlimited
     
-    private let hintIconColor = Color.green.opacity(0.4)
+    private let hintIconColor = Color(hex: "#01780F").opacity(0.5)
     
     var body: some View {
         HStack(alignment: .center, spacing: 6) {

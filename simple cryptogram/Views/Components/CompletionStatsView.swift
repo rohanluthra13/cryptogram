@@ -5,7 +5,7 @@ struct CompletionStatsView: View {
     let maxMistakes: Int = 3
     
     // Green color for checkmark icons, matching hint icon color
-    private let checkmarkColor = Color.green.opacity(0.4)
+    private let checkmarkColor = Color(hex: "#01780F").opacity(0.5)
     
     var body: some View {
         HStack {

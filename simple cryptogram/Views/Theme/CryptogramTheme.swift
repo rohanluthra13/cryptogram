@@ -13,7 +13,7 @@ struct CryptogramTheme {
         
         // System colors for states
         static let error = Color(.systemRed)
-        static let success = Color(.systemGreen)
+        static let success = Color(hex: "#01780F")
         static let hint = Color(.systemOrange)
         static let preFilledBackground = Color(.systemBlue).opacity(0.15) // Muted blue-grey for pre-filled cells
         
