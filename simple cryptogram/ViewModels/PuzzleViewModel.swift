@@ -815,7 +815,6 @@ class PuzzleViewModel: ObservableObject {
             startTime: session.startTime,
             endTime: session.endTime,
             isCompleted: session.isComplete,
-            blueShadedCellIDs: nil,
             isPreFilled: isPreFilled,
             isRevealed: isRevealed
         )
