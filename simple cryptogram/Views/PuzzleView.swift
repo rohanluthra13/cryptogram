@@ -98,7 +98,7 @@ struct PuzzleView: View {
                             }
                             .layoutPriority(1)
                             .frame(maxWidth: .infinity)
-                            .frame(maxHeight: UIScreen.main.bounds.height * 0.45)
+                            .frame(maxHeight: UIScreen.main.bounds.height * 0.42)
                             .padding(.horizontal, 12)
                             .padding(.top, 60)
                             .padding(.bottom, 12)
