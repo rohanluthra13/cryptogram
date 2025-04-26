@@ -7,6 +7,7 @@ struct PuzzleView: View {
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
     @State private var showSettings = false
     @State private var showCompletionView = false
+    @State private var showDailyCompletionView = false
     @State private var showStatsOverlay = false
     @State private var showInfoOverlay = false
     @State private var displayedGameOver = ""
@@ -70,14 +71,22 @@ struct PuzzleView: View {
                     if viewModel.currentPuzzle != nil && !showSettings && !showStatsOverlay && !showCompletionView {
                         VStack(alignment: .trailing, spacing: 2) {
                             Button(action: {
-                                viewModel.loadDailyPuzzle()
+                                if viewModel.isDailyPuzzleCompletedPublished {
+                                    viewModel.loadDailyPuzzle() // Ensure currentPuzzle is set to the daily puzzle
+                                    // Delay the overlay slightly to ensure state is updated
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                                        showDailyCompletionView = true
+                                    }
+                                } else {
+                                    viewModel.loadDailyPuzzle()
+                                }
                             }) {
-                                Image(systemName: "calendar")
+                                Image(systemName: viewModel.isDailyPuzzleCompletedPublished ? "calendar.badge.checkmark" : "calendar")
                                     .font(.title3)
                                     .foregroundColor(viewModel.isDailyPuzzle ? Color(hex: "#01780F").opacity(0.8) : CryptogramTheme.Colors.text)
                                     .opacity(0.7)
                                     .frame(width: 44, height: 44)
-                                    .accessibilityLabel("Calendar")
+                                    .accessibilityLabel(viewModel.isDailyPuzzleCompletedPublished ? "Daily Puzzle Completed" : "Calendar")
                             }
                         }
                         .frame(minWidth: 0, maxWidth: .infinity, alignment: .trailing)
@@ -104,7 +113,7 @@ struct PuzzleView: View {
                             }
                             .layoutPriority(1)
                             .frame(maxWidth: .infinity)
-                            .frame(maxHeight: UIScreen.main.bounds.height * 0.42)
+                            .frame(maxHeight: UIScreen.main.bounds.height * 0.45)
                             .padding(.horizontal, 12)
                             .padding(.top, 60)
                             .padding(.bottom, 12)
@@ -217,7 +226,7 @@ struct PuzzleView: View {
                                 .frame(width: 24, height: 24)
                                 .accessibilityLabel("About / Info")
                         }
-                        .offset(x: -10, y: 60)
+                        .offset(x: -10, y: 50)
                         .padding(.trailing, 16)
                     }
                     Spacer()
@@ -232,18 +241,18 @@ struct PuzzleView: View {
                         .ignoresSafeArea()
                         .allowsHitTesting(false)
                     VStack {
-                        Spacer(minLength: 490)
+                        Spacer()
                         Text("paused")
                             .font(CryptogramTheme.Typography.body)
                             .fontWeight(.bold)
                             .foregroundColor(CryptogramTheme.Colors.text)
                             .padding(.horizontal, 32)
                             .padding(.vertical, 12)
+                            .padding(.bottom, 240)
                             .onTapGesture {
                                 viewModel.togglePause()
                             }
                             .allowsHitTesting(true)
-                        Spacer()
                     }
                 }
                 .zIndex(120)
@@ -258,18 +267,18 @@ struct PuzzleView: View {
                         .ignoresSafeArea()
                         .allowsHitTesting(false)
                     VStack {
-                        Spacer(minLength: 490)
+                        Spacer()
                         Text("game over")
                             .font(CryptogramTheme.Typography.body)
                             .fontWeight(.bold)
                             .foregroundColor(CryptogramTheme.Colors.text)
                             .padding(.horizontal, 32)
                             .padding(.vertical, 12)
+                            .padding(.bottom, 240)
                             .onTapGesture {
                                 // Optionally, you might want to trigger try again here, or leave as non-tappable
                             }
                             .allowsHitTesting(false) // Not tappable by default, nav bar handles retry
-                        Spacer()
                     }
                 }
                 .zIndex(120)
@@ -325,6 +334,13 @@ struct PuzzleView: View {
                     .environmentObject(themeManager)
                     .environmentObject(viewModel)
                     .zIndex(200)
+            }
+            // --- Daily Completion View overlay ---
+            if showDailyCompletionView {
+                PuzzleCompletionView(showCompletionView: $showDailyCompletionView, hideStats: true)
+                    .environmentObject(themeManager)
+                    .environmentObject(viewModel)
+                    .zIndex(201)
             }
 
             // --- Persistent Bottom Banner Above All Overlays (with icons) ---
@@ -411,6 +427,12 @@ struct PuzzleView: View {
                 // Then transition to completion view with a slight delay
                 withAnimation(.easeOut(duration: 0.5).delay(0.7)) {
                     showCompletionView = true
+                }
+                // If daily puzzle, set published completion state
+                if viewModel.isDailyPuzzle {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                        viewModel.isDailyPuzzleCompletedPublished = true
+                    }
                 }
             }
         }

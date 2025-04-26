@@ -34,6 +34,8 @@ struct PuzzleCompletionView: View {
     // Helper for summary typing speed
     var summaryTypingSpeed: Double { 0.015 }
 
+    var hideStats: Bool = false
+
     // MARK: - Helper for line typing animation
     private func typeLine(line: String, setter: @escaping (String) -> Void, completion: @escaping () -> Void) {
         let characters = Array(line)
@@ -256,10 +258,12 @@ struct PuzzleCompletionView: View {
                             .padding(.vertical, 5)
                             .opacity(showStats ? 1 : 0)
                     }
-                    CompletionStatsView()
-                        .environmentObject(viewModel)
-                        .opacity(showStats ? 1 : 0)
-                        .offset(y: showStats ? 0 : 20)
+                    if !hideStats {
+                        CompletionStatsView()
+                            .environmentObject(viewModel)
+                            .opacity(showStats ? 1 : 0)
+                            .offset(y: showStats ? 0 : 20)
+                    }
                     Button(action: { loadNextPuzzle() }) {
                         Image(systemName: viewModel.isFailed ? "arrow.counterclockwise" : "arrow.right")
                             .font(.system(size: 22))
