@@ -102,7 +102,7 @@ struct KeyboardView: View {
         .background(
             isRemaining ? AnyView(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(CryptogramTheme.Colors.success.opacity(0.3))
+                    .fill(CryptogramTheme.Colors.success.opacity(0.2))
                     .frame(width: keyHeight * 0.55, height: keyHeight * 0.7)
                     .shadow(color: Color.black.opacity(0.13), radius: 2, x: 0, y: 1)
             ) : AnyView(Color.clear)
@@ -140,7 +140,7 @@ struct KeyboardView: View {
         }
         .background(
             RoundedRectangle(cornerRadius: 8)
-                .fill(showRemainingLetters ? CryptogramTheme.Colors.success.opacity(0.3) : Color(.systemGray5))
+                .fill(showRemainingLetters ? CryptogramTheme.Colors.success.opacity(0.2) : Color(.systemGray5))
                 .frame(width: keyHeight * 0.55, height: keyHeight * 0.7)
                 .shadow(color: Color.black.opacity(0.13), radius: 2, x: 0, y: 1)
         )
