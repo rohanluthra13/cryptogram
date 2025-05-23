@@ -16,7 +16,6 @@ class DatabaseService {
         let databaseFileName = "quotes.db"
         // Path to the app's Documents directory
         let documentsURL = try! fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-        print("[DatabaseService] Documents directory: \(documentsURL.path)")
         let destinationURL = documentsURL.appendingPathComponent(databaseFileName)
 
         // Path to the bundled database in the app bundle
@@ -29,19 +28,16 @@ class DatabaseService {
         if !fileManager.fileExists(atPath: destinationURL.path) {
             do {
                 try fileManager.copyItem(atPath: bundleDBPath, toPath: destinationURL.path)
-                print("Copied quotes.db to Documents directory.")
             } catch {
                 print("Error copying quotes.db to Documents: \(error)")
                 return
             }
         } else {
-            print("quotes.db already exists in Documents directory.")
         }
 
         // Now open the DB from the Documents directory (read-write)
         do {
             _db = try Connection(destinationURL.path)
-            print("Successfully connected to writable database in Documents.")
             isInitialized = true
         } catch {
             print("Error opening writable database: \(error)")
@@ -67,9 +63,7 @@ class DatabaseService {
             let createdAt = Expression<String>("created_at")
             let quoteId = Expression<Int>("quote_id")
             let letterEncoded = Expression<String>("letter_encoded")
-            let _ = Expression<String>("letter_key")
             let numberEncoded = Expression<String>("number_encoded")
-            let _ = Expression<String>("number_key")
             // Start with a random query, excluding daily puzzle quotes
             var randomQuery = quotesTable
                 .select(id, quoteText, author, length, difficulty, createdAt)
@@ -118,9 +112,7 @@ class DatabaseService {
             let createdAt = Expression<String>("created_at")
             let encodedQuoteId = Expression<Int>("quote_id")
             let letterEncoded = Expression<String>("letter_encoded")
-            let _ = Expression<String>("letter_key")
             let numberEncoded = Expression<String>("number_encoded")
-            let _ = Expression<String>("number_key")
             if let quoteRow = try db.pluck(quotesTable.filter(quoteId == id)),
                let encodedRow = try db.pluck(encodedQuotesTable.filter(encodedQuoteId == id)) {
                 let encodedText = encodingType == "Numbers" ? encodedRow[numberEncoded] : encodedRow[letterEncoded]
@@ -200,9 +192,7 @@ class DatabaseService {
             let createdAt = Expression<String>("created_at")
             let encodedQuoteId = Expression<Int>("quote_id")
             let letterEncoded = Expression<String>("letter_encoded")
-            let _ = Expression<String>("letter_key")
             let numberEncoded = Expression<String>("number_encoded")
-            let _ = Expression<String>("number_key")
 
             // Find the daily puzzle for the specified date
             if let dailyRow = try db.pluck(dailyPuzzlesTable.filter(puzzleDate == dateString)) {

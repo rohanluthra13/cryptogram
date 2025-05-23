@@ -45,9 +45,7 @@ struct PuzzleSession: Equatable {
     }
     
     mutating func incrementMistakes() {
-        print("[DEBUG] incrementMistakes called. Previous mistakeCount: \(mistakeCount)")
         mistakeCount += 1
-        print("[DEBUG] incrementMistakes: New mistakeCount: \(mistakeCount)")
         // defer failure marking to checkPuzzleCompletion for proper logging
     }
     

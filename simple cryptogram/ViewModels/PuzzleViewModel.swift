@@ -163,7 +163,6 @@ class PuzzleViewModel: ObservableObject {
     }
     
     init(initialPuzzle: Puzzle? = nil, progressStore: PuzzleProgressStore? = nil) {
-        print("=== PuzzleViewModel Initialization ===")
         self.databaseService = DatabaseService.shared
         // Use injected store or default to LocalPuzzleProgressStore
         if let store = progressStore {
@@ -175,18 +174,14 @@ class PuzzleViewModel: ObservableObject {
         }
         
         if let puzzle = initialPuzzle {
-            print("Using provided puzzle")
             self.currentPuzzle = puzzle
             startNewPuzzle(puzzle: puzzle)
         } else {
-            print("Attempting to load random puzzle from database")
             // Try to load a random puzzle from the database
             if let puzzle = databaseService.fetchRandomPuzzle(encodingType: encodingType) {
-                print("Successfully loaded puzzle from database")
                 self.currentPuzzle = puzzle
                 startNewPuzzle(puzzle: puzzle)
             } else {
-                print("Failed to load puzzle from database, using fallback")
                 // Fallback to a default puzzle if database is not available
                 self.currentPuzzle = Puzzle(
                     quoteId: 0,
@@ -223,7 +218,6 @@ class PuzzleViewModel: ObservableObject {
     // MARK: - Public Methods
     
     func startNewPuzzle(puzzle: Puzzle, skipAnimationInit: Bool = false) {
-        print("[DEBUG] startNewPuzzle called, skipAnimationInit: \(skipAnimationInit)")
         completedLetters = [] // Reset completed letters
         currentPuzzle = puzzle
         cells = puzzle.createCells(encodingType: encodingType)
@@ -234,18 +228,6 @@ class PuzzleViewModel: ObservableObject {
         letterMapping = [:]
         letterUsage = [:]
         
-        print("New puzzle started with \(cells.count) cells")
-        
-        // Debug: Log cell information to help diagnose space issues
-        #if DEBUG
-        print("=== Cell Debug Information ===")
-        for (index, cell) in cells.enumerated() {
-            let cellType = cell.isSymbol ? "Symbol" : "Letter"
-            let solutionInfo = cell.solutionChar != nil ? "Solution: \(cell.solutionChar!)" : "No solution"
-            print("Cell \(index): '\(cell.encodedChar)' (\(cellType)) - \(solutionInfo)")
-        }
-        print("=== End Cell Debug ===")
-        #endif
         
         // --- Restore pre-fill logic for normal mode ---
         let difficulty = UserSettings.currentMode
@@ -274,7 +256,6 @@ class PuzzleViewModel: ObservableObject {
                         revealedIndices.insert(indexToReveal)
                     }
                 }
-                print("Normal mode: Revealed \(revealedIndices.count) cells for letters: \(lettersToReveal.map { String($0) }.joined())")
             }
         }
         // --- End pre-fill logic ---
@@ -301,7 +282,6 @@ class PuzzleViewModel: ObservableObject {
     
     // Unified cell modification system that only updates the specific cell
     private func modifyCells(at index: Int, operation: CellOperation) -> Bool {
-        print("[DEBUG] modifyCells called with index: \(index), operation: \(operation)")
         guard index >= 0 && index < cells.count, !cells[index].isSymbol else { return false }
         
         let targetCell = cells[index]
@@ -342,10 +322,7 @@ class PuzzleViewModel: ObservableObject {
             
             // Only count a mistake once per entry and only for newly entered incorrect letters
             if !isCorrect && !uppercaseLetter.isEmpty && wasEmpty {
-                print("[DEBUG] Detected mistake at cell index \(index). Calling incrementMistakes().")
-                print("[DEBUG] Before incrementMistakes, session.mistakeCount = \(session.mistakeCount)")
                 session.incrementMistakes()
-                print("[DEBUG] After incrementMistakes, session.mistakeCount = \(session.mistakeCount)")
                 session = session // Ensure UI updates after mutation
                 
                 // For incorrect letters, remove them after a brief delay
@@ -369,12 +346,10 @@ class PuzzleViewModel: ObservableObject {
             
         case .reveal:
             guard let solutionChar = targetCell.solutionChar else { 
-                print("DEBUG: Tried to reveal a cell without a solution character at index \(index)")
                 return false 
             }
             let solutionString = String(solutionChar)
             
-            print("DEBUG: Revealing cell at index \(index) with encoded char '\(encodedChar)' and solution '\(solutionString)'")
             
             // Reveal only the target cell
             cells[index].userInput = solutionString
@@ -403,7 +378,6 @@ class PuzzleViewModel: ObservableObject {
     
     // Refactor existing methods to use the unified cell modification approach
     func inputLetter(_ letter: String, at index: Int) {
-        print("[DEBUG] inputLetter called with letter: \(letter), index: \(index)")
         if session.startTime == nil {
             session.startTime = Date() // Start timer on first input
             session = session
@@ -514,7 +488,6 @@ class PuzzleViewModel: ObservableObject {
                     }
                 }
                 // Convert Character sequence to String for printing
-                print("Normal mode: Revealed \(revealedIndices.count) cells for letters: \(lettersToReveal.map { String($0) }.joined())")
             }
         }
         // --- End Difficulty Logic ---
@@ -556,7 +529,6 @@ class PuzzleViewModel: ObservableObject {
     func loadNewPuzzle() {
         isDailyPuzzle = false
         completedLetters = [] // Reset completed letters
-        print("Loading new puzzle...")
         let selectedDifficulties = UserSettings.selectedDifficulties
         // Exclude puzzles already completed by user
         let completedIDs = Set(progressStore.allAttempts().filter { $0.completedAt != nil }.map { $0.puzzleID })
@@ -589,7 +561,6 @@ class PuzzleViewModel: ObservableObject {
         if let puzzle = nextPuzzle {
             startNewPuzzle(puzzle: puzzle)
         } else {
-            print("Error: Failed to load a new puzzle")
         }
         updateCompletedLetters() // Ensure state for pre-filled cells
         handleUserAction()
@@ -693,7 +664,6 @@ class PuzzleViewModel: ObservableObject {
         let totalCount = nonSymbolCells.count
         
         // Debug log
-        print("Puzzle completion check: \(correctCount)/\(totalCount) cells correct")
         
         // The puzzle is complete when all non-symbol cells have correct inputs
         let allCorrect = correctCount == totalCount
@@ -711,7 +681,6 @@ class PuzzleViewModel: ObservableObject {
         
         // Also check if the game is failed due to mistake count
         if session.mistakeCount >= 3 && !session.isFailed {
-            print("Game over: Too many mistakes!")
             session.markFailed()
             session = session
             // --- Log failed attempt ---
@@ -762,7 +731,6 @@ class PuzzleViewModel: ObservableObject {
     
     func userEngaged() {
         guard !hasUserEngaged else { return }
-        print("[DEBUG] userEngaged() called")
         hasUserEngaged = true
         handleUserAction()
     }
@@ -789,7 +757,6 @@ class PuzzleViewModel: ObservableObject {
             startNewPuzzle(puzzle: puzzle, skipAnimationInit: false) // allow pre-fill
             // Do NOT call loadDailyPuzzleProgress here
         } else {
-            print("No daily puzzle found for today.")
         }
     }
     

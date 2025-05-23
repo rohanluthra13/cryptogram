@@ -70,7 +70,6 @@ struct PuzzleCell: View {
         .disabled(cell.isRevealed)
         .onChange(of: shouldAnimate) { _, animate in
             if animate {
-                print("[DEBUG] shouldAnimate triggered for cell ID: \(cell.id)")
                 // Only animate border/text color, no background highlight
                 withAnimation(.easeInOut(duration: 0.3)) {
                     if !effectiveCompleted {

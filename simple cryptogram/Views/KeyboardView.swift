@@ -21,7 +21,6 @@ struct KeyboardView: View {
     private let rowSpacing: CGFloat = 6
 
     var body: some View {
-        print("KeyboardView: completedLetters = \(completedLetters)")
         return VStack(spacing: rowSpacing) {
             // Top row
             HStack(spacing: 2) {

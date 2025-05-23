@@ -35,8 +35,6 @@ struct Puzzle: Identifiable {
     
     // Creates a list of CryptogramCells from the puzzle
     func createCells(encodingType: String = "Letters") -> [CryptogramCell] {
-        var _ = [CryptogramCell]()
-        
         if encodingType == "Letters" {
             return createLetterEncodedCells()
         } else {
@@ -56,8 +54,6 @@ struct Puzzle: Identifiable {
     // - Letters are properly aligned between encoded and solution text
     // - No extra cells are created for spaces/punctuation in the encoded text
     private func createLetterEncodedCells() -> [CryptogramCell] {
-        var _ = [CryptogramCell]()
-        
         // Ensure solution and encodedText are properly aligned
         let solutionArray = Array(solution.uppercased())
         let encodedArray = Array(encodedText)
@@ -72,12 +68,10 @@ struct Puzzle: Identifiable {
         
         // Ensure we have enough solution characters for the encoded text
         guard letterCount <= solutionArray.count else {
-            print("Error: Encoded text has more letters than solution")
             return []
         }
         
         var solutionIndex = 0
-        var _ = 0
         var processedCells: [CryptogramCell] = []
         
         for i in 0..<encodedArray.count {
@@ -157,10 +151,6 @@ struct Puzzle: Identifiable {
             solutionIndex += 1
         }
         
-        // Debug information
-        print("Letter encoded puzzle: \(encodedText)")
-        print("Solution: \(solution)")
-        print("Created \(finalCells.count) cells")
         
         return finalCells
     }
@@ -219,7 +209,6 @@ struct Puzzle: Identifiable {
                 }
             } else if component.count > 1 {
                 // This might be multiple characters (rare case)
-                print("Warning: Multi-character component in number encoding: \(component)")
                 
                 // If it contains any numbers, it might need to map to solution
                 let hasNumbers = component.contains(where: { $0.isNumber })
@@ -289,10 +278,6 @@ struct Puzzle: Identifiable {
             solutionIndex += 1
         }
         
-        // Debug information
-        print("Number encoded puzzle: \(encodedText)")
-        print("Solution: \(solution)")
-        print("Created \(finalCells.count) cells, mapped to \(solutionIndex) solution characters")
         
         return finalCells
     }
