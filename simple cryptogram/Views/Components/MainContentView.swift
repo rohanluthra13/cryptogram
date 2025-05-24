@@ -1,0 +1,86 @@
+import SwiftUI
+
+struct MainContentView: View {
+    @EnvironmentObject private var viewModel: PuzzleViewModel
+    @ObservedObject var uiState: PuzzleViewState
+    let layoutBinding: Binding<NavigationBarLayout>
+    
+    var body: some View {
+        if viewModel.currentPuzzle != nil {
+            VStack(spacing: 0) {
+                Group {
+                    ScrollView {
+                        WordAwarePuzzleGrid()
+                            .environmentObject(viewModel)
+                            .padding(.horizontal, PuzzleViewConstants.Spacing.puzzleGridHorizontalPadding)
+                            .allowsHitTesting(!viewModel.isPaused)
+                    }
+                    .layoutPriority(1)
+                    .frame(maxWidth: .infinity)
+                    .frame(maxHeight: UIScreen.main.bounds.height * PuzzleViewConstants.Sizes.puzzleGridMaxHeightRatio)
+                    .padding(.horizontal, PuzzleViewConstants.Spacing.mainContentHorizontalPadding)
+                    .padding(.top, PuzzleViewConstants.Spacing.puzzleGridTopPadding)
+                    .padding(.bottom, PuzzleViewConstants.Spacing.puzzleGridBottomPadding)
+
+                    Rectangle()
+                        .fill(Color.clear)
+                        .frame(height: PuzzleViewConstants.Spacing.clearSpacerHeight)
+                        .allowsHitTesting(false)
+                }
+                .opacity(uiState.isSwitchingPuzzle ? 0 : 1)
+                .animation(.easeInOut(duration: PuzzleViewConstants.Animation.puzzleSwitchDuration), value: uiState.isSwitchingPuzzle)
+
+                // Navigation Bar with all controls in a single layer
+                NavigationBarView(
+                    onMoveLeft: { viewModel.moveToAdjacentCell(direction: -1) },
+                    onMoveRight: { viewModel.moveToAdjacentCell(direction: 1) },
+                    onTogglePause: viewModel.togglePause,
+                    onNextPuzzle: {
+                        uiState.animatePuzzleSwitch {
+                            viewModel.refreshPuzzleWithCurrentSettings()
+                        }
+                    },
+                    onTryAgain: { 
+                        viewModel.reset()
+                        // Re-apply difficulty settings to the same puzzle
+                        if let currentPuzzle = viewModel.currentPuzzle {
+                            viewModel.startNewPuzzle(puzzle: currentPuzzle)
+                        }
+                    },
+                    isPaused: viewModel.isPaused,
+                    isFailed: viewModel.isFailed,
+                    showCenterButtons: true, // Show all buttons in the nav bar
+                    layout: layoutBinding
+                )
+                
+                // Keyboard View
+                KeyboardView(
+                    onLetterPress: { letter in
+                        if let index = viewModel.selectedCellIndex {
+                            viewModel.inputLetter(String(letter), at: index)
+                        }
+                    },
+                    onBackspacePress: { 
+                        if let index = viewModel.selectedCellIndex {
+                            viewModel.handleDelete(at: index)
+                        }
+                    },
+                    completedLetters: viewModel.completedLetters
+                )
+                .padding(.bottom, 0)
+                .padding(.horizontal, PuzzleViewConstants.Spacing.keyboardHorizontalPadding)
+                .frame(maxWidth: .infinity)
+                .allowsHitTesting(!viewModel.isPaused)
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+}
+
+#Preview {
+    MainContentView(
+        uiState: PuzzleViewState(),
+        layoutBinding: .constant(.leftLayout)
+    )
+    .environmentObject(PuzzleViewModel())
+}
