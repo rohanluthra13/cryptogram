@@ -6,7 +6,7 @@ import CryptoKit
  * This model replaces the legacy EncodedChar model and provides enhanced functionality.
  * The 'encodedChar' property corresponds to what was previously 'value' in EncodedChar.
  */
-struct CryptogramCell: Identifiable {
+struct CryptogramCell: Identifiable, Equatable {
     let id: UUID
     let quoteId: Int
     let position: Int            // Position in the original puzzle

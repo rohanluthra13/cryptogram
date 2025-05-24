@@ -69,12 +69,7 @@ struct PuzzleView: View {
                 withAnimation(.easeOut(duration: PuzzleViewConstants.Animation.puzzleSwitchDuration).delay(PuzzleViewConstants.Animation.completionDelay)) {
                     uiState.showCompletionView = true
                 }
-                // If daily puzzle, set published completion state
-                if viewModel.isDailyPuzzle {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + PuzzleViewConstants.Animation.completionWiggleDelay) {
-                        viewModel.isDailyPuzzleCompletedPublished = true
-                    }
-                }
+                // Daily puzzle completion state is now handled internally by DailyPuzzleManager
             }
         }
         .navigationBarHidden(true)

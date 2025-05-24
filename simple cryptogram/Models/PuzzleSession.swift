@@ -1,7 +1,7 @@
 import Foundation
 
 /// Represents a single puzzle-solving session with metrics and state
-struct PuzzleSession: Equatable {
+struct PuzzleSession {
     var startTime: Date?
     var endTime: Date?
     var mistakeCount: Int
@@ -18,6 +18,9 @@ struct PuzzleSession: Equatable {
     
     var isPaused: Bool = false
     private var pauseStartTime: Date?
+    
+    // Store additional data
+    var userInfo: [String: Any] = [:]
     
     // Determines if the session has actively started
     var hasStarted: Bool {
