@@ -6,22 +6,35 @@ class DatabaseService {
     private var _db: Connection?
     private let databaseFileName = "quotes.db"
     private var isInitialized = false
+    private var initializationError: DatabaseError?
     
     private init() {
-        setupDatabase()
+        do {
+            try setupDatabase()
+        } catch {
+            if let dbError = error as? DatabaseError {
+                initializationError = dbError
+            } else {
+                initializationError = .initializationFailed(error.localizedDescription)
+            }
+        }
     }
     
-    private func setupDatabase() {
+    private func setupDatabase() throws {
         let fileManager = FileManager.default
         let databaseFileName = "quotes.db"
         // Path to the app's Documents directory
-        let documentsURL = try! fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        let documentsURL: URL
+        do {
+            documentsURL = try fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+        } catch {
+            throw DatabaseError.fileSystemError("Cannot access documents directory: \(error.localizedDescription)")
+        }
         let destinationURL = documentsURL.appendingPathComponent(databaseFileName)
 
         // Path to the bundled database in the app bundle
         guard let bundleDBPath = Bundle.main.path(forResource: "quotes", ofType: "db") else {
-            print("Error: Could not find quotes.db in bundle.")
-            return
+            throw DatabaseError.initializationFailed("Could not find quotes.db in bundle")
         }
 
         // Copy the DB from the bundle to Documents if it doesn't already exist there
@@ -29,10 +42,8 @@ class DatabaseService {
             do {
                 try fileManager.copyItem(atPath: bundleDBPath, toPath: destinationURL.path)
             } catch {
-                print("Error copying quotes.db to Documents: \(error)")
-                return
+                throw DatabaseError.fileSystemError("Failed to copy database to documents: \(error.localizedDescription)")
             }
-        } else {
         }
 
         // Now open the DB from the Documents directory (read-write)
@@ -40,17 +51,19 @@ class DatabaseService {
             _db = try Connection(destinationURL.path)
             isInitialized = true
         } catch {
-            print("Error opening writable database: \(error)")
+            throw DatabaseError.connectionFailed
         }
     }
     
     // Make the database connection accessible for progress tracking and other services
     var db: Connection? { _db }
     
-    func fetchRandomPuzzle(current: Puzzle? = nil, encodingType: String = "Letters", selectedDifficulties: [String] = UserSettings.selectedDifficulties) -> Puzzle? {
+    func fetchRandomPuzzle(current: Puzzle? = nil, encodingType: String = "Letters", selectedDifficulties: [String] = UserSettings.selectedDifficulties) throws -> Puzzle? {
         guard let db = _db else {
-            print("Error: Database not initialized")
-            return nil
+            if let error = initializationError {
+                throw error
+            }
+            throw DatabaseError.connectionFailed
         }
         do {
             let quotesTable = Table("quotes")
@@ -91,15 +104,17 @@ class DatabaseService {
                 )
             }
         } catch {
-            print("Error fetching random puzzle: \(error.localizedDescription)")
+            throw DatabaseError.queryFailed("Failed to fetch random puzzle: \(error.localizedDescription)")
         }
-        return nil
+        throw DatabaseError.noDataFound
     }
     
-    func fetchPuzzleById(_ id: Int, encodingType: String = "Letters") -> Puzzle? {
+    func fetchPuzzleById(_ id: Int, encodingType: String = "Letters") throws -> Puzzle? {
         guard let db = _db else {
-            print("Error: Database not initialized")
-            return nil
+            if let error = initializationError {
+                throw error
+            }
+            throw DatabaseError.connectionFailed
         }
         do {
             let quotesTable = Table("quotes")
@@ -128,16 +143,18 @@ class DatabaseService {
                 )
             }
         } catch {
-            print("Error fetching puzzle by ID: \(error.localizedDescription)")
+            throw DatabaseError.queryFailed("Failed to fetch puzzle by ID: \(error.localizedDescription)")
         }
-        return nil
+        throw DatabaseError.noDataFound
     }
     
     /// Fetch an Author record by name
-    func fetchAuthor(byName name: String) async -> Author? {
+    func fetchAuthor(byName name: String) async throws -> Author? {
         guard let db = _db else {
-            print("Error: Database not initialized")
-            return nil
+            if let error = initializationError {
+                throw error
+            }
+            throw DatabaseError.connectionFailed
         }
         do {
             let authorsTable = Table("authors")
@@ -163,16 +180,18 @@ class DatabaseService {
                 )
             }
         } catch {
-            print("Error fetching author: \(error)")
+            throw DatabaseError.queryFailed("Failed to fetch author: \(error.localizedDescription)")
         }
         return nil
     }
     
     /// Fetch the daily puzzle for a given date (default: today)
-    func fetchDailyPuzzle(for date: Date = Date(), encodingType: String = "Letters") -> Puzzle? {
+    func fetchDailyPuzzle(for date: Date = Date(), encodingType: String = "Letters") throws -> Puzzle? {
         guard let db = _db else {
-            print("Error: Database not initialized")
-            return nil
+            if let error = initializationError {
+                throw error
+            }
+            throw DatabaseError.connectionFailed
         }
         // Format date as yyyy-MM-dd
         let dateFormatter = DateFormatter()
@@ -215,7 +234,7 @@ class DatabaseService {
                 }
             }
         } catch {
-            print("Error fetching daily puzzle: \(error.localizedDescription)")
+            throw DatabaseError.queryFailed("Failed to fetch daily puzzle: \(error.localizedDescription)")
         }
         return nil
     }

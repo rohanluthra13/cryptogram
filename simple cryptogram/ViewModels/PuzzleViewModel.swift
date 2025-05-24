@@ -19,6 +19,17 @@ class PuzzleViewModel: ObservableObject {
     @Published var completedLetters: Set<String> = [] // Set of encoded letters that are completed (all cells filled, normal mode only)
     @Published var hasUserEngaged: Bool = false // Track if the user has interacted with the puzzle yet
     @Published var showCompletedHighlights: Bool = false // Toggle for displaying completed‑letter highlights
+    @Published var currentError: DatabaseError? {
+        didSet {
+            // Attempt automatic recovery for certain errors
+            if let error = currentError {
+                if ErrorRecoveryService.shared.attemptRecovery(from: error) {
+                    // If recovery succeeded, clear the error
+                    currentError = nil
+                }
+            }
+        }
+    }
     
     // Add letter mapping to track and enforce cryptogram rules
     private var letterMapping: [String: String] = [:]
@@ -41,8 +52,13 @@ class PuzzleViewModel: ObservableObject {
         lastAuthorName = name
         Task { [weak self] in
             guard let self = self else { return }
-            let author = await self.databaseService.fetchAuthor(byName: name)
-            self.currentAuthor = author
+            do {
+                let author = try await self.databaseService.fetchAuthor(byName: name)
+                self.currentAuthor = author
+            } catch {
+                // Silently fail for author info as it's not critical
+                self.currentAuthor = nil
+            }
         }
     }
     
@@ -123,29 +139,64 @@ class PuzzleViewModel: ObservableObject {
     // --- Stats for Current Puzzle ---
     var completionCountForCurrentPuzzle: Int {
         guard let puzzle = currentPuzzle else { return 0 }
-        return progressStore.attempts(for: puzzle.id, encodingType: encodingType).filter { $0.completedAt != nil }.count
+        do {
+            return try progressStore.attempts(for: puzzle.id, encodingType: encodingType).filter { $0.completedAt != nil }.count
+        } catch {
+            // Return 0 for stats on error - non-critical
+            return 0
+        }
     }
     var failureCountForCurrentPuzzle: Int {
         guard let puzzle = currentPuzzle else { return 0 }
-        return progressStore.attempts(for: puzzle.id, encodingType: encodingType).filter { $0.failedAt != nil }.count
+        do {
+            return try progressStore.attempts(for: puzzle.id, encodingType: encodingType).filter { $0.failedAt != nil }.count
+        } catch {
+            // Return 0 for stats on error - non-critical
+            return 0
+        }
     }
     var bestTimeForCurrentPuzzle: TimeInterval? {
         guard let puzzle = currentPuzzle else { return nil }
-        return progressStore.bestCompletionTime(for: puzzle.id, encodingType: encodingType)
+        do {
+            return try progressStore.bestCompletionTime(for: puzzle.id, encodingType: encodingType)
+        } catch {
+            // Return nil for stats on error - non-critical
+            return nil
+        }
     }
     
     // --- Global Stats ---
     var totalAttempts: Int {
-        progressStore.allAttempts().count
+        do {
+            return try progressStore.allAttempts().count
+        } catch {
+            // Return 0 for stats on error - non-critical
+            return 0
+        }
     }
     var totalCompletions: Int {
-        progressStore.allAttempts().filter { $0.completedAt != nil }.count
+        do {
+            return try progressStore.allAttempts().filter { $0.completedAt != nil }.count
+        } catch {
+            // Return 0 for stats on error - non-critical
+            return 0
+        }
     }
     var totalFailures: Int {
-        progressStore.allAttempts().filter { $0.failedAt != nil }.count
+        do {
+            return try progressStore.allAttempts().filter { $0.failedAt != nil }.count
+        } catch {
+            // Return 0 for stats on error - non-critical
+            return 0
+        }
     }
     var globalBestTime: TimeInterval? {
-        progressStore.allAttempts().compactMap { $0.completionTime }.min()
+        do {
+            return try progressStore.allAttempts().compactMap { $0.completionTime }.min()
+        } catch {
+            // Return nil for stats on error - non-critical
+            return nil
+        }
     }
     
     // MARK: - Aggregate User Stats
@@ -158,9 +209,14 @@ class PuzzleViewModel: ObservableObject {
     
     /// Average completion time over all successful attempts
     var averageTime: TimeInterval? {
-        let times = progressStore.allAttempts().compactMap { $0.completionTime }
-        guard !times.isEmpty else { return nil }
-        return times.reduce(0, +) / Double(times.count)
+        do {
+            let times = try progressStore.allAttempts().compactMap { $0.completionTime }
+            guard !times.isEmpty else { return nil }
+            return times.reduce(0, +) / Double(times.count)
+        } catch {
+            // Return nil for stats on error - non-critical
+            return nil
+        }
     }
     
     init(initialPuzzle: Puzzle? = nil, progressStore: PuzzleProgressStore? = nil) {
@@ -179,11 +235,33 @@ class PuzzleViewModel: ObservableObject {
             startNewPuzzle(puzzle: puzzle)
         } else {
             // Try to load a random puzzle from the database
-            if let puzzle = databaseService.fetchRandomPuzzle(encodingType: encodingType) {
-                self.currentPuzzle = puzzle
-                startNewPuzzle(puzzle: puzzle)
-            } else {
-                // Fallback to a default puzzle if database is not available
+            do {
+                if let puzzle = try databaseService.fetchRandomPuzzle(encodingType: encodingType) {
+                    self.currentPuzzle = puzzle
+                    startNewPuzzle(puzzle: puzzle)
+                } else {
+                    // Fallback to a default puzzle if database is not available
+                    self.currentPuzzle = Puzzle(
+                        quoteId: 0,
+                        encodedText: "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
+                        solution: "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
+                        hint: "A pangram containing every letter of the alphabet"
+                    )
+                    startNewPuzzle(puzzle: self.currentPuzzle!)
+                }
+            } catch let error as DatabaseError {
+                self.currentError = error
+                // Use fallback puzzle when database error occurs
+                self.currentPuzzle = Puzzle(
+                    quoteId: 0,
+                    encodedText: "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
+                    solution: "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
+                    hint: "A pangram containing every letter of the alphabet"
+                )
+                startNewPuzzle(puzzle: self.currentPuzzle!)
+            } catch {
+                self.currentError = DatabaseError.connectionFailed
+                // Use fallback puzzle when database error occurs
                 self.currentPuzzle = Puzzle(
                     quoteId: 0,
                     encodedText: "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
@@ -510,28 +588,37 @@ class PuzzleViewModel: ObservableObject {
     
     func refreshPuzzleWithCurrentSettings() {
         isDailyPuzzle = false
-        // Exclude puzzles already completed by user
-        let completedIDs = Set(progressStore.allAttempts().filter { $0.completedAt != nil }.map { $0.puzzleID })
-        var nextPuzzle: Puzzle?
-        let maxTries = 10
-        var tries = 0
-        repeat {
-            if let candidate = databaseService.fetchRandomPuzzle(current: currentPuzzle, encodingType: encodingType) {
-                if !completedIDs.contains(candidate.id) {
-                    nextPuzzle = candidate
+        
+        do {
+            // Exclude puzzles already completed by user
+            let completedIDs = Set(try progressStore.allAttempts().filter { $0.completedAt != nil }.map { $0.puzzleID })
+            var nextPuzzle: Puzzle?
+            let maxTries = 10
+            var tries = 0
+            
+            repeat {
+                if let candidate = try databaseService.fetchRandomPuzzle(current: currentPuzzle, encodingType: encodingType) {
+                    if !completedIDs.contains(candidate.id) {
+                        nextPuzzle = candidate
+                        break
+                    }
+                } else {
                     break
                 }
-            } else {
-                break
+                tries += 1
+            } while tries < maxTries
+            
+            // If no new unique puzzle found, allow any
+            if nextPuzzle == nil {
+                nextPuzzle = try databaseService.fetchRandomPuzzle(encodingType: encodingType)
             }
-            tries += 1
-        } while tries < maxTries
-        // If no new unique puzzle found, allow any
-        if nextPuzzle == nil {
-            nextPuzzle = databaseService.fetchRandomPuzzle(encodingType: encodingType)
-        }
-        if let puzzle = nextPuzzle {
-            startNewPuzzle(puzzle: puzzle)
+            
+            if let puzzle = nextPuzzle {
+                startNewPuzzle(puzzle: puzzle)
+            }
+        } catch {
+            // Silently handle error - keep current puzzle
+            currentError = error as? DatabaseError ?? DatabaseError.connectionFailed
         }
     }
 
@@ -539,38 +626,74 @@ class PuzzleViewModel: ObservableObject {
         isDailyPuzzle = false
         completedLetters = [] // Reset completed letters
         let selectedDifficulties = UserSettings.selectedDifficulties
-        // Exclude puzzles already completed by user
-        let completedIDs = Set(progressStore.allAttempts().filter { $0.completedAt != nil }.map { $0.puzzleID })
-        var nextPuzzle: Puzzle?
-        let maxTries = 10
-        var tries = 0
-        repeat {
-            if let candidate = databaseService.fetchRandomPuzzle(
-                current: currentPuzzle,
-                encodingType: encodingType,
-                selectedDifficulties: selectedDifficulties
-            ) {
-                if !completedIDs.contains(candidate.id) {
-                    nextPuzzle = candidate
+        
+        do {
+            // Exclude puzzles already completed by user
+            let completedIDs = Set(try progressStore.allAttempts().filter { $0.completedAt != nil }.map { $0.puzzleID })
+            var nextPuzzle: Puzzle?
+            let maxTries = 10
+            var tries = 0
+            
+            repeat {
+                if let candidate = try databaseService.fetchRandomPuzzle(
+                    current: currentPuzzle,
+                    encodingType: encodingType,
+                    selectedDifficulties: selectedDifficulties
+                ) {
+                    if !completedIDs.contains(candidate.id) {
+                        nextPuzzle = candidate
+                        break
+                    }
+                } else {
                     break
                 }
-            } else {
-                break
+                tries += 1
+            } while tries < maxTries
+            
+            // If no new unique puzzle found, allow any
+            if nextPuzzle == nil {
+                nextPuzzle = try databaseService.fetchRandomPuzzle(
+                    encodingType: encodingType,
+                    selectedDifficulties: selectedDifficulties
+                )
             }
-            tries += 1
-        } while tries < maxTries
-        // If no new unique puzzle found, allow any
-        if nextPuzzle == nil {
-            nextPuzzle = databaseService.fetchRandomPuzzle(
-                encodingType: encodingType,
-                selectedDifficulties: selectedDifficulties
+            
+            // Load or fallback
+            if let puzzle = nextPuzzle {
+                startNewPuzzle(puzzle: puzzle)
+            } else {
+                // Use fallback puzzle if no puzzle found
+                currentError = DatabaseError.noDataFound
+                let fallbackPuzzle = Puzzle(
+                    quoteId: 0,
+                    encodedText: "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
+                    solution: "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
+                    hint: "A pangram containing every letter of the alphabet"
+                )
+                startNewPuzzle(puzzle: fallbackPuzzle)
+            }
+        } catch let error as DatabaseError {
+            currentError = error
+            // Use fallback puzzle on database error
+            let fallbackPuzzle = Puzzle(
+                quoteId: 0,
+                encodedText: "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
+                solution: "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
+                hint: "A pangram containing every letter of the alphabet"
             )
+            startNewPuzzle(puzzle: fallbackPuzzle)
+        } catch {
+            currentError = DatabaseError.connectionFailed
+            // Use fallback puzzle on unexpected error
+            let fallbackPuzzle = Puzzle(
+                quoteId: 0,
+                encodedText: "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
+                solution: "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
+                hint: "A pangram containing every letter of the alphabet"
+            )
+            startNewPuzzle(puzzle: fallbackPuzzle)
         }
-        // Load or fallback
-        if let puzzle = nextPuzzle {
-            startNewPuzzle(puzzle: puzzle)
-        } else {
-        }
+        
         updateCompletedLetters() // Ensure state for pre-filled cells
         handleUserAction()
     }
@@ -647,7 +770,14 @@ class PuzzleViewModel: ObservableObject {
             hintCount: session.hintCount,
             mistakeCount: session.mistakeCount
         )
-        progressStore.logAttempt(attempt)
+        
+        do {
+            try progressStore.logAttempt(attempt)
+        } catch {
+            // Logging errors are non-critical - don't interrupt gameplay
+            // Just store the error for potential UI display
+            currentError = error as? DatabaseError ?? DatabaseError.connectionFailed
+        }
     }
 
     func logPuzzleFailure() {
@@ -663,7 +793,14 @@ class PuzzleViewModel: ObservableObject {
             hintCount: session.hintCount,
             mistakeCount: session.mistakeCount
         )
-        progressStore.logAttempt(attempt)
+        
+        do {
+            try progressStore.logAttempt(attempt)
+        } catch {
+            // Logging errors are non-critical - don't interrupt gameplay
+            // Just store the error for potential UI display
+            currentError = error as? DatabaseError ?? DatabaseError.connectionFailed
+        }
     }
 
     private func checkPuzzleCompletion() {
@@ -747,26 +884,47 @@ class PuzzleViewModel: ObservableObject {
     
     // --- Global Stats Reset ---
     func resetAllProgress() {
-        progressStore.clearAllProgress()
+        do {
+            try progressStore.clearAllProgress()
+        } catch {
+            // Set error for UI display
+            currentError = error as? DatabaseError ?? DatabaseError.connectionFailed
+        }
     }
     
     /// Loads today's daily puzzle from the database and starts it (if available)
     func loadDailyPuzzle() {
         isDailyPuzzle = true
         let dateStr = Self.currentDateString()
-        if let data = UserDefaults.standard.data(forKey: dailyProgressKey(for: dateStr)),
-           let progress = try? JSONDecoder().decode(DailyPuzzleProgress.self, from: data),
-           let puzzle = databaseService.fetchPuzzleById(progress.quoteId, encodingType: encodingType) {
-            // Saved progress exists: restore from progress, skip animation/pre-fill
-            startNewPuzzle(puzzle: puzzle, skipAnimationInit: true)
-            loadDailyPuzzleProgress(for: puzzle)
-            return
-        }
-        // No saved progress: run normal pre-fill logic
-        if let puzzle = databaseService.fetchDailyPuzzle(encodingType: encodingType) {
-            startNewPuzzle(puzzle: puzzle, skipAnimationInit: false) // allow pre-fill
-            // Do NOT call loadDailyPuzzleProgress here
-        } else {
+        
+        do {
+            if let data = UserDefaults.standard.data(forKey: dailyProgressKey(for: dateStr)),
+               let progress = try? JSONDecoder().decode(DailyPuzzleProgress.self, from: data),
+               let puzzle = try databaseService.fetchPuzzleById(progress.quoteId, encodingType: encodingType) {
+                // Saved progress exists: restore from progress, skip animation/pre-fill
+                startNewPuzzle(puzzle: puzzle, skipAnimationInit: true)
+                loadDailyPuzzleProgress(for: puzzle)
+                return
+            }
+            
+            // No saved progress: run normal pre-fill logic
+            if let puzzle = try databaseService.fetchDailyPuzzle(encodingType: encodingType) {
+                startNewPuzzle(puzzle: puzzle, skipAnimationInit: false) // allow pre-fill
+                // Do NOT call loadDailyPuzzleProgress here
+            } else {
+                // No daily puzzle found - use fallback
+                currentError = DatabaseError.noDataFound
+                isDailyPuzzle = false // Reset since we couldn't load daily puzzle
+                loadNewPuzzle() // Fall back to random puzzle
+            }
+        } catch let error as DatabaseError {
+            currentError = error
+            isDailyPuzzle = false // Reset since we couldn't load daily puzzle
+            loadNewPuzzle() // Fall back to random puzzle
+        } catch {
+            currentError = DatabaseError.connectionFailed
+            isDailyPuzzle = false // Reset since we couldn't load daily puzzle
+            loadNewPuzzle() // Fall back to random puzzle
         }
     }
     
