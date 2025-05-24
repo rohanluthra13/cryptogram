@@ -4,6 +4,16 @@ import SQLite
 class LocalPuzzleProgressStore: PuzzleProgressStore {
     private let db: Connection
     private let attemptsTable = Table("puzzle_progress_attempts")
+    
+    // Helper function to generate fallback UUID for corrupted data
+    private func generateFallbackUUID(for string: String) -> UUID? {
+        // Try to create a deterministic UUID based on the corrupted string
+        // This ensures consistency if the same corrupted data is encountered again
+        let data = string.data(using: .utf8) ?? Data()
+        let hash = data.reduce(0) { $0 &+ Int($1) }
+        let fallbackString = "00000000-0000-0000-0000-\(String(format: "%012d", abs(hash)))"
+        return UUID(uuidString: fallbackString)
+    }
     private let attemptID = Expression<String>("attempt_id")
     private let puzzleID = Expression<String>("puzzle_id")
     private let encodingType = Expression<String>("encoding_type")
@@ -84,9 +94,16 @@ class LocalPuzzleProgressStore: PuzzleProgressStore {
             attemptsTable.filter(self.puzzleID == puzzleID.uuidString && self.encodingType == encodingType!)
         let formatter = ISO8601DateFormatter()
         return (try? db.prepare(query).compactMap { row in
-            PuzzleAttempt(
-                attemptID: UUID(uuidString: row[attemptID])!,
-                puzzleID: UUID(uuidString: row[self.puzzleID])!,
+            // Safely unwrap UUIDs with fallback generation for corrupted data
+            guard let attemptUUID = UUID(uuidString: row[attemptID]) ?? generateFallbackUUID(for: row[attemptID]),
+                  let puzzleUUID = UUID(uuidString: row[self.puzzleID]) ?? generateFallbackUUID(for: row[self.puzzleID]) else {
+                print("LocalPuzzleProgressStore: Skipping corrupted attempt record")
+                return nil
+            }
+            
+            return PuzzleAttempt(
+                attemptID: attemptUUID,
+                puzzleID: puzzleUUID,
                 encodingType: row[self.encodingType],
                 completedAt: row[completedAt].flatMap { formatter.date(from: $0) },
                 failedAt: row[failedAt].flatMap { formatter.date(from: $0) },
@@ -117,9 +134,16 @@ class LocalPuzzleProgressStore: PuzzleProgressStore {
         let formatter = ISO8601DateFormatter()
         let query = attemptsTable
         return (try? db.prepare(query).compactMap { row in
-            PuzzleAttempt(
-                attemptID: UUID(uuidString: row[attemptID])!,
-                puzzleID: UUID(uuidString: row[self.puzzleID])!,
+            // Safely unwrap UUIDs with fallback generation for corrupted data
+            guard let attemptUUID = UUID(uuidString: row[attemptID]) ?? generateFallbackUUID(for: row[attemptID]),
+                  let puzzleUUID = UUID(uuidString: row[self.puzzleID]) ?? generateFallbackUUID(for: row[self.puzzleID]) else {
+                print("LocalPuzzleProgressStore: Skipping corrupted attempt record")
+                return nil
+            }
+            
+            return PuzzleAttempt(
+                attemptID: attemptUUID,
+                puzzleID: puzzleUUID,
                 encodingType: row[self.encodingType],
                 completedAt: row[completedAt].flatMap { formatter.date(from: $0) },
                 failedAt: row[failedAt].flatMap { formatter.date(from: $0) },

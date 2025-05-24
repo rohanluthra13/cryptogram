@@ -39,9 +39,10 @@ class PuzzleViewModel: ObservableObject {
     func loadAuthorIfNeeded(name: String) {
         guard name != lastAuthorName else { return }
         lastAuthorName = name
-        Task {
-            let author = await databaseService.fetchAuthor(byName: name)
-            currentAuthor = author
+        Task { [weak self] in
+            guard let self = self else { return }
+            let author = await self.databaseService.fetchAuthor(byName: name)
+            self.currentAuthor = author
         }
     }
     
@@ -207,6 +208,11 @@ class PuzzleViewModel: ObservableObject {
         )
     }
     
+    deinit {
+        // Remove all NotificationCenter observers to prevent memory leaks
+        NotificationCenter.default.removeObserver(self)
+    }
+    
     @objc private func handleDifficultySelectionChanged() {
         // Only reload if we're on the main menu or just starting
         // Don't interrupt an active game
@@ -267,7 +273,8 @@ class PuzzleViewModel: ObservableObject {
         session = session
         
         // Add subtle haptic feedback for cell selection
-        DispatchQueue.main.async {
+        DispatchQueue.main.async { [weak self] in
+            guard self != nil else { return }
             let generator = UIImpactFeedbackGenerator(style: .light)
             generator.impactOccurred(intensity: 0.5) // Reduced intensity for less intrusive feedback
         }
@@ -308,7 +315,8 @@ class PuzzleViewModel: ObservableObject {
             cells[index].isError = !isCorrect && !uppercaseLetter.isEmpty
             
             // Add haptic feedback for letter input - different for correct vs incorrect
-            DispatchQueue.main.async {
+            DispatchQueue.main.async { [weak self] in
+                guard self != nil else { return }
                 if isCorrect {
                     // Light feedback for correct letter
                     let generator = UIImpactFeedbackGenerator(style: .light)
@@ -362,7 +370,8 @@ class PuzzleViewModel: ObservableObject {
             session = session
             
             // Add haptic feedback for revealing a letter (hint)
-            DispatchQueue.main.async {
+            DispatchQueue.main.async { [weak self] in
+                guard self != nil else { return }
                 let generator = UISelectionFeedbackGenerator()
                 generator.selectionChanged()
             }
@@ -686,7 +695,8 @@ class PuzzleViewModel: ObservableObject {
             // --- Log failed attempt ---
             logPuzzleFailure()
             // Add haptic feedback for failure
-            DispatchQueue.main.async {
+            DispatchQueue.main.async { [weak self] in
+                guard self != nil else { return }
                 let generator = UINotificationFeedbackGenerator()
                 generator.notificationOccurred(.error)
             }
