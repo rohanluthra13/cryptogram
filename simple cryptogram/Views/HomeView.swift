@@ -26,24 +26,20 @@ struct HomeView: View {
                 
                 VStack(spacing: 0) {
                     // Main content
-                    VStack(spacing: 30) {
+                    VStack(spacing: 20) {
                         // Header
                         Text("Select mode to play")
-                            .font(.title2)
+                            .font(.footnote)
                             .fontWeight(.semibold)
                             .foregroundColor(CryptogramTheme.Colors.text)
-                            .padding(.top, 50)
+                            .padding(.top, 150)
                         
                         // Puzzle mode options
-                        VStack(spacing: 20) {
+                        VStack(spacing: 12) {
+                            modeButton(.random, title: "Random")
                             modeButton(.short, title: "Short")
                             modeButton(.medium, title: "Medium")
                             modeButton(.long, title: "Long")
-                            
-                            Divider()
-                                .padding(.horizontal, 40)
-                            
-                            modeButton(.random, title: "Random")
                             modeButton(.daily, title: "Daily Puzzle")
                         }
                         .padding(.horizontal, 40)
@@ -51,6 +47,7 @@ struct HomeView: View {
                         // Expert mode toggle
                         HStack {
                             Text("Expert Mode")
+                                .font(.footnote)
                                 .foregroundColor(CryptogramTheme.Colors.text)
                             
                             Spacer()
@@ -62,7 +59,7 @@ struct HomeView: View {
                             .labelsHidden()
                         }
                         .padding(.horizontal, 40)
-                        .padding(.top, 20)
+                        .padding(.top, 10)
                         
                         Spacer()
                     }
@@ -74,7 +71,7 @@ struct HomeView: View {
                             showStats.toggle()
                         }) {
                             Image(systemName: "chart.bar")
-                                .font(.system(size: 22))
+                                .font(.system(size: 20))
                                 .foregroundColor(CryptogramTheme.Colors.text)
                                 .opacity(0.8)
                                 .frame(width: 44, height: 44)
@@ -87,7 +84,7 @@ struct HomeView: View {
                             showSettings.toggle()
                         }) {
                             Image(systemName: "gearshape")
-                                .font(.system(size: 22))
+                                .font(.system(size: 20))
                                 .foregroundColor(CryptogramTheme.Colors.text)
                                 .opacity(0.8)
                                 .frame(width: 44, height: 44)
@@ -95,7 +92,6 @@ struct HomeView: View {
                     }
                     .padding(.horizontal, 20)
                     .padding(.vertical, 10)
-                    .background(CryptogramTheme.Colors.surface)
                 }
                 
                 // Settings overlay
@@ -153,22 +149,11 @@ struct HomeView: View {
         Button(action: {
             selectMode(mode)
         }) {
-            HStack {
-                Text(title)
-                    .font(.title3)
-                    .foregroundColor(CryptogramTheme.Colors.text)
-                
-                Spacer()
-                
-                Image(systemName: "chevron.right")
-                    .foregroundColor(CryptogramTheme.Colors.text.opacity(0.5))
-            }
-            .padding(.vertical, 12)
-            .padding(.horizontal, 20)
-            .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(CryptogramTheme.Colors.surface)
-            )
+            Text(title)
+                .font(.footnote)
+                .foregroundColor(CryptogramTheme.Colors.text)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 10)
         }
         .buttonStyle(PlainButtonStyle())
     }
