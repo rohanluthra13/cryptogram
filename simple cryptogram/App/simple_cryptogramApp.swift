@@ -2,6 +2,7 @@ import SwiftUI
 
 @main
 struct simple_cryptogramApp: App {
+    @StateObject private var appSettings = AppSettings.shared
     @StateObject private var viewModel = PuzzleViewModel()
     @StateObject private var themeManager = ThemeManager()
     @StateObject private var settingsViewModel = SettingsViewModel()
@@ -9,6 +10,7 @@ struct simple_cryptogramApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(appSettings)
                 .environmentObject(viewModel)
                 .environmentObject(themeManager)
                 .environmentObject(settingsViewModel)

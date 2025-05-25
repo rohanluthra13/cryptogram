@@ -1,0 +1,223 @@
+//
+//  AppSettings.swift
+//  simple cryptogram
+//
+//  Created on 25/05/2025.
+//
+
+import Foundation
+import SwiftUI
+import Combine
+
+/// Central settings manager for the application
+@MainActor
+class AppSettings: ObservableObject {
+    // MARK: - Game Settings
+    @Published var encodingType: String = "Letters" {
+        didSet { persistence.setValue(encodingType, for: "appSettings.encodingType") }
+    }
+    
+    @Published var difficultyMode: DifficultyMode = .normal {
+        didSet { persistence.setValue(difficultyMode.rawValue, for: "appSettings.difficultyMode") }
+    }
+    
+    @Published var selectedDifficulties: [String] = ["easy", "medium", "hard"] {
+        didSet { persistence.setValue(selectedDifficulties, for: "appSettings.selectedDifficulties") }
+    }
+    
+    @Published var autoSubmitLetter: Bool = false {
+        didSet { persistence.setValue(autoSubmitLetter, for: "appSettings.autoSubmitLetter") }
+    }
+    
+    // MARK: - UI Settings
+    @Published var navigationBarLayout: NavigationBarLayout = .centerLayout {
+        didSet { persistence.setValue(navigationBarLayout.rawValue, for: "appSettings.navigationBarLayout") }
+    }
+    
+    @Published var textSize: TextSizeOption = .medium {
+        didSet { persistence.setValue(textSize.rawValue, for: "appSettings.textSize") }
+    }
+    
+    @Published var soundFeedbackEnabled: Bool = true {
+        didSet { persistence.setValue(soundFeedbackEnabled, for: "appSettings.soundFeedbackEnabled") }
+    }
+    
+    @Published var hapticFeedbackEnabled: Bool = true {
+        didSet { persistence.setValue(hapticFeedbackEnabled, for: "appSettings.hapticFeedbackEnabled") }
+    }
+    
+    // MARK: - Theme Settings
+    @Published var darkModePreference: String = "system" {
+        didSet { persistence.setValue(darkModePreference, for: "appSettings.darkModePreference") }
+    }
+    
+    @Published var highContrastMode: Bool = false {
+        didSet { persistence.setValue(highContrastMode, for: "appSettings.highContrastMode") }
+    }
+    
+    // MARK: - Daily Puzzle State
+    @Published var lastCompletedDailyPuzzleID: Int = 0 {
+        didSet { persistence.setValue(lastCompletedDailyPuzzleID, for: "appSettings.lastCompletedDailyPuzzleID") }
+    }
+    
+    // MARK: - Migration Support
+    private static let settingsVersion = 1
+    @Published private var migratedVersion: Int = 0 {
+        didSet { persistence.setValue(migratedVersion, for: "appSettings.migratedVersion") }
+    }
+    
+    // MARK: - User-Defined Defaults
+    private struct UserDefaults {
+        var encodingType: String = "Letters"
+        var difficultyMode: DifficultyMode = .normal
+        var selectedDifficulties: [String] = ["easy", "medium", "hard"]
+        var autoSubmitLetter: Bool = false
+        var navigationBarLayout: NavigationBarLayout = .centerLayout
+        var textSize: TextSizeOption = .medium
+        var soundFeedbackEnabled: Bool = true
+        var hapticFeedbackEnabled: Bool = true
+        var darkModePreference: String = "system"
+        var highContrastMode: Bool = false
+    }
+    
+    private var userDefaults = UserDefaults()
+    
+    // MARK: - Singleton
+    static let shared = AppSettings()
+    
+    // MARK: - Dependencies
+    private let persistence: PersistenceStrategy
+    
+    // MARK: - Initialization
+    init(persistence: PersistenceStrategy = UserDefaultsPersistence()) {
+        self.persistence = persistence
+        loadSettings()
+        performMigrationIfNeeded()
+        saveCurrentAsUserDefaults()
+    }
+    
+    // MARK: - Loading
+    private func loadSettings() {
+        // Game Settings
+        if let encodingType = persistence.value(for: "appSettings.encodingType", type: String.self) {
+            self.encodingType = encodingType
+        }
+        
+        if let difficultyModeRaw = persistence.value(for: "appSettings.difficultyMode", type: String.self),
+           let difficultyMode = DifficultyMode(rawValue: difficultyModeRaw) {
+            self.difficultyMode = difficultyMode
+        }
+        
+        if let selectedDifficulties = persistence.value(for: "appSettings.selectedDifficulties", type: [String].self) {
+            self.selectedDifficulties = selectedDifficulties
+        }
+        
+        if let autoSubmitLetter = persistence.value(for: "appSettings.autoSubmitLetter", type: Bool.self) {
+            self.autoSubmitLetter = autoSubmitLetter
+        }
+        
+        // UI Settings
+        if let navBarLayoutRaw = persistence.value(for: "appSettings.navigationBarLayout", type: String.self),
+           let navigationBarLayout = NavigationBarLayout(rawValue: navBarLayoutRaw) {
+            self.navigationBarLayout = navigationBarLayout
+        }
+        
+        if let textSizeRaw = persistence.value(for: "appSettings.textSize", type: String.self),
+           let textSize = TextSizeOption(rawValue: textSizeRaw) {
+            self.textSize = textSize
+        }
+        
+        if let soundFeedbackEnabled = persistence.value(for: "appSettings.soundFeedbackEnabled", type: Bool.self) {
+            self.soundFeedbackEnabled = soundFeedbackEnabled
+        }
+        
+        if let hapticFeedbackEnabled = persistence.value(for: "appSettings.hapticFeedbackEnabled", type: Bool.self) {
+            self.hapticFeedbackEnabled = hapticFeedbackEnabled
+        }
+        
+        // Theme Settings
+        if let darkModePreference = persistence.value(for: "appSettings.darkModePreference", type: String.self) {
+            self.darkModePreference = darkModePreference
+        }
+        
+        if let highContrastMode = persistence.value(for: "appSettings.highContrastMode", type: Bool.self) {
+            self.highContrastMode = highContrastMode
+        }
+        
+        // Daily Puzzle State
+        if let lastCompletedDailyPuzzleID = persistence.value(for: "appSettings.lastCompletedDailyPuzzleID", type: Int.self) {
+            self.lastCompletedDailyPuzzleID = lastCompletedDailyPuzzleID
+        }
+        
+        // Migration version
+        if let migratedVersion = persistence.value(for: "appSettings.migratedVersion", type: Int.self) {
+            self.migratedVersion = migratedVersion
+        }
+    }
+    
+    // MARK: - Migration
+    private func performMigrationIfNeeded() {
+        guard migratedVersion < Self.settingsVersion else { return }
+        
+        // Perform migration from @AppStorage
+        MigrationUtility.migrateFromAppStorage(to: self)
+        
+        // Update migration version
+        migratedVersion = Self.settingsVersion
+        
+        // Force synchronization after migration
+        persistence.synchronize()
+    }
+    
+    // MARK: - Reset Methods
+    
+    /// Save current settings as user defaults
+    private func saveCurrentAsUserDefaults() {
+        userDefaults.encodingType = encodingType
+        userDefaults.difficultyMode = difficultyMode
+        userDefaults.selectedDifficulties = selectedDifficulties
+        userDefaults.autoSubmitLetter = autoSubmitLetter
+        userDefaults.navigationBarLayout = navigationBarLayout
+        userDefaults.textSize = textSize
+        userDefaults.soundFeedbackEnabled = soundFeedbackEnabled
+        userDefaults.hapticFeedbackEnabled = hapticFeedbackEnabled
+        userDefaults.darkModePreference = darkModePreference
+        userDefaults.highContrastMode = highContrastMode
+    }
+    
+    /// Reset all settings to user-defined defaults
+    func reset() {
+        encodingType = userDefaults.encodingType
+        difficultyMode = userDefaults.difficultyMode
+        selectedDifficulties = userDefaults.selectedDifficulties
+        autoSubmitLetter = userDefaults.autoSubmitLetter
+        navigationBarLayout = userDefaults.navigationBarLayout
+        textSize = userDefaults.textSize
+        soundFeedbackEnabled = userDefaults.soundFeedbackEnabled
+        hapticFeedbackEnabled = userDefaults.hapticFeedbackEnabled
+        darkModePreference = userDefaults.darkModePreference
+        highContrastMode = userDefaults.highContrastMode
+    }
+    
+    /// Reset all settings to factory defaults
+    func resetToFactory() {
+        encodingType = "Letters"
+        difficultyMode = .normal
+        selectedDifficulties = ["easy", "medium", "hard"]
+        autoSubmitLetter = false
+        navigationBarLayout = .centerLayout
+        textSize = .medium
+        soundFeedbackEnabled = true
+        hapticFeedbackEnabled = true
+        darkModePreference = "system"
+        highContrastMode = false
+        
+        // Also update user defaults to factory
+        saveCurrentAsUserDefaults()
+    }
+    
+    /// Update user defaults with current settings
+    func saveAsUserDefaults() {
+        saveCurrentAsUserDefaults()
+    }
+}

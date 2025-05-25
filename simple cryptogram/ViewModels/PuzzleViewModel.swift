@@ -21,8 +21,13 @@ class PuzzleViewModel: ObservableObject {
     private let hintManager: HintManager
     private let statisticsManager: StatisticsManager
     private let databaseService: DatabaseService
+    private let appSettings = AppSettings.shared
     
-    @AppStorage("encodingType") private var encodingType = "Letters"
+    // Computed property for encodingType
+    private var encodingType: String {
+        return appSettings.encodingType
+    }
+    
     private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Author Info (keeping in ViewModel for now)
@@ -330,7 +335,7 @@ class PuzzleViewModel: ObservableObject {
     
     private func loadInitialPuzzle() {
         do {
-            if let puzzle = try databaseService.fetchRandomPuzzle(encodingType: encodingType) {
+            if let puzzle = try databaseService.fetchRandomPuzzle(encodingType: encodingType, selectedDifficulties: UserSettings.selectedDifficulties) {
                 gameState.startNewPuzzle(puzzle)
                 loadAuthorIfNeeded(name: puzzle.hint ?? "")
             } else {
@@ -355,7 +360,8 @@ class PuzzleViewModel: ObservableObject {
             repeat {
                 if let candidate = try databaseService.fetchRandomPuzzle(
                     current: currentPuzzle,
-                    encodingType: encodingType
+                    encodingType: encodingType,
+                    selectedDifficulties: UserSettings.selectedDifficulties
                 ) {
                     if !completedIDs.contains(candidate.id) {
                         nextPuzzle = candidate
@@ -368,7 +374,10 @@ class PuzzleViewModel: ObservableObject {
             } while tries < maxTries
             
             if nextPuzzle == nil {
-                nextPuzzle = try databaseService.fetchRandomPuzzle(encodingType: encodingType)
+                nextPuzzle = try databaseService.fetchRandomPuzzle(
+                    encodingType: encodingType,
+                    selectedDifficulties: UserSettings.selectedDifficulties
+                )
             }
             
             if let puzzle = nextPuzzle {

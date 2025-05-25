@@ -58,7 +58,7 @@ class DatabaseService {
     // Make the database connection accessible for progress tracking and other services
     var db: Connection? { _db }
     
-    func fetchRandomPuzzle(current: Puzzle? = nil, encodingType: String = "Letters", selectedDifficulties: [String] = UserSettings.selectedDifficulties) throws -> Puzzle? {
+    func fetchRandomPuzzle(current: Puzzle? = nil, encodingType: String = "Letters", selectedDifficulties: [String]) throws -> Puzzle? {
         guard let db = _db else {
             if let error = initializationError {
                 throw error

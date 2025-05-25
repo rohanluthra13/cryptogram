@@ -1,20 +1,39 @@
 import SwiftUI
 import Combine
 
+@MainActor
 class SettingsViewModel: ObservableObject {
-    @Published var selectedMode: DifficultyMode = UserSettings.currentMode
-    @Published var selectedNavBarLayout: NavigationBarLayout = UserSettings.navigationBarLayout
-    @Published var selectedLengths: [String] = UserSettings.selectedDifficulties
-    @AppStorage("textSize") private var textSizeRaw: String = TextSizeOption.medium.rawValue
-    @Published var textSize: TextSizeOption = .medium
-    private var textSizeCancellable: AnyCancellable?
-    
-    private var modeCancellable: AnyCancellable?
-    private var navBarLayoutCancellable: AnyCancellable?
-    private var lengthCancellable: AnyCancellable?
+    // Direct references to AppSettings properties
+    private let appSettings = AppSettings.shared
+    private var cancellables = Set<AnyCancellable>()
     
     // Notification name for difficulty selection changes
     static let difficultySelectionChangedNotification = Notification.Name("DifficultySelectionChanged")
+    
+    // Computed properties that forward to AppSettings
+    var selectedMode: DifficultyMode {
+        get { appSettings.difficultyMode }
+        set { appSettings.difficultyMode = newValue }
+    }
+    
+    var selectedNavBarLayout: NavigationBarLayout {
+        get { appSettings.navigationBarLayout }
+        set { appSettings.navigationBarLayout = newValue }
+    }
+    
+    var selectedLengths: [String] {
+        get { appSettings.selectedDifficulties }
+        set { 
+            appSettings.selectedDifficulties = newValue
+            // Post notification when difficulty selection changes
+            NotificationCenter.default.post(name: Self.difficultySelectionChangedNotification, object: nil)
+        }
+    }
+    
+    var textSize: TextSizeOption {
+        get { appSettings.textSize }
+        set { appSettings.textSize = newValue }
+    }
 
     // Computed property for the quote length dropdown display text
     var quoteRangeDisplayText: String {
@@ -57,36 +76,12 @@ class SettingsViewModel: ObservableObject {
     }
 
     init() {
-        // No need to read initial value here, @Published already uses UserSettings values
-        
-        // Sink changes from the @Published properties back to UserSettings
-        modeCancellable = $selectedMode
-            .dropFirst() // Don't write the initial value back
-            .sink { newMode in
-                UserSettings.currentMode = newMode
+        // Forward AppSettings changes to trigger view updates
+        appSettings.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
             }
-            
-        navBarLayoutCancellable = $selectedNavBarLayout
-            .dropFirst() // Don't write the initial value back
-            .sink { newLayout in
-                UserSettings.navigationBarLayout = newLayout
-            }
-            
-        lengthCancellable = $selectedLengths
-            .dropFirst()
-            .sink { newLengths in
-                UserSettings.selectedDifficulties = newLengths
-                // Post notification when difficulty selection changes
-                NotificationCenter.default.post(name: Self.difficultySelectionChangedNotification, object: nil)
-            }
-        
-        // Sync textSize changes from textSizeRaw and persist changes
-        textSize = TextSizeOption(rawValue: textSizeRaw) ?? .medium
-        textSizeCancellable = $textSize
-            .dropFirst()
-            .sink { [unowned self] newSize in
-                self.textSizeRaw = newSize.rawValue
-            }
+            .store(in: &cancellables)
     }
     
     // Methods for length selection

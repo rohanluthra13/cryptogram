@@ -14,9 +14,14 @@ class GameStateManager: ObservableObject {
     
     // MARK: - Private Properties
     private let databaseService: DatabaseService
+    private let appSettings = AppSettings.shared
     private var letterMapping: [String: String] = [:]
     private var letterUsage: [String: String] = [:]
-    @AppStorage("encodingType") private var encodingType = "Letters"
+    
+    // Computed property for encodingType
+    private var encodingType: String {
+        return appSettings.encodingType
+    }
     
     // MARK: - Computed Properties
     var selectedCellIndex: Int? {
