@@ -8,11 +8,11 @@ struct PuzzleCell: View {
     var shouldAnimate: Bool = false
     var onAnimationComplete: (() -> Void)? = nil
     
-    @AppStorage("encodingType") private var encodingType = "Letters"
     @State private var cellHighlightAmount: CGFloat = 0.0
     @State private var animateCompletionBorder: Bool = false  // flash border on group completion
     @EnvironmentObject private var viewModel: PuzzleViewModel
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
+    @EnvironmentObject private var appSettings: AppSettings
     
     // Combine completion state with toggle
     private var effectiveCompleted: Bool {

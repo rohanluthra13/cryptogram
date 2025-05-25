@@ -5,8 +5,8 @@ struct PuzzleView: View {
     @EnvironmentObject private var viewModel: PuzzleViewModel
     @EnvironmentObject private var themeManager: ThemeManager
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
+    @EnvironmentObject private var appSettings: AppSettings
     @StateObject private var uiState = PuzzleViewState()
-    @AppStorage("isDarkMode") private var isDarkMode = false
     
     // Create a custom binding for the layout
     private var layoutBinding: Binding<NavigationBarLayout> {

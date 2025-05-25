@@ -46,8 +46,8 @@ class MigrationUtility {
         }
         
         // Theme Settings
-        if let darkMode = defaults.string(forKey: "darkModePreference") {
-            settings.darkModePreference = darkMode
+        if defaults.object(forKey: "isDarkMode") != nil {
+            settings.isDarkMode = defaults.bool(forKey: "isDarkMode")
         }
         
         if defaults.object(forKey: "highContrastMode") != nil {

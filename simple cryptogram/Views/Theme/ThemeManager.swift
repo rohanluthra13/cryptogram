@@ -1,11 +1,29 @@
 import SwiftUI
+import Combine
 
+@MainActor
 class ThemeManager: ObservableObject {
-    @AppStorage("isDarkMode") private var isDarkMode = false
+    private var cancellables = Set<AnyCancellable>()
+    
+    var isDarkMode: Bool {
+        get { AppSettings.shared?.isDarkMode ?? false }
+        set { 
+            AppSettings.shared?.isDarkMode = newValue
+            applyTheme()
+        }
+    }
     
     init() {
         // Set initial appearance on app launch
         applyTheme()
+        
+        // Listen for AppSettings changes
+        AppSettings.shared?.objectWillChange
+            .sink { [weak self] _ in
+                self?.objectWillChange.send()
+                self?.applyTheme()
+            }
+            .store(in: &cancellables)
     }
     
     func toggleTheme() {
@@ -14,7 +32,7 @@ class ThemeManager: ObservableObject {
     }
     
     func applyTheme() {
-        setSystemAppearance(isDark: isDarkMode)
+        setSystemAppearance(isDark: AppSettings.shared?.isDarkMode ?? false)
     }
     
     private func setSystemAppearance(isDark: Bool) {

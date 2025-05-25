@@ -47,8 +47,8 @@ final class AppSettings: ObservableObject {
     }
     
     // MARK: - Theme Settings
-    @Published var darkModePreference: String = "system" {
-        didSet { persistence.setValue(darkModePreference, for: "appSettings.darkModePreference") }
+    @Published var isDarkMode: Bool = false {
+        didSet { persistence.setValue(isDarkMode, for: "appSettings.isDarkMode") }
     }
     
     @Published var highContrastMode: Bool = false {
@@ -76,7 +76,7 @@ final class AppSettings: ObservableObject {
         var textSize: TextSizeOption = .medium
         var soundFeedbackEnabled: Bool = true
         var hapticFeedbackEnabled: Bool = true
-        var darkModePreference: String = "system"
+        var isDarkMode: Bool = false
         var highContrastMode: Bool = false
     }
     
@@ -137,8 +137,8 @@ final class AppSettings: ObservableObject {
         }
         
         // Theme Settings
-        if let darkModePreference = persistence.value(for: "appSettings.darkModePreference", type: String.self) {
-            self.darkModePreference = darkModePreference
+        if let isDarkMode = persistence.value(for: "appSettings.isDarkMode", type: Bool.self) {
+            self.isDarkMode = isDarkMode
         }
         
         if let highContrastMode = persistence.value(for: "appSettings.highContrastMode", type: Bool.self) {
@@ -182,7 +182,7 @@ final class AppSettings: ObservableObject {
         userDefaults.textSize = textSize
         userDefaults.soundFeedbackEnabled = soundFeedbackEnabled
         userDefaults.hapticFeedbackEnabled = hapticFeedbackEnabled
-        userDefaults.darkModePreference = darkModePreference
+        userDefaults.isDarkMode = isDarkMode
         userDefaults.highContrastMode = highContrastMode
     }
     
@@ -196,7 +196,7 @@ final class AppSettings: ObservableObject {
         textSize = userDefaults.textSize
         soundFeedbackEnabled = userDefaults.soundFeedbackEnabled
         hapticFeedbackEnabled = userDefaults.hapticFeedbackEnabled
-        darkModePreference = userDefaults.darkModePreference
+        isDarkMode = userDefaults.isDarkMode
         highContrastMode = userDefaults.highContrastMode
     }
     
@@ -210,7 +210,7 @@ final class AppSettings: ObservableObject {
         textSize = .medium
         soundFeedbackEnabled = true
         hapticFeedbackEnabled = true
-        darkModePreference = "system"
+        isDarkMode = false
         highContrastMode = false
         
         // Also update user defaults to factory

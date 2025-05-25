@@ -21,7 +21,7 @@ struct simple_cryptogramApp: App {
                 .environmentObject(viewModel)
                 .environmentObject(themeManager)
                 .environmentObject(settingsViewModel)
-                .preferredColorScheme(UserDefaults.standard.bool(forKey: "isDarkMode") ? .dark : .light)
+                .preferredColorScheme(appSettings.isDarkMode ? .dark : .light)
         }
     }
 }

@@ -4,9 +4,9 @@ struct PuzzleCompletionView: View {
     @EnvironmentObject private var viewModel: PuzzleViewModel
     @EnvironmentObject private var themeManager: ThemeManager
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
+    @EnvironmentObject private var appSettings: AppSettings
     @Binding var showCompletionView: Bool
     @State private var showSettings = false
-    @AppStorage("isDarkMode") private var isDarkMode = false
     
     // Animation states
     @State private var showQuote = false

@@ -1,17 +1,30 @@
 import SwiftUI
 
 struct SettingsContentView: View {
-    @AppStorage("encodingType") private var selectedEncodingType = "Letters"
-    @AppStorage("isDarkMode") private var isDarkMode = false
-    @AppStorage("selectedDifficulties") private var selectedDifficulties = "easy,medium,hard" // default all selected
     @EnvironmentObject private var puzzleViewModel: PuzzleViewModel
     @EnvironmentObject private var themeManager: ThemeManager
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
+    @EnvironmentObject private var appSettings: AppSettings
     
     // State properties for info panels
     @State private var showDifficultyInfo = false
     @State private var showLengthSelector = false
     @State private var showTextSizeSelector = false
+    
+    // Computed bindings for AppSettings
+    private var selectedEncodingType: Binding<String> {
+        Binding(
+            get: { appSettings.encodingType },
+            set: { appSettings.encodingType = $0 }
+        )
+    }
+    
+    private var isDarkMode: Binding<Bool> {
+        Binding(
+            get: { appSettings.isDarkMode },
+            set: { appSettings.isDarkMode = $0 }
+        )
+    }
     
     // Info text for difficulty
     private let difficultyInfoText = "normal mode gives you some starting letters.\nexpert mode does not."
@@ -55,7 +68,7 @@ struct SettingsContentView: View {
                                 ToggleOptionRow(
                                     leftOption: ("Letters", "abc"),
                                     rightOption: ("Numbers", "123"),
-                                    selection: $selectedEncodingType
+                                    selection: selectedEncodingType
                                 )
                                 .transition(.opacity)
                                 
@@ -136,10 +149,10 @@ struct SettingsContentView: View {
                             // Light mode
                             IconToggleButton(
                                 iconName: "sun.max",
-                                isSelected: !isDarkMode,
+                                isSelected: !isDarkMode.wrappedValue,
                                 action: {
-                                    if isDarkMode {
-                                        isDarkMode = false
+                                    if isDarkMode.wrappedValue {
+                                        isDarkMode.wrappedValue = false
                                         themeManager.applyTheme()
                                     }
                                 },
@@ -149,10 +162,10 @@ struct SettingsContentView: View {
                             
                             // Toggle arrow
                             Button(action: {
-                                isDarkMode.toggle()
+                                isDarkMode.wrappedValue.toggle()
                                 themeManager.applyTheme()
                             }) {
-                                Image(systemName: !isDarkMode ? "arrow.right" : "arrow.left")
+                                Image(systemName: !isDarkMode.wrappedValue ? "arrow.right" : "arrow.left")
                                     .font(.system(size: 13, weight: .medium))
                                     .foregroundColor(CryptogramTheme.Colors.text)
                             }
@@ -162,10 +175,10 @@ struct SettingsContentView: View {
                             // Dark mode
                             IconToggleButton(
                                 iconName: "moon.stars",
-                                isSelected: isDarkMode,
+                                isSelected: isDarkMode.wrappedValue,
                                 action: {
-                                    if !isDarkMode {
-                                        isDarkMode = true
+                                    if !isDarkMode.wrappedValue {
+                                        isDarkMode.wrappedValue = true
                                         themeManager.applyTheme()
                                     }
                                 },

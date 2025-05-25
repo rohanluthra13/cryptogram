@@ -6,8 +6,8 @@ struct KeyboardView: View {
     var onBackspacePress: () -> Void
     var completedLetters: Set<String> // Remove default value to force explicit passing
 
-    @AppStorage("encodingType") private var encodingType = "Letters"
     @EnvironmentObject private var viewModel: PuzzleViewModel
+    @EnvironmentObject private var appSettings: AppSettings
 
     // New state for showing/hiding remaining letters (session only, defaults to hide)
     @State private var showRemainingLetters = false
@@ -59,7 +59,7 @@ struct KeyboardView: View {
     // Helper method to create a key button
     private func keyButton(for key: Character) -> some View {
         let baseLocked: Bool
-        if encodingType == "Letters" {
+        if appSettings.encodingType == "Letters" {
             baseLocked = completedLetters.contains(String(key).uppercased())
         } else {
             // For number encoding, lock the key if ANY encodedChar for this letter is in completedLetters
@@ -73,7 +73,7 @@ struct KeyboardView: View {
 
         // Determine if this key is a remaining letter (in puzzle, not completed)
         let isInPuzzle: Bool = {
-            if encodingType == "Letters" {
+            if appSettings.encodingType == "Letters" {
                 // Any cell in the puzzle with this solutionChar
                 return viewModel.cells.contains { cell in
                     guard let solutionChar = cell.solutionChar else { return false }
