@@ -11,7 +11,7 @@ import Combine
 
 /// Central settings manager for the application
 @MainActor
-class AppSettings: ObservableObject {
+final class AppSettings: ObservableObject {
     // MARK: - Game Settings
     @Published var encodingType: String = "Letters" {
         didSet { persistence.setValue(encodingType, for: "appSettings.encodingType") }
@@ -83,7 +83,8 @@ class AppSettings: ObservableObject {
     private var userDefaults = UserDefaults()
     
     // MARK: - Singleton
-    static let shared = AppSettings()
+    // Note: shared instance is created in App struct to ensure main thread initialization
+    static var shared: AppSettings!
     
     // MARK: - Dependencies
     private let persistence: PersistenceStrategy

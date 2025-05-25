@@ -4,7 +4,6 @@ import Combine
 @MainActor
 class SettingsViewModel: ObservableObject {
     // Direct references to AppSettings properties
-    private let appSettings = AppSettings.shared
     private var cancellables = Set<AnyCancellable>()
     
     // Notification name for difficulty selection changes
@@ -12,27 +11,27 @@ class SettingsViewModel: ObservableObject {
     
     // Computed properties that forward to AppSettings
     var selectedMode: DifficultyMode {
-        get { appSettings.difficultyMode }
-        set { appSettings.difficultyMode = newValue }
+        get { AppSettings.shared?.difficultyMode ?? .normal }
+        set { AppSettings.shared?.difficultyMode = newValue }
     }
     
     var selectedNavBarLayout: NavigationBarLayout {
-        get { appSettings.navigationBarLayout }
-        set { appSettings.navigationBarLayout = newValue }
+        get { AppSettings.shared?.navigationBarLayout ?? .centerLayout }
+        set { AppSettings.shared?.navigationBarLayout = newValue }
     }
     
     var selectedLengths: [String] {
-        get { appSettings.selectedDifficulties }
+        get { AppSettings.shared?.selectedDifficulties ?? ["easy", "medium", "hard"] }
         set { 
-            appSettings.selectedDifficulties = newValue
+            AppSettings.shared?.selectedDifficulties = newValue
             // Post notification when difficulty selection changes
             NotificationCenter.default.post(name: Self.difficultySelectionChangedNotification, object: nil)
         }
     }
     
     var textSize: TextSizeOption {
-        get { appSettings.textSize }
-        set { appSettings.textSize = newValue }
+        get { AppSettings.shared?.textSize ?? .medium }
+        set { AppSettings.shared?.textSize = newValue }
     }
 
     // Computed property for the quote length dropdown display text
@@ -77,7 +76,7 @@ class SettingsViewModel: ObservableObject {
 
     init() {
         // Forward AppSettings changes to trigger view updates
-        appSettings.objectWillChange
+        AppSettings.shared?.objectWillChange
             .sink { [weak self] _ in
                 self?.objectWillChange.send()
             }

@@ -21,11 +21,10 @@ class PuzzleViewModel: ObservableObject {
     private let hintManager: HintManager
     private let statisticsManager: StatisticsManager
     private let databaseService: DatabaseService
-    private let appSettings = AppSettings.shared
     
     // Computed property for encodingType
     private var encodingType: String {
-        return appSettings.encodingType
+        return AppSettings.shared?.encodingType ?? "Letters"
     }
     
     private var cancellables = Set<AnyCancellable>()

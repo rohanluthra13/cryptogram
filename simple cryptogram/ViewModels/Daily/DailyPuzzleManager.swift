@@ -9,7 +9,11 @@ class DailyPuzzleManager: ObservableObject {
     
     // MARK: - Dependencies
     private let databaseService: DatabaseService
-    @AppStorage("encodingType") private var encodingType = "Letters"
+    
+    // Computed property for encodingType
+    private var encodingType: String {
+        return AppSettings.shared?.encodingType ?? "Letters"
+    }
     
     // MARK: - Initialization
     init(databaseService: DatabaseService = .shared) {

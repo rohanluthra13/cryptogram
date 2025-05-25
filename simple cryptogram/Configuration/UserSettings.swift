@@ -15,10 +15,10 @@ struct UserSettings {
     @MainActor
     static var currentMode: DifficultyMode {
         get {
-            return AppSettings.shared.difficultyMode
+            return AppSettings.shared?.difficultyMode ?? .normal
         }
         set {
-            AppSettings.shared.difficultyMode = newValue
+            AppSettings.shared?.difficultyMode = newValue
         }
     }
     
@@ -32,10 +32,10 @@ struct UserSettings {
     @MainActor
     static var navigationBarLayout: NavigationBarLayout {
         get {
-            return AppSettings.shared.navigationBarLayout
+            return AppSettings.shared?.navigationBarLayout ?? .centerLayout
         }
         set {
-            AppSettings.shared.navigationBarLayout = newValue
+            AppSettings.shared?.navigationBarLayout = newValue
             // Post notification for backward compatibility
             NotificationCenter.default.post(name: navigationBarLayoutChangedNotification, object: nil)
         }
@@ -44,10 +44,10 @@ struct UserSettings {
     @MainActor
     static var selectedDifficulties: [String] {
         get {
-            return AppSettings.shared.selectedDifficulties
+            return AppSettings.shared?.selectedDifficulties ?? ["easy", "medium", "hard"]
         }
         set {
-            AppSettings.shared.selectedDifficulties = newValue
+            AppSettings.shared?.selectedDifficulties = newValue
         }
     }
 
