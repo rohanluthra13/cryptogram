@@ -20,10 +20,11 @@ class HintManager: ObservableObject {
         // Determine target index
         let targetIndex: Int
         
-        if let idx = index, 
-           idx >= 0 && idx < gameState.cells.count && 
-           !gameState.cells[idx].isSymbol && 
-           !gameState.cells[idx].isRevealed {
+        if let idx = index {
+            // Validate the provided index
+            guard idx >= 0 && idx < gameState.cells.count else { return }
+            guard !gameState.cells[idx].isSymbol else { return }
+            guard !gameState.cells[idx].isRevealed else { return }
             targetIndex = idx
         } else if let selected = gameState.selectedCellIndex,
                   selected >= 0 && selected < gameState.cells.count &&

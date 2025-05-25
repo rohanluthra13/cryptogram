@@ -61,7 +61,7 @@ struct StatisticsManagerTests {
             encodingType: encodingType,
             completedAt: isCompleted ? Date() : nil,
             failedAt: isCompleted ? nil : Date(),
-            completionTime: completionTime,
+            completionTime: isCompleted ? completionTime : nil,
             mode: "normal",
             hintCount: hintCount,
             mistakeCount: mistakeCount

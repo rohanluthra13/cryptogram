@@ -23,6 +23,10 @@ class GameStateManager: ObservableObject {
         session.selectedCellIndex
     }
     
+    var hasStarted: Bool {
+        session.hasStarted
+    }
+    
     var isComplete: Bool {
         session.isComplete
     }
@@ -60,8 +64,11 @@ class GameStateManager: ObservableObject {
     }
     
     var progressPercentage: Double {
-        let filledCells = nonSymbolCells.filter { !$0.isEmpty }.count
-        return Double(filledCells) / Double(nonSymbolCells.count)
+        let totalNonSymbol = nonSymbolCells.count
+        guard totalNonSymbol > 0 else { return 0.0 }
+        
+        let filledCells = nonSymbolCells.filter { !$0.userInput.isEmpty }.count
+        return Double(filledCells) / Double(totalNonSymbol)
     }
     
     var wordGroups: [WordGroup] {
@@ -115,6 +122,7 @@ class GameStateManager: ObservableObject {
     func resetPuzzle() {
         completedLetters = []
         session = PuzzleSession()
+        hasUserEngaged = false
         
         for i in cells.indices {
             cells[i].userInput = ""
@@ -160,6 +168,10 @@ class GameStateManager: ObservableObject {
     
     func selectCell(at index: Int) {
         guard index >= 0 && index < cells.count else { return }
+        
+        // Don't select symbol cells
+        guard !cells[index].isSymbol else { return }
+        
         session.selectedCellIndex = index
         objectWillChange.send()
     }

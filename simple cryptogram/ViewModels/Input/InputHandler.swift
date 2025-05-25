@@ -31,6 +31,11 @@ class InputHandler: ObservableObject {
               index >= 0 && index < gameState.cells.count,
               !gameState.cells[index].isSymbol else { return }
         
+        // Validate input - must be a single letter
+        guard letter.count == 1,
+              let firstChar = letter.first,
+              firstChar.isLetter else { return }
+        
         // Start timer on first input
         gameState.startTimer()
         
@@ -86,11 +91,10 @@ class InputHandler: ObservableObject {
         guard let gameState = gameState else { return }
         
         let targetIndex = index ?? gameState.selectedCellIndex ?? -1
-        if targetIndex >= 0 {
+        if targetIndex >= 0 && targetIndex < gameState.cells.count && !gameState.cells[targetIndex].isSymbol {
             gameState.clearCell(at: targetIndex)
+            gameState.userEngaged()
         }
-        
-        gameState.userEngaged()
     }
     
     // MARK: - Navigation

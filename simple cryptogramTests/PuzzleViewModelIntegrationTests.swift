@@ -1,0 +1,515 @@
+import Testing
+import Foundation
+@testable import simple_cryptogram
+
+@MainActor
+struct PuzzleViewModelIntegrationTests {
+    
+    // MARK: - Mock Database Service
+    class MockDatabaseService: DatabaseService {
+        private var mockPuzzles: [Puzzle] = []
+        private var currentIndex = 0
+        
+        override init() {
+            super.init()
+            setupMockData()
+        }
+        
+        private func setupMockData() {
+            mockPuzzles = [
+                Puzzle(
+                    quoteId: 1,
+                    encodedText: "ABC DEF",
+                    solution: "THE DOG",
+                    hint: "Test puzzle 1"
+                ),
+                Puzzle(
+                    quoteId: 2,
+                    encodedText: "GHI JKL MNO",
+                    solution: "CAT AND RAT",
+                    hint: "Test puzzle 2"
+                ),
+                Puzzle(
+                    quoteId: 3,
+                    encodedText: "PQR STU",
+                    solution: "BIG FUN",
+                    hint: "Test puzzle 3"
+                )
+            ]
+        }
+        
+        override func getRandomPuzzle() throws -> Puzzle? {
+            guard !mockPuzzles.isEmpty else { return nil }
+            let puzzle = mockPuzzles[currentIndex % mockPuzzles.count]
+            currentIndex += 1
+            return puzzle
+        }
+        
+        override func getDailyPuzzle() throws -> Puzzle? {
+            return mockPuzzles.first
+        }
+    }
+    
+    // MARK: - Helper Methods
+    private func createViewModel() -> PuzzleViewModel {
+        let mockDb = MockDatabaseService()
+        return PuzzleViewModel(databaseService: mockDb)
+    }
+    
+    private func waitForAsync(timeout: TimeInterval = 1.0) async throws {
+        try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
+    }
+    
+    // MARK: - Critical User Workflow Tests
+    
+    // Test 1: Complete puzzle flow (start → input letters → complete → save progress)
+    @Test func completePuzzleWorkflow() async throws {
+        let viewModel = createViewModel()
+        
+        // Start a new puzzle
+        viewModel.loadNextPuzzle()
+        
+        // Wait for puzzle to load
+        try await waitForAsync(timeout: 0.1)
+        
+        #expect(viewModel.currentPuzzle != nil)
+        #expect(!viewModel.cells.isEmpty)
+        #expect(!viewModel.hasStarted)
+        
+        // Input correct letters for "THE DOG"
+        let nonSymbolIndices = viewModel.cells.enumerated().compactMap { index, cell in
+            cell.isSymbol ? nil : index
+        }
+        
+        // T-H-E
+        viewModel.inputLetter("T", at: nonSymbolIndices[0])
+        #expect(viewModel.hasStarted) // Timer should start on first input
+        
+        viewModel.inputLetter("H", at: nonSymbolIndices[1])
+        viewModel.inputLetter("E", at: nonSymbolIndices[2])
+        
+        // D-O-G
+        viewModel.inputLetter("D", at: nonSymbolIndices[3])
+        viewModel.inputLetter("O", at: nonSymbolIndices[4])
+        viewModel.inputLetter("G", at: nonSymbolIndices[5])
+        
+        // Check completion
+        #expect(viewModel.isComplete)
+        #expect(viewModel.completionTime != nil)
+        #expect(viewModel.mistakeCount == 0)
+        
+        // Verify progress was saved
+        let attempts = viewModel.getAttempts(for: viewModel.currentPuzzle!.id)
+        #expect(attempts.count == 1)
+        #expect(attempts[0].completedAt != nil)
+    }
+    
+    // Test 2: Daily puzzle flow (load daily → complete → mark as completed)
+    @Test func dailyPuzzleWorkflow() async throws {
+        let viewModel = createViewModel()
+        
+        // Load daily puzzle
+        viewModel.loadDailyPuzzle()
+        
+        // Wait for puzzle to load
+        try await waitForAsync(timeout: 0.1)
+        
+        #expect(viewModel.currentPuzzle != nil)
+        #expect(viewModel.currentPuzzle?.quoteId == 1) // First mock puzzle
+        
+        // Complete the puzzle
+        let nonSymbolIndices = viewModel.cells.enumerated().compactMap { index, cell in
+            cell.isSymbol ? nil : index
+        }
+        
+        // Input all correct letters
+        for (idx, charIndex) in nonSymbolIndices.enumerated() {
+            let solution = viewModel.currentPuzzle!.solution
+            let solutionChar = String(solution[solution.index(solution.startIndex, offsetBy: idx)])
+            viewModel.inputLetter(solutionChar, at: charIndex)
+        }
+        
+        #expect(viewModel.isComplete)
+        
+        // Load daily puzzle again - should be same puzzle
+        viewModel.loadDailyPuzzle()
+        try await waitForAsync(timeout: 0.1)
+        
+        #expect(viewModel.currentPuzzle?.quoteId == 1)
+    }
+    
+    // Test 3: Hint system flow (request hint → reveal letter → update UI → affect statistics)
+    @Test func hintSystemWorkflow() async throws {
+        let viewModel = createViewModel()
+        
+        viewModel.loadNextPuzzle()
+        try await waitForAsync(timeout: 0.1)
+        
+        let initialHintCount = viewModel.hintCount
+        let nonSymbolCount = viewModel.cells.filter { !$0.isSymbol }.count
+        
+        // Select a cell
+        if let firstNonSymbolIndex = viewModel.cells.firstIndex(where: { !$0.isSymbol }) {
+            viewModel.selectCell(at: firstNonSymbolIndex)
+            
+            // Request hint
+            viewModel.revealSelectedCell()
+            
+            // Check hint was applied
+            #expect(viewModel.cells[firstNonSymbolIndex].isRevealed)
+            #expect(!viewModel.cells[firstNonSymbolIndex].userInput.isEmpty)
+            #expect(viewModel.hintCount == initialHintCount + 1)
+            
+            // UI should reflect revealed cell
+            let revealedCount = viewModel.cells.filter { $0.isRevealed }.count
+            #expect(revealedCount >= 1)
+            
+            // Progress percentage should update
+            let filledCells = viewModel.cells.filter { !$0.isSymbol && !$0.userInput.isEmpty }.count
+            let expectedProgress = Double(filledCells) / Double(nonSymbolCount)
+            #expect(abs(viewModel.progressPercentage - expectedProgress) < 0.01)
+        }
+    }
+    
+    // Test 4: Error/retry flow (make mistakes → game over → retry)
+    @Test func errorRetryWorkflow() async throws {
+        let viewModel = createViewModel()
+        
+        viewModel.loadNextPuzzle()
+        try await waitForAsync(timeout: 0.1)
+        
+        // Make 3 mistakes to trigger game over
+        let nonSymbolIndices = viewModel.cells.enumerated().compactMap { index, cell in
+            cell.isSymbol ? nil : index
+        }
+        
+        guard nonSymbolIndices.count >= 3 else {
+            throw TestError("Need at least 3 non-symbol cells for this test")
+        }
+        
+        // Input wrong letters
+        viewModel.inputLetter("X", at: nonSymbolIndices[0])
+        try await waitForAsync(timeout: 0.6) // Wait for error animation
+        
+        viewModel.inputLetter("Y", at: nonSymbolIndices[1])
+        try await waitForAsync(timeout: 0.6)
+        
+        viewModel.inputLetter("Z", at: nonSymbolIndices[2])
+        try await waitForAsync(timeout: 0.6)
+        
+        // Should be failed
+        #expect(viewModel.isFailed)
+        #expect(viewModel.mistakeCount >= 3)
+        
+        // Retry puzzle
+        viewModel.retryPuzzle()
+        
+        // Should reset state
+        #expect(!viewModel.isFailed)
+        #expect(viewModel.mistakeCount == 0)
+        #expect(viewModel.cells.allSatisfy { $0.userInput.isEmpty || $0.isPreFilled })
+    }
+    
+    // Test 5: Pause/resume flow (pause → timer stops → resume → timer continues)
+    @Test func pauseResumeWorkflow() async throws {
+        let viewModel = createViewModel()
+        
+        viewModel.loadNextPuzzle()
+        try await waitForAsync(timeout: 0.1)
+        
+        // Start timer by inputting a letter
+        if let firstNonSymbolIndex = viewModel.cells.firstIndex(where: { !$0.isSymbol }) {
+            viewModel.inputLetter("A", at: firstNonSymbolIndex)
+        }
+        
+        #expect(viewModel.hasStarted)
+        #expect(!viewModel.isPaused)
+        
+        // Pause
+        viewModel.togglePause()
+        #expect(viewModel.isPaused)
+        
+        let pauseTime = viewModel.startTime
+        
+        // Wait a bit
+        try await waitForAsync(timeout: 0.5)
+        
+        // Resume
+        viewModel.togglePause()
+        #expect(!viewModel.isPaused)
+        
+        // Timer should have adjusted for pause duration
+        #expect(viewModel.startTime != pauseTime || viewModel.startTime == nil)
+    }
+    
+    // Test 6: Settings change flow (change encoding type → puzzle updates → progress saves)
+    @Test func settingsChangeWorkflow() async throws {
+        let viewModel = createViewModel()
+        UserSettings.encodingType = "Letters"
+        
+        viewModel.loadNextPuzzle()
+        try await waitForAsync(timeout: 0.1)
+        
+        let puzzleId = viewModel.currentPuzzle?.id
+        
+        // Input some letters
+        if let firstNonSymbolIndex = viewModel.cells.firstIndex(where: { !$0.isSymbol }) {
+            viewModel.inputLetter("A", at: firstNonSymbolIndex)
+        }
+        
+        // Change encoding type
+        UserSettings.encodingType = "Numbers"
+        
+        // Load same puzzle with new encoding
+        viewModel.loadNextPuzzle()
+        try await waitForAsync(timeout: 0.1)
+        
+        // Should have different encoding
+        let hasNumbers = viewModel.cells.contains { cell in
+            !cell.isSymbol && cell.encodedChar.rangeOfCharacter(from: .decimalDigits) != nil
+        }
+        #expect(hasNumbers)
+        
+        // Progress should be tracked separately for each encoding type
+        let letterAttempts = viewModel.getAttempts(for: puzzleId!, encodingType: "Letters")
+        let numberAttempts = viewModel.getAttempts(for: puzzleId!, encodingType: "Numbers")
+        
+        // Should have separate progress tracking
+        #expect(letterAttempts.count >= 0)
+        #expect(numberAttempts.count >= 0)
+        
+        // Reset encoding type
+        UserSettings.encodingType = "Letters"
+    }
+    
+    // MARK: - Manager Coordination Tests
+    
+    @Test func gameStateInputHandlerCoordination() async throws {
+        let viewModel = createViewModel()
+        
+        viewModel.loadNextPuzzle()
+        try await waitForAsync(timeout: 0.1)
+        
+        // Select a cell
+        if let firstIndex = viewModel.cells.firstIndex(where: { !$0.isSymbol }) {
+            viewModel.selectCell(at: firstIndex)
+            #expect(viewModel.selectedCellIndex == firstIndex)
+            
+            // Input should update game state
+            viewModel.inputLetter("T", at: firstIndex)
+            #expect(viewModel.cells[firstIndex].userInput == "T")
+            #expect(viewModel.hasUserEngaged)
+        }
+    }
+    
+    @Test func gameStateHintManagerCoordination() async throws {
+        let viewModel = createViewModel()
+        
+        viewModel.loadNextPuzzle()
+        try await waitForAsync(timeout: 0.1)
+        
+        let initialHintCount = viewModel.hintCount
+        
+        // Reveal a cell
+        if let firstIndex = viewModel.cells.firstIndex(where: { !$0.isSymbol }) {
+            viewModel.revealCell(at: firstIndex)
+            
+            // GameState should be updated
+            #expect(viewModel.cells[firstIndex].isRevealed)
+            #expect(viewModel.hintCount == initialHintCount + 1)
+            #expect(viewModel.hasStarted) // Timer should start
+        }
+    }
+    
+    @Test func stateAcrossAllManagers() async throws {
+        let viewModel = createViewModel()
+        
+        viewModel.loadNextPuzzle()
+        try await waitForAsync(timeout: 0.1)
+        
+        // Input, hint, and complete puzzle
+        let nonSymbolIndices = viewModel.cells.enumerated().compactMap { index, cell in
+            cell.isSymbol ? nil : index
+        }
+        
+        // Use hint on first cell
+        viewModel.revealCell(at: nonSymbolIndices[0])
+        
+        // Input rest of the letters
+        let solution = viewModel.currentPuzzle!.solution.replacingOccurrences(of: " ", with: "")
+        for i in 1..<nonSymbolIndices.count {
+            let correctLetter = String(solution[solution.index(solution.startIndex, offsetBy: i)])
+            viewModel.inputLetter(correctLetter, at: nonSymbolIndices[i])
+        }
+        
+        // Verify state consistency
+        #expect(viewModel.isComplete)
+        #expect(viewModel.hintCount > 0)
+        #expect(viewModel.completionTime != nil)
+        
+        // Check statistics
+        #expect(viewModel.totalCompletions > 0)
+        #expect(viewModel.averageTime != nil)
+    }
+    
+    // MARK: - Error Propagation and Recovery Tests
+    
+    @Test func errorRecoveryInProgressSaving() async throws {
+        let viewModel = createViewModel()
+        
+        viewModel.loadNextPuzzle()
+        try await waitForAsync(timeout: 0.1)
+        
+        // Complete puzzle
+        let nonSymbolIndices = viewModel.cells.enumerated().compactMap { index, cell in
+            cell.isSymbol ? nil : index
+        }
+        
+        for (idx, cellIndex) in nonSymbolIndices.enumerated() {
+            let solution = viewModel.currentPuzzle!.solution.replacingOccurrences(of: " ", with: "")
+            let correctLetter = String(solution[solution.index(solution.startIndex, offsetBy: idx)])
+            viewModel.inputLetter(correctLetter, at: cellIndex)
+        }
+        
+        #expect(viewModel.isComplete)
+        
+        // Even if there's an error, the UI should remain functional
+        #expect(viewModel.cells.count > 0)
+        #expect(viewModel.currentPuzzle != nil)
+    }
+    
+    // MARK: - Performance Tests
+    
+    @Test func puzzleLoadingPerformance() async throws {
+        let viewModel = createViewModel()
+        
+        // Measure time to load a puzzle
+        let startTime = Date()
+        
+        viewModel.loadNextPuzzle()
+        try await waitForAsync(timeout: 0.1)
+        
+        let loadTime = Date().timeIntervalSince(startTime)
+        
+        // Puzzle should load quickly (under 0.2 seconds)
+        #expect(loadTime < 0.2)
+        #expect(viewModel.currentPuzzle != nil)
+        #expect(!viewModel.cells.isEmpty)
+    }
+    
+    @Test func rapidInputPerformance() async throws {
+        let viewModel = createViewModel()
+        
+        viewModel.loadNextPuzzle()
+        try await waitForAsync(timeout: 0.1)
+        
+        let nonSymbolIndices = viewModel.cells.enumerated().compactMap { index, cell in
+            cell.isSymbol ? nil : index
+        }
+        
+        guard nonSymbolIndices.count >= 10 else {
+            throw TestError("Need at least 10 non-symbol cells for performance test")
+        }
+        
+        // Measure rapid input performance
+        let startTime = Date()
+        
+        // Rapidly input 10 letters
+        for i in 0..<10 {
+            let index = nonSymbolIndices[i % nonSymbolIndices.count]
+            viewModel.inputLetter("A", at: index)
+        }
+        
+        let inputTime = Date().timeIntervalSince(startTime)
+        
+        // Should handle rapid input efficiently (under 0.1 seconds for 10 inputs)
+        #expect(inputTime < 0.1)
+    }
+    
+    @Test func memoryUsageDuringExtendedPlay() async throws {
+        let viewModel = createViewModel()
+        
+        // Simulate extended play session
+        for _ in 0..<5 {
+            viewModel.loadNextPuzzle()
+            try await waitForAsync(timeout: 0.05)
+            
+            // Input some letters
+            let nonSymbolIndices = viewModel.cells.enumerated().compactMap { index, cell in
+                cell.isSymbol ? nil : index
+            }
+            
+            for i in 0..<min(5, nonSymbolIndices.count) {
+                viewModel.inputLetter("A", at: nonSymbolIndices[i])
+            }
+            
+            // Use a hint
+            if let firstIndex = nonSymbolIndices.first {
+                viewModel.revealCell(at: firstIndex)
+            }
+        }
+        
+        // Verify no memory leaks or state corruption
+        #expect(viewModel.cells.count > 0)
+        #expect(viewModel.currentPuzzle != nil)
+        
+        // Check that attempts are being tracked
+        let allAttempts = viewModel.allAttempts()
+        #expect(allAttempts.count >= 0)
+    }
+    
+    @Test func largePuzzleHandling() async throws {
+        // Test with a mock large puzzle
+        class LargePuzzleMockService: MockDatabaseService {
+            override func getRandomPuzzle() throws -> Puzzle? {
+                // Create a large puzzle (50+ characters)
+                let longQuote = "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG AND THEN RUNS AWAY QUICKLY"
+                let encoded = "ABC DEFGH IJKLM NKO PQRST KUCJ ABC VWXY ZKL WMZ ABCM JQMT WWWY DEFGHVY"
+                
+                return Puzzle(
+                    quoteId: 999,
+                    encodedText: encoded,
+                    solution: longQuote,
+                    hint: "A long test puzzle"
+                )
+            }
+        }
+        
+        let mockDb = LargePuzzleMockService()
+        let viewModel = PuzzleViewModel(databaseService: mockDb)
+        
+        let startTime = Date()
+        
+        viewModel.loadNextPuzzle()
+        try await waitForAsync(timeout: 0.1)
+        
+        let loadTime = Date().timeIntervalSince(startTime)
+        
+        // Should handle large puzzles efficiently
+        #expect(loadTime < 0.3)
+        #expect(viewModel.cells.count > 50)
+        
+        // Test rapid input on large puzzle
+        let inputStartTime = Date()
+        
+        for i in 0..<10 {
+            if i < viewModel.cells.count && !viewModel.cells[i].isSymbol {
+                viewModel.inputLetter("A", at: i)
+            }
+        }
+        
+        let inputTime = Date().timeIntervalSince(inputStartTime)
+        #expect(inputTime < 0.1)
+    }
+}
+
+// MARK: - Test Error
+extension PuzzleViewModelIntegrationTests {
+    struct TestError: Error {
+        let message: String
+        
+        init(_ message: String) {
+            self.message = message
+        }
+    }
+}

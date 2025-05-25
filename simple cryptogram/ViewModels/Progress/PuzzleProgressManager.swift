@@ -24,7 +24,7 @@ class PuzzleProgressManager: ObservableObject {
             attemptID: UUID(),
             puzzleID: puzzle.id,
             encodingType: encodingType,
-            completedAt: Date(),
+            completedAt: session.endTime ?? Date(),
             failedAt: nil,
             completionTime: timeTaken,
             mode: UserSettings.currentMode.rawValue,
