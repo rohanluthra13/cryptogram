@@ -6,7 +6,7 @@ struct ContentView: View {
     
     var body: some View {
         NavigationView {
-            PuzzleView()
+            HomeView()
         }
         .onChange(of: viewModel.currentError) { _, newError in
             if let error = newError {

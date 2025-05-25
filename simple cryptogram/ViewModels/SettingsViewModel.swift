@@ -73,6 +73,47 @@ class SettingsViewModel: ObservableObject {
         // Fallback (shouldn't happen with current UI constraints)
         return "custom"
     }
+    
+    // Computed property for the quote length dropdown display text (short/medium/long)
+    var quoteLengthDisplayText: String {
+        let hasEasy = selectedLengths.contains("easy")
+        let hasMedium = selectedLengths.contains("medium")
+        let hasHard = selectedLengths.contains("hard")
+        
+        // Show "all" when all options are selected
+        if hasEasy && hasMedium && hasHard {
+            return "all"
+        }
+        
+        // Show specific lengths based on selections
+        if hasEasy && !hasMedium && !hasHard {
+            return "short"
+        }
+        
+        if !hasEasy && hasMedium && !hasHard {
+            return "medium"
+        }
+        
+        if !hasEasy && !hasMedium && hasHard {
+            return "long"
+        }
+        
+        // Multiple selections
+        if hasEasy && hasMedium && !hasHard {
+            return "short & medium"
+        }
+        
+        if !hasEasy && hasMedium && hasHard {
+            return "medium & long"
+        }
+        
+        if hasEasy && !hasMedium && hasHard {
+            return "short & long"
+        }
+        
+        // Fallback (shouldn't happen with current UI constraints)
+        return "custom"
+    }
 
     init() {
         // Forward AppSettings changes to trigger view updates

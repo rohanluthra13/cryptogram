@@ -7,6 +7,7 @@ struct PuzzleCompletionView: View {
     @EnvironmentObject private var appSettings: AppSettings
     @Binding var showCompletionView: Bool
     @State private var showSettings = false
+    @Environment(\.dismiss) private var dismiss
     
     // Animation states
     @State private var showQuote = false
@@ -264,10 +265,28 @@ struct PuzzleCompletionView: View {
                             .opacity(showStats ? 1 : 0)
                             .offset(y: showStats ? 0 : 20)
                     }
-                    Button(action: { loadNextPuzzle() }) {
-                        Image(systemName: viewModel.isFailed ? "arrow.counterclockwise" : "arrow.right")
-                            .font(.system(size: 22))
-                            .foregroundColor(CryptogramTheme.Colors.text)
+                    HStack(spacing: 40) {
+                        Button(action: { loadNextPuzzle() }) {
+                            VStack(spacing: 8) {
+                                Image(systemName: viewModel.isFailed ? "arrow.counterclockwise" : "arrow.right")
+                                    .font(.system(size: 22))
+                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                Text(viewModel.isFailed ? "Try Again" : "Next Puzzle")
+                                    .font(.caption)
+                                    .foregroundColor(CryptogramTheme.Colors.text)
+                            }
+                        }
+                        
+                        Button(action: { goHome() }) {
+                            VStack(spacing: 8) {
+                                Image(systemName: "house")
+                                    .font(.system(size: 22))
+                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                Text("Home")
+                                    .font(.caption)
+                                    .foregroundColor(CryptogramTheme.Colors.text)
+                            }
+                        }
                     }
                     .opacity(showNextButton ? 1 : 0)
                     .offset(y: showNextButton ? 0 : 15)
@@ -375,6 +394,14 @@ struct PuzzleCompletionView: View {
             // For "Next Puzzle": get a new puzzle with current settings
             viewModel.refreshPuzzleWithCurrentSettings()
         }
+    }
+    
+    func goHome() {
+        // Hide the completion view and dismiss to return to home
+        withAnimation(.easeOut(duration: 0.3)) {
+            showCompletionView = false
+        }
+        dismiss()
     }
 }
 

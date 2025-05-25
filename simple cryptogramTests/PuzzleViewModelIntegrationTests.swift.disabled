@@ -10,9 +10,9 @@ struct PuzzleViewModelIntegrationTests {
         private var mockPuzzles: [Puzzle] = []
         private var currentIndex = 0
         
-        override init() {
-            super.init()
-            setupMockData()
+        init(puzzles: [Puzzle] = []) {
+            mockPuzzles = puzzles
+            // Don't call super.init() to avoid real database initialization
         }
         
         private func setupMockData() {

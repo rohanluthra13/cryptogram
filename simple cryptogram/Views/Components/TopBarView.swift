@@ -4,6 +4,7 @@ struct TopBarView: View {
     @EnvironmentObject private var viewModel: PuzzleViewModel
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
     @ObservedObject var uiState: PuzzleViewState
+    @Environment(\.dismiss) private var dismiss
     
     private var shouldShowControls: Bool {
         viewModel.currentPuzzle != nil && uiState.isMainUIVisible
@@ -47,9 +48,22 @@ struct TopBarView: View {
             }
             .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
             
-            // Right: daily puzzle button
+            // Right: home and daily puzzle buttons
             if shouldShowControls {
-                VStack(alignment: .trailing, spacing: 2) {
+                HStack(spacing: 12) {
+                    // Home button
+                    Button(action: {
+                        dismiss()
+                    }) {
+                        Image(systemName: "house")
+                            .font(.title3)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                            .opacity(PuzzleViewConstants.Colors.iconOpacity)
+                            .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
+                            .accessibilityLabel("Return to Home")
+                    }
+                    
+                    // Daily puzzle button
                     Button(action: {
                         if viewModel.isDailyPuzzleCompletedPublished {
                             viewModel.loadDailyPuzzle() // Ensure currentPuzzle is set to the daily puzzle

@@ -28,7 +28,7 @@ struct SettingsContentView: View {
     
     // Info text for difficulty
     private let difficultyInfoText = "normal mode gives you some starting letters.\nexpert mode does not."
-    private let lengthInfoText = "easy: short quotes (13-49 chars)\nmedium: medium quotes (50-99 chars)\nhard: long quotes (100+ chars)"
+    private let lengthInfoText = "short: quotes under 50 characters\nmedium: quotes 50-99 characters\nlong: quotes 100+ characters"
     
     var body: some View {
         VStack(spacing: 20) {
@@ -81,10 +81,10 @@ struct SettingsContentView: View {
                                     HStack {
                                         Spacer()
                                         
-                                        Text("character length: ")
+                                        Text("quote length: ")
                                             .font(.footnote)
                                             .foregroundColor(CryptogramTheme.Colors.text) +
-                                        Text(settingsViewModel.quoteRangeDisplayText)
+                                        Text(settingsViewModel.quoteLengthDisplayText)
                                             .font(.footnote)
                                             .fontWeight(.bold)
                                             .foregroundColor(CryptogramTheme.Colors.text)
@@ -106,17 +106,17 @@ struct SettingsContentView: View {
                                 if showLengthSelector {
                                     HStack(spacing: 4) {
                                         MultiCheckboxRow(
-                                            title: "< 50",
+                                            title: "short",
                                             isSelected: settingsViewModel.isLengthSelected("easy"),
                                             action: { settingsViewModel.toggleLength("easy") }
                                         )
                                         MultiCheckboxRow(
-                                            title: "50 - 99",
+                                            title: "medium",
                                             isSelected: settingsViewModel.isLengthSelected("medium"),
                                             action: { settingsViewModel.toggleLength("medium") }
                                         )
                                         MultiCheckboxRow(
-                                            title: "100 +",
+                                            title: "long",
                                             isSelected: settingsViewModel.isLengthSelected("hard"),
                                             action: { settingsViewModel.toggleLength("hard") }
                                         )

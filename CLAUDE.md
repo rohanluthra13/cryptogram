@@ -30,30 +30,83 @@ xcodebuild test -project "simple cryptogram.xcodeproj" -scheme "simple cryptogra
 
 ## Architecture
 
-### MVVM Pattern
+### MVVM Pattern with Manager Architecture
 - **Views**: SwiftUI views in `Views/` directory
-- **ViewModels**: Business logic in `ViewModels/` (PuzzleViewModel, SettingsViewModel)
+- **ViewModels**: Orchestration and business logic in `ViewModels/`
 - **Models**: Data structures in `Models/`
 - **Services**: Data access and business services in `Services/`
 
+### Core ViewModels Structure
+The app uses a manager pattern to separate concerns:
+```
+ViewModels/
+├── PuzzleViewModel.swift (452 lines) - Central orchestrator
+├── SettingsViewModel.swift - Settings management
+├── GameState/
+│   └── GameStateManager.swift - Game state, cells, completion
+├── Progress/
+│   ├── PuzzleProgressManager.swift - Progress persistence
+│   └── StatisticsManager.swift - Stats aggregation
+├── Input/
+│   ├── InputHandler.swift - Keyboard and selection
+│   └── HintManager.swift - Hint system
+└── Daily/
+    └── DailyPuzzleManager.swift - Daily puzzle features
+```
+
 ### Key Architectural Components
 
-1. **DatabaseService** (`Services/DatabaseService.swift`): Singleton managing SQLite operations
-   - Handles quotes, authors, and daily puzzles
-   - Supports database migrations via SQL files in `data/migrations/`
+1. **PuzzleViewModel** (`ViewModels/PuzzleViewModel.swift`): Central orchestrator
+   - Coordinates all specialized managers
+   - Maintains backward compatibility
+   - Handles author loading and error state
+   - Provides unified interface for views
 
-2. **PuzzleViewModel** (`ViewModels/PuzzleViewModel.swift`): Core game state management
-   - Manages puzzle encoding/decoding logic
-   - Handles user input and validation
-   - Tracks completion and hints
+2. **GameStateManager** (`ViewModels/GameState/GameStateManager.swift`): Core game logic
+   - Manages puzzle cells and game session
+   - Tracks mistakes, completion, and timing
+   - Handles puzzle initialization and reset
+   - Controls UI state (wiggling, highlights)
 
-3. **LocalPuzzleProgressStore** (`Services/LocalPuzzleProgressStore.swift`): User progress persistence
+3. **InputHandler** (`ViewModels/Input/InputHandler.swift`): User input processing
+   - Keyboard input validation
+   - Cell selection and navigation
+   - Delete and clear operations
+   - Haptic feedback coordination
+
+4. **HintManager** (`ViewModels/Input/HintManager.swift`): Hint system
+   - Cell reveal operations
+   - Hint count tracking
+   - Smart cell selection after hints
+
+5. **PuzzleProgressManager** (`ViewModels/Progress/PuzzleProgressManager.swift`): Progress tracking
+   - Interfaces with LocalPuzzleProgressStore
+   - Logs attempts and completions
+   - Manages puzzle-specific progress
+
+6. **StatisticsManager** (`ViewModels/Progress/StatisticsManager.swift`): Statistics aggregation
+   - Calculates global and puzzle-specific stats
+   - Win rates and timing analytics
+   - Performance metrics
+
+7. **DailyPuzzleManager** (`ViewModels/Daily/DailyPuzzleManager.swift`): Daily puzzles
+   - Date-based puzzle loading
+   - Daily puzzle progress persistence
+   - Calendar integration
+
+8. **DatabaseService** (`Services/DatabaseService.swift`): Data layer
+   - SQLite operations with error handling
+   - Database migrations via SQL files
+   - Throws DatabaseError for failures
+
+9. **LocalPuzzleProgressStore** (`Services/LocalPuzzleProgressStore.swift`): Progress persistence
    - Implements PuzzleProgressStore protocol
-   - Tracks attempts, completions, and statistics
+   - Safe data handling with no force unwraps
+   - Error propagation for corrupted data
 
-4. **ThemeManager** (`Views/Theme/ThemeManager.swift`): Centralized theming
-   - Dynamic color management for light/dark modes
-   - Custom color assets in `Assets.xcassets/Colors/`
+10. **ThemeManager** (`Views/Theme/ThemeManager.swift`): Centralized theming
+    - Dynamic color management for light/dark modes
+    - Custom color assets in `Assets.xcassets/Colors/`
 
 ### State Management
 - **AppSettings** (`Configuration/StateManagement/AppSettings.swift`): Central source of truth for all app settings
@@ -61,11 +114,24 @@ xcodebuild test -project "simple cryptogram.xcodeproj" -scheme "simple cryptogra
   - All settings flow through this single instance
   - Implements automatic persistence via PersistenceStrategy
   - Supports reset to user defaults and factory defaults
+  - Migrates legacy @AppStorage values automatically
 - **UserSettings** (`Configuration/UserSettings.swift`): Legacy compatibility layer
   - Now forwards all calls to AppSettings
   - Maintained for backward compatibility during transition
 - Environment objects for app-wide state sharing
 - NotificationCenter for settings change propagation
+
+### Error Handling
+- **DatabaseError** (`Services/DatabaseError.swift`): User-friendly error messages
+  - Categorized errors (initialization, migration, data access)
+  - Recovery suggestions for each error type
+  - Localized error descriptions
+- **ErrorRecoveryService** (`Services/ErrorRecoveryService.swift`): Automatic recovery
+  - Retry logic for transient failures
+  - Database reinitialization for corruption
+  - User notification for unrecoverable errors
+- All database operations use proper error propagation
+- ViewModels handle errors gracefully with user feedback
 
 ### State Access Patterns
 For Views:
@@ -102,15 +168,48 @@ The app uses SQLite with the following main tables:
 - Haptic feedback for user interactions
 
 ### Testing Approach
-- Unit tests for ViewModels and Services
-- UI tests for critical user flows
-- Database migration tests when adding new schema changes
+- **Comprehensive Test Suite**: 127+ tests covering all managers
+  - Unit tests for each manager component
+  - Integration tests for manager coordination
+  - Performance tests for critical paths
+  - Database migration and error handling tests
+- **Test Organization**:
+  - `GameStateManagerTests`: Game logic and state transitions
+  - `InputHandlerTests`: Input validation and navigation
+  - `HintManagerTests`: Hint system edge cases
+  - `PuzzleProgressManagerTests`: Progress persistence
+  - `StatisticsManagerTests`: Stats calculation accuracy
+  - `DailyPuzzleManagerTests`: Daily puzzle workflows
+  - `PuzzleViewModelIntegrationTests`: End-to-end scenarios
+- **Testing Commands**:
+  ```bash
+  # Run all tests
+  xcodebuild test -project "simple cryptogram.xcodeproj" -scheme "simple cryptogram" -destination 'platform=iOS Simulator,name=iPhone 15'
+  
+  # Run specific manager tests
+  xcodebuild test -project "simple cryptogram.xcodeproj" -scheme "simple cryptogram" -only-testing:"simple cryptogramTests/GameStateManagerTests"
+  ```
 
 ### Common Development Tasks
 When adding new features:
 1. Update database schema if needed (add migration in `data/migrations/`)
-2. Extend relevant ViewModels for business logic
-3. Create reusable components in `Views/Components/`
-4. Add new settings to AppSettings (not UserSettings)
-5. Test on both light and dark themes
-6. Ensure new settings are persisted via AppSettings' didSet observers
+2. Identify the appropriate manager for your feature:
+   - Game mechanics → GameStateManager
+   - User input → InputHandler
+   - Progress/stats → PuzzleProgressManager/StatisticsManager
+   - Daily puzzles → DailyPuzzleManager
+   - New domain → Create a new manager
+3. Update PuzzleViewModel to expose new functionality
+4. Create reusable components in `Views/Components/`
+5. Add new settings to AppSettings (not UserSettings)
+6. Write unit tests for your manager changes
+7. Test on both light and dark themes
+8. Ensure new settings are persisted via AppSettings' didSet observers
+9. Handle errors appropriately using DatabaseError patterns
+
+### Component Design Patterns
+- **Manager Pattern**: Each manager has a single responsibility
+- **Coordinator Pattern**: PuzzleViewModel coordinates managers
+- **Protocol-Oriented**: Use protocols for testability (e.g., PuzzleProgressStore)
+- **Error Propagation**: Throw errors up, handle at view layer
+- **Functional Composition**: See NavigationBarView for clean component design
