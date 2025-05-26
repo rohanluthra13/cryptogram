@@ -8,6 +8,9 @@ struct HomeView: View {
     @State private var showStats = false
     @State private var navigateToPuzzle = false
     @State private var selectedMode: PuzzleMode = .random
+    @State private var showLengthSelection = false
+    @State private var isBottomBarVisible = true
+    @State private var bottomBarHideWorkItem: DispatchWorkItem?
     
     enum PuzzleMode {
         case random
@@ -24,73 +27,96 @@ struct HomeView: View {
                 VStack(spacing: 0) {
                     // Main content
                     VStack(spacing: 20) {
-                        // Main buttons
-                        VStack(spacing: 12) {
-                            modeButton(.random, title: "Play")
-                            modeButton(.daily, title: "Daily Puzzle")
-                        }
-                        .padding(.horizontal, 40)
-                        .padding(.top, 100)
+                        Spacer()
+                        Spacer()
+                        Spacer() // Additional spacer to push content lower
                         
-                        // Settings box - Quote length checkboxes
-                        HStack(spacing: 4) {
-                            MultiCheckboxRow(
-                                title: "short",
-                                isSelected: appSettings.selectedDifficulties.contains("easy"),
-                                action: { toggleLength("easy") }
-                            )
-                            MultiCheckboxRow(
-                                title: "medium",
-                                isSelected: appSettings.selectedDifficulties.contains("medium"),
-                                action: { toggleLength("medium") }
-                            )
-                            MultiCheckboxRow(
-                                title: "long",
-                                isSelected: appSettings.selectedDifficulties.contains("hard"),
-                                action: { toggleLength("hard") }
-                            )
+                        // Main buttons positioned in bottom third
+                        if !showLengthSelection {
+                            VStack(spacing: 50) {
+                                playButton
+                                dailyPuzzleButton
+                            }
+                            .transition(.opacity.combined(with: .scale))
+                        } else {
+                            // Length selection
+                            VStack(spacing: 20) {
+                                randomButton
+                                
+                                Text("or select length")
+                                    .font(.footnote)
+                                    .italic()
+                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(0.7))
+                                    .padding(.vertical, 4)
+                                
+                                HStack(spacing: 30) {
+                                    lengthButton("short", difficulty: "easy")
+                                    lengthButton("medium", difficulty: "medium")
+                                    lengthButton("long", difficulty: "hard")
+                                }
+                            }
+                            .transition(.opacity.combined(with: .scale))
                         }
-                        .frame(maxWidth: .infinity)
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 16)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(CryptogramTheme.Colors.border.opacity(0.3), lineWidth: 1)
-                        )
-                        .padding(.horizontal, 40)
-                        .padding(.top, 20)
                         
                         Spacer()
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        if showLengthSelection {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                showLengthSelection = false
+                            }
+                        }
                     }
                     
                     // Bottom bar
-                    HStack {
-                        // Stats button
-                        Button(action: {
-                            showStats.toggle()
-                        }) {
-                            Image(systemName: "chart.bar")
-                                .font(.system(size: PuzzleViewConstants.Sizes.statsIconSize))
-                                .foregroundColor(CryptogramTheme.Colors.text)
-                                .opacity(PuzzleViewConstants.Colors.iconOpacity)
-                                .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
+                    ZStack {
+                        // Visible bottom bar with icons
+                        if isBottomBarVisible || showSettings || showStats {
+                            HStack {
+                                // Stats button
+                                Button(action: {
+                                    showStats.toggle()
+                                    showBottomBarTemporarily()
+                                }) {
+                                    Image(systemName: "chart.bar")
+                                        .font(.system(size: PuzzleViewConstants.Sizes.statsIconSize))
+                                        .foregroundColor(CryptogramTheme.Colors.text)
+                                        .opacity(PuzzleViewConstants.Colors.iconOpacity)
+                                        .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
+                                }
+                                
+                                Spacer()
+                                
+                                // Settings button
+                                Button(action: {
+                                    showSettings.toggle()
+                                    showBottomBarTemporarily()
+                                }) {
+                                    Image(systemName: "gearshape")
+                                        .font(.system(size: PuzzleViewConstants.Sizes.settingsIconSize))
+                                        .foregroundColor(CryptogramTheme.Colors.text)
+                                        .opacity(PuzzleViewConstants.Colors.iconOpacity)
+                                        .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
+                                }
+                            }
+                            .frame(height: PuzzleViewConstants.Spacing.bottomBarHeight)
+                            .padding(.horizontal, PuzzleViewConstants.Spacing.bottomBarHorizontalPadding)
+                            .transition(.opacity)
                         }
                         
-                        Spacer()
-                        
-                        // Settings button
-                        Button(action: {
-                            showSettings.toggle()
-                        }) {
-                            Image(systemName: "gearshape")
-                                .font(.system(size: PuzzleViewConstants.Sizes.settingsIconSize))
-                                .foregroundColor(CryptogramTheme.Colors.text)
-                                .opacity(PuzzleViewConstants.Colors.iconOpacity)
-                                .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
+                        // Invisible tap area to bring back bottom bar
+                        if !isBottomBarVisible && !showSettings && !showStats {
+                            Rectangle()
+                                .fill(Color.clear)
+                                .frame(height: PuzzleViewConstants.Spacing.bottomBarHeight)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    showBottomBarTemporarily()
+                                }
                         }
                     }
                     .frame(height: PuzzleViewConstants.Spacing.bottomBarHeight)
-                    .padding(.horizontal, PuzzleViewConstants.Spacing.bottomBarHorizontalPadding)
                 }
                 
                 // Settings overlay
@@ -133,34 +159,67 @@ struct HomeView: View {
                 PuzzleView()
                     .navigationBarHidden(true)
             }
+            .onAppear {
+                showBottomBarTemporarily()
+            }
         }
     }
     
-    private func modeButton(_ mode: PuzzleMode, title: String) -> some View {
+    private var playButton: some View {
         Button(action: {
-            selectMode(mode)
+            withAnimation(.easeInOut(duration: 0.2)) {
+                showLengthSelection = true
+            }
         }) {
-            Text(title)
-                .font(.footnote)
+            Text("play")
+                .font(.system(size: 16))
                 .foregroundColor(CryptogramTheme.Colors.text)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
+                .padding(.vertical, 8)
         }
         .buttonStyle(PlainButtonStyle())
     }
     
-    private func toggleLength(_ difficulty: String) {
-        var newSelection = appSettings.selectedDifficulties
-        if newSelection.contains(difficulty) {
-            newSelection.removeAll { $0 == difficulty }
-        } else {
-            newSelection.append(difficulty)
+    private var dailyPuzzleButton: some View {
+        Button(action: {
+            selectMode(.daily)
+        }) {
+            Text("daily puzzle")
+                .font(.system(size: 16))
+                .foregroundColor(CryptogramTheme.Colors.text)
+                .padding(.vertical, 8)
         }
-        
-        // Ensure at least one difficulty is selected
-        if !newSelection.isEmpty {
-            appSettings.selectedDifficulties = newSelection
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    private var randomButton: some View {
+        Button(action: {
+            appSettings.selectedDifficulties = ["easy", "medium", "hard"]
+            selectMode(.random)
+        }) {
+            HStack(spacing: 4) {
+                Text("just play")
+                    .font(.system(size: 16))
+                    .foregroundColor(CryptogramTheme.Colors.text)
+                Image(systemName: "dice")
+                    .font(.system(size: 10))
+                    .foregroundColor(CryptogramTheme.Colors.text)
+            }
+            .padding(.vertical, 8)
         }
+        .buttonStyle(PlainButtonStyle())
+    }
+    
+    private func lengthButton(_ title: String, difficulty: String) -> some View {
+        Button(action: {
+            appSettings.selectedDifficulties = [difficulty]
+            selectMode(.random)
+        }) {
+            Text(title)
+                .font(.system(size: 16))
+                .foregroundColor(CryptogramTheme.Colors.text)
+                .padding(.vertical, 8)
+        }
+        .buttonStyle(PlainButtonStyle())
     }
     
     private func selectMode(_ mode: PuzzleMode) {
@@ -182,6 +241,21 @@ struct HomeView: View {
         // Load new puzzle and navigate
         viewModel.loadNewPuzzle()
         navigateToPuzzle = true
+    }
+    
+    private func showBottomBarTemporarily() {
+        withAnimation {
+            isBottomBarVisible = true
+        }
+        bottomBarHideWorkItem?.cancel()
+        
+        let workItem = DispatchWorkItem {
+            withAnimation {
+                self.isBottomBarVisible = false
+            }
+        }
+        bottomBarHideWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + PuzzleViewConstants.Animation.bottomBarAutoHideDelay, execute: workItem)
     }
 }
 

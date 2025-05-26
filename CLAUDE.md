@@ -79,6 +79,7 @@ Views/
    - Tracks mistakes, completion, and timing
    - Handles puzzle initialization and reset
    - Controls UI state (wiggling, highlights)
+   - Applies pre-filled letters (20% of unique letters) at puzzle start
 
 3. **InputHandler** (`ViewModels/Input/InputHandler.swift`): User input processing
    - Keyboard input validation
@@ -174,7 +175,7 @@ The app uses SQLite with the following main tables:
 ### Key Features to Maintain
 - Home screen with puzzle length selection (Short/Medium/Long/Random)
 - Letter and number encoding modes
-- Normal/Expert difficulty levels
+- Pre-filled letters at puzzle start (20% of unique letters revealed)
 - Daily puzzle system with calendar-based access
 - Comprehensive statistics tracking
 - Author information cards
