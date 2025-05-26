@@ -397,15 +397,18 @@ struct PuzzleCompletionView: View {
             showCompletionView = false
         }
         
-        // Reset current session and load next puzzle
-        viewModel.reset()
-        
-        if viewModel.isFailed && viewModel.currentPuzzle != nil {
-            // For "Try Again": reuse the same puzzle but apply difficulty settings
-            viewModel.startNewPuzzle(puzzle: viewModel.currentPuzzle!)
-        } else {
-            // For "Next Puzzle": get a new puzzle with current settings
-            viewModel.refreshPuzzleWithCurrentSettings()
+        // Delay loading the next puzzle until after the completion view is hidden
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            // Reset current session and load next puzzle
+            viewModel.reset()
+            
+            if viewModel.isFailed && viewModel.currentPuzzle != nil {
+                // For "Try Again": reuse the same puzzle but apply difficulty settings
+                viewModel.startNewPuzzle(puzzle: viewModel.currentPuzzle!)
+            } else {
+                // For "Next Puzzle": get a new puzzle with current settings
+                viewModel.refreshPuzzleWithCurrentSettings()
+            }
         }
     }
     
