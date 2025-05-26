@@ -224,7 +224,7 @@ struct SettingsContentView: View {
                         }
                         
                         // Font selection
-                        VStack(spacing: 8) {
+                        VStack(spacing: 0) {
                             Button {
                                 withAnimation(.easeInOut(duration: 0.3)) {
                                     showFontSelector.toggle()
@@ -254,7 +254,7 @@ struct SettingsContentView: View {
                             .buttonStyle(PlainButtonStyle())
                             
                             if showFontSelector {
-                                VStack(spacing: 8) {
+                                VStack(spacing: 0) {
                                     ForEach(FontOption.allCases, id: \.self) { font in
                                         Button {
                                             appSettings.fontFamily = font
@@ -262,23 +262,20 @@ struct SettingsContentView: View {
                                                 showFontSelector = false
                                             }
                                         } label: {
-                                            HStack {
-                                                Spacer()
-                                                Text(font.rawValue.lowercased())
-                                                    .font(.system(.footnote, design: font.design))
-                                                    .fontWeight(appSettings.fontFamily == font ? .bold : .regular)
-                                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(appSettings.fontFamily == font ? 1 : 0.6))
-                                                Spacer()
-                                            }
-                                            .padding(.vertical, 4)
+                                            Text(font.rawValue.lowercased())
+                                                .font(.system(.footnote, design: font.design))
+                                                .fontWeight(appSettings.fontFamily == font ? .bold : .regular)
+                                                .foregroundColor(CryptogramTheme.Colors.text.opacity(appSettings.fontFamily == font ? 1 : 0.6))
+                                                .frame(maxWidth: .infinity)
+                                                .padding(.vertical, 8)
                                         }
                                         .buttonStyle(PlainButtonStyle())
                                     }
                                 }
-                                .padding(.horizontal, 16)
                                 .transition(.move(edge: .top).combined(with: .opacity))
                             }
                         }
+                        .zIndex(showFontSelector ? 1 : 0)
                         
                         // Layout selection with visual previews
                         NavBarLayoutSelector(selection: $settingsViewModel.selectedNavBarLayout)
