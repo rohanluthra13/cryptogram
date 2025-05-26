@@ -71,10 +71,10 @@ struct CompletionStatsView: View {
                                 .foregroundColor(checkmarkColor)
                         }
                     } else {
-                        // Show lightbulb and count for hints used - using theme color and outline version
-                        Image(systemName: "lightbulb")
+                        // Show lightbulb and count for hints used - using green color and filled version
+                        Image(systemName: "lightbulb.fill")
                             .rotationEffect(.degrees(45))
-                            .foregroundColor(CryptogramTheme.Colors.text)
+                            .foregroundColor(Color(hex: "#01780F").opacity(0.5))
                             .font(typography.caption)
                         
                         Text("\(viewModel.hintCount)")

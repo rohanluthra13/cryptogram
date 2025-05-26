@@ -10,6 +10,9 @@ struct PuzzleCompletionView: View {
     @State private var showSettings = false
     @Environment(\.dismiss) private var dismiss
     
+    // Bottom bar state
+    @StateObject private var uiState = PuzzleViewState()
+    
     // Animation states
     @State private var showQuote = false
     @State private var showAttribution = false
@@ -266,28 +269,12 @@ struct PuzzleCompletionView: View {
                             .opacity(showStats ? 1 : 0)
                             .offset(y: showStats ? 0 : 20)
                     }
-                    HStack(spacing: 40) {
-                        Button(action: { loadNextPuzzle() }) {
-                            VStack(spacing: 8) {
-                                Image(systemName: viewModel.isFailed ? "arrow.counterclockwise" : "arrow.right")
-                                    .font(typography.title)
-                                    .foregroundColor(CryptogramTheme.Colors.text)
-                                Text(viewModel.isFailed ? "Try Again" : "Next Puzzle")
-                                    .font(typography.caption)
-                                    .foregroundColor(CryptogramTheme.Colors.text)
-                            }
-                        }
-                        
-                        Button(action: { goHome() }) {
-                            VStack(spacing: 8) {
-                                Image(systemName: "house")
-                                    .font(typography.title)
-                                    .foregroundColor(CryptogramTheme.Colors.text)
-                                Text("Home")
-                                    .font(typography.caption)
-                                    .foregroundColor(CryptogramTheme.Colors.text)
-                            }
-                        }
+                    // Single button for next puzzle
+                    Button(action: { loadNextPuzzle() }) {
+                        Image(systemName: viewModel.isFailed ? "arrow.counterclockwise" : "arrow.right")
+                            .font(.system(size: 22))
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                            .frame(width: 44, height: 44)
                     }
                     .opacity(showNextButton ? 1 : 0)
                     .offset(y: showNextButton ? 0 : 15)
@@ -296,6 +283,28 @@ struct PuzzleCompletionView: View {
             }
             .frame(maxHeight: .infinity)
             .padding(CryptogramTheme.Layout.gridPadding)
+            
+            // Bottom bar with three icons
+            BottomBarView(uiState: uiState)
+                .opacity(showNextButton ? 1 : 0)
+                .animation(.easeInOut(duration: 0.5), value: showNextButton)
+            
+            // Settings overlay
+            if uiState.showSettings {
+                SettingsContentView()
+                    .environmentObject(settingsViewModel)
+                    .environmentObject(themeManager)
+                    .transition(.move(edge: .bottom))
+                    .zIndex(200)
+            }
+            
+            // Stats overlay
+            if uiState.showStatsOverlay {
+                UserStatsView(viewModel: viewModel)
+                    .environmentObject(themeManager)
+                    .transition(.move(edge: .bottom))
+                    .zIndex(200)
+            }
         }
         .onAppear {
             // Reset author summary state on appear
@@ -308,6 +317,9 @@ struct PuzzleCompletionView: View {
             showBornLine = false
             showDiedLine = false
             startAnimationSequence()
+            
+            // Show bottom bar and start auto-hide timer
+            uiState.showBottomBarTemporarily()
         }
     }
     
