@@ -48,40 +48,18 @@ struct TopBarView: View {
             }
             .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
             
-            // Right: home and daily puzzle buttons
+            // Right: home button
             if shouldShowControls {
-                HStack(spacing: 12) {
-                    // Home button
-                    Button(action: {
-                        dismiss()
-                    }) {
-                        Image(systemName: "house")
-                            .font(.title3)
-                            .foregroundColor(CryptogramTheme.Colors.text)
-                            .opacity(PuzzleViewConstants.Colors.iconOpacity)
-                            .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
-                            .accessibilityLabel("Return to Home")
-                    }
-                    
-                    // Daily puzzle button
-                    Button(action: {
-                        if viewModel.isDailyPuzzleCompletedPublished {
-                            viewModel.loadDailyPuzzle() // Ensure currentPuzzle is set to the daily puzzle
-                            // Delay the overlay slightly to ensure state is updated
-                            DispatchQueue.main.asyncAfter(deadline: .now() + PuzzleViewConstants.Animation.dailyPuzzleLoadDelay) {
-                                uiState.showDailyCompletionView = true
-                            }
-                        } else {
-                            viewModel.loadDailyPuzzle()
-                        }
-                    }) {
-                        Image(systemName: viewModel.isDailyPuzzleCompletedPublished ? "calendar.badge.checkmark" : "calendar")
-                            .font(.title3)
-                            .foregroundColor(viewModel.isDailyPuzzle ? PuzzleViewConstants.Colors.dailyPuzzleGreen.opacity(0.8) : CryptogramTheme.Colors.text)
-                            .opacity(PuzzleViewConstants.Colors.iconOpacity)
-                            .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
-                            .accessibilityLabel(viewModel.isDailyPuzzleCompletedPublished ? "Daily Puzzle Completed" : "Calendar")
-                    }
+                // Home button
+                Button(action: {
+                    dismiss()
+                }) {
+                    Image(systemName: "house")
+                        .font(.title3)
+                        .foregroundColor(CryptogramTheme.Colors.text)
+                        .opacity(PuzzleViewConstants.Colors.iconOpacity)
+                        .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
+                        .accessibilityLabel("Return to Home")
                 }
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .trailing)
             }
