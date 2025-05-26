@@ -3,7 +3,7 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Overview
-Simple Cryptogram is a SwiftUI-based iOS puzzle game where users decode encrypted quotes. The app uses MVVM architecture with a SQLite database for content storage.
+Simple Cryptogram is a SwiftUI-based iOS puzzle game where users decode encrypted quotes. The app uses MVVM architecture with a SQLite database for content storage. The app features a home screen for puzzle selection before entering the game.
 
 ## Build and Development Commands
 
@@ -52,6 +52,18 @@ ViewModels/
 │   └── HintManager.swift - Hint system
 └── Daily/
     └── DailyPuzzleManager.swift - Daily puzzle features
+```
+
+### Core Views Structure
+```
+Views/
+├── ContentView.swift - Root view container
+├── HomeView.swift - Home screen with puzzle selection
+├── PuzzleView.swift - Main puzzle gameplay view
+├── Components/
+│   ├── PuzzleCompletionView.swift - Post-game completion screen
+│   ├── TopBarView.swift - Top navigation bar
+│   └── ... other components
 ```
 
 ### Key Architectural Components
@@ -160,12 +172,14 @@ The app uses SQLite with the following main tables:
 - SQLite.swift (0.15.3): Database operations
 
 ### Key Features to Maintain
+- Home screen with puzzle length selection (Short/Medium/Long/Random)
 - Letter and number encoding modes
 - Normal/Expert difficulty levels
 - Daily puzzle system with calendar-based access
 - Comprehensive statistics tracking
 - Author information cards
 - Haptic feedback for user interactions
+- Navigation between home and puzzle views
 
 ### Testing Approach
 - **Comprehensive Test Suite**: 127+ tests covering all managers
@@ -206,6 +220,21 @@ When adding new features:
 7. Test on both light and dark themes
 8. Ensure new settings are persisted via AppSettings' didSet observers
 9. Handle errors appropriately using DatabaseError patterns
+
+### Navigation Flow
+The app follows this navigation structure:
+1. **ContentView** → **HomeView** (app entry point)
+2. **HomeView** → **PuzzleView** (via puzzle selection)
+3. **PuzzleView** → **PuzzleCompletionView** (on puzzle completion)
+4. Navigation back to HomeView via:
+   - Home button in TopBarView (during gameplay)
+   - Home button in PuzzleCompletionView (after completion)
+
+### Puzzle Length Selection
+- **Short**: Puzzles under 50 characters (maps to "easy" difficulty)
+- **Medium**: Puzzles 50-99 characters (maps to "medium" difficulty)
+- **Long**: Puzzles 100+ characters (maps to "hard" difficulty)
+- **Random**: Any length (all difficulties selected)
 
 ### Component Design Patterns
 - **Manager Pattern**: Each manager has a single responsibility

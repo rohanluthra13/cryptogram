@@ -119,21 +119,21 @@ struct OverlayManager: ViewModifier {
     @ViewBuilder
     private var statsOverlay: some View {
         if uiState.showStatsOverlay {
-            ZStack(alignment: .top) {
-                CryptogramTheme.Colors.background
-                    .ignoresSafeArea()
-                    .opacity(PuzzleViewConstants.Overlay.backgroundOpacity)
-                    .onTapGesture { uiState.showStatsOverlay = false }
-                VStack(spacing: 0) {
-                    Spacer(minLength: 0)
-                    UserStatsView(viewModel: viewModel)
-                        .padding(.top, 24)
-                }
-            }
-            .matchedGeometryEffect(id: "statsOverlay", in: statsOverlayNamespace)
-            .transition(.opacity)
-            .animation(.easeInOut(duration: PuzzleViewConstants.Animation.overlayDuration), value: uiState.showStatsOverlay)
-            .zIndex(OverlayZIndex.statsSettings)
+            CryptogramTheme.Colors.surface
+                .opacity(0.95)
+                .ignoresSafeArea()
+                .onTapGesture { uiState.showStatsOverlay = false }
+                .overlay(
+                    VStack(spacing: 0) {
+                        Spacer(minLength: 0)
+                        UserStatsView(viewModel: viewModel)
+                            .padding(.top, 24)
+                    }
+                )
+                .matchedGeometryEffect(id: "statsOverlay", in: statsOverlayNamespace)
+                .transition(.opacity)
+                .animation(.easeInOut(duration: PuzzleViewConstants.Animation.overlayDuration), value: uiState.showStatsOverlay)
+                .zIndex(OverlayZIndex.statsSettings)
         }
     }
     
@@ -141,25 +141,21 @@ struct OverlayManager: ViewModifier {
     @ViewBuilder
     private var settingsOverlay: some View {
         if uiState.showSettings {
-            ZStack {
-                CryptogramTheme.Colors.surface
-                    .opacity(0.95)
-                    .edgesIgnoringSafeArea(.all)
-                    .onTapGesture {
-                        uiState.showSettings = false
-                    }
-                    .zIndex(10)
-                SettingsContentView()
-                    .padding(.horizontal, PuzzleViewConstants.Overlay.overlayHorizontalPadding)
-                    .padding(.vertical, 20)
-                    .contentShape(Rectangle())
-                    .onTapGesture { }
-                    .environmentObject(viewModel)
-                    .environmentObject(themeManager)
-                    .environmentObject(settingsViewModel)
-                    .zIndex(11)
-            }
-            .zIndex(OverlayZIndex.statsSettings)
+            CryptogramTheme.Colors.surface
+                .opacity(0.95)
+                .edgesIgnoringSafeArea(.all)
+                .onTapGesture {
+                    uiState.showSettings = false
+                }
+                .overlay(
+                    SettingsContentView()
+                        .padding(.horizontal, PuzzleViewConstants.Overlay.overlayHorizontalPadding)
+                        .padding(.vertical, 20)
+                        .environmentObject(viewModel)
+                        .environmentObject(themeManager)
+                        .environmentObject(settingsViewModel)
+                )
+                .zIndex(OverlayZIndex.statsSettings)
         }
     }
     

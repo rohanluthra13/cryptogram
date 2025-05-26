@@ -10,9 +10,6 @@ struct HomeView: View {
     @State private var selectedMode: PuzzleMode = .random
     
     enum PuzzleMode {
-        case short
-        case medium
-        case long
         case random
         case daily
     }
@@ -27,39 +24,54 @@ struct HomeView: View {
                 VStack(spacing: 0) {
                     // Main content
                     VStack(spacing: 20) {
-                        // Header
-                        Text("Select mode to play")
-                            .font(.footnote)
-                            .fontWeight(.semibold)
-                            .foregroundColor(CryptogramTheme.Colors.text)
-                            .padding(.top, 150)
-                        
-                        // Puzzle mode options
+                        // Main buttons
                         VStack(spacing: 12) {
-                            modeButton(.random, title: "Random")
-                            modeButton(.short, title: "Short")
-                            modeButton(.medium, title: "Medium")
-                            modeButton(.long, title: "Long")
+                            modeButton(.random, title: "Play")
                             modeButton(.daily, title: "Daily Puzzle")
                         }
                         .padding(.horizontal, 40)
+                        .padding(.top, 100)
                         
-                        // Expert mode toggle
-                        HStack {
-                            Text("Expert Mode")
-                                .font(.footnote)
-                                .foregroundColor(CryptogramTheme.Colors.text)
+                        // Settings box
+                        VStack(spacing: 15) {
+                            // Difficulty toggle
+                            ToggleOptionRow(
+                                leftOption: (DifficultyMode.normal, DifficultyMode.normal.displayName.lowercased()),
+                                rightOption: (DifficultyMode.expert, DifficultyMode.expert.displayName.lowercased()),
+                                selection: Binding(
+                                    get: { appSettings.difficultyMode },
+                                    set: { appSettings.difficultyMode = $0 }
+                                )
+                            )
                             
-                            Spacer()
-                            
-                            Toggle("", isOn: Binding(
-                                get: { appSettings.difficultyMode == .expert },
-                                set: { appSettings.difficultyMode = $0 ? .expert : .normal }
-                            ))
-                            .labelsHidden()
+                            // Quote length checkboxes
+                            HStack(spacing: 4) {
+                                MultiCheckboxRow(
+                                    title: "short",
+                                    isSelected: appSettings.selectedDifficulties.contains("easy"),
+                                    action: { toggleLength("easy") }
+                                )
+                                MultiCheckboxRow(
+                                    title: "medium",
+                                    isSelected: appSettings.selectedDifficulties.contains("medium"),
+                                    action: { toggleLength("medium") }
+                                )
+                                MultiCheckboxRow(
+                                    title: "long",
+                                    isSelected: appSettings.selectedDifficulties.contains("hard"),
+                                    action: { toggleLength("hard") }
+                                )
+                            }
+                            .frame(maxWidth: .infinity)
                         }
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 16)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(CryptogramTheme.Colors.border.opacity(0.3), lineWidth: 1)
+                        )
                         .padding(.horizontal, 40)
-                        .padding(.top, 10)
+                        .padding(.top, 20)
                         
                         Spacer()
                     }
@@ -71,10 +83,10 @@ struct HomeView: View {
                             showStats.toggle()
                         }) {
                             Image(systemName: "chart.bar")
-                                .font(.system(size: 20))
+                                .font(.system(size: PuzzleViewConstants.Sizes.statsIconSize))
                                 .foregroundColor(CryptogramTheme.Colors.text)
-                                .opacity(0.8)
-                                .frame(width: 44, height: 44)
+                                .opacity(PuzzleViewConstants.Colors.iconOpacity)
+                                .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
                         }
                         
                         Spacer()
@@ -84,58 +96,50 @@ struct HomeView: View {
                             showSettings.toggle()
                         }) {
                             Image(systemName: "gearshape")
-                                .font(.system(size: 20))
+                                .font(.system(size: PuzzleViewConstants.Sizes.settingsIconSize))
                                 .foregroundColor(CryptogramTheme.Colors.text)
-                                .opacity(0.8)
-                                .frame(width: 44, height: 44)
+                                .opacity(PuzzleViewConstants.Colors.iconOpacity)
+                                .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
                         }
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.vertical, 10)
+                    .frame(height: PuzzleViewConstants.Spacing.bottomBarHeight)
+                    .padding(.horizontal, PuzzleViewConstants.Spacing.bottomBarHorizontalPadding)
                 }
                 
                 // Settings overlay
                 if showSettings {
-                    ZStack {
-                        // Background that dismisses overlay
-                        Color.black.opacity(0.5)
-                            .ignoresSafeArea()
-                            .onTapGesture {
-                                showSettings = false
-                            }
-                        
-                        // Settings content
-                        VStack {
-                            Spacer()
-                            SettingsContentView()
-                                .background(CryptogramTheme.Colors.surface)
-                                .cornerRadius(20)
-                                .padding(.horizontal, 16)
-                                .frame(maxHeight: UIScreen.main.bounds.height * 0.9)
+                    CryptogramTheme.Colors.surface
+                        .opacity(0.95)
+                        .edgesIgnoringSafeArea(.all)
+                        .onTapGesture {
+                            showSettings = false
                         }
-                    }
+                        .overlay(
+                            SettingsContentView()
+                                .padding(.horizontal, PuzzleViewConstants.Overlay.overlayHorizontalPadding)
+                                .padding(.vertical, 20)
+                                .environmentObject(viewModel)
+                                .environmentObject(themeManager)
+                        )
+                        .zIndex(OverlayZIndex.statsSettings)
                 }
                 
                 // Stats overlay
                 if showStats {
-                    ZStack {
-                        // Background that dismisses overlay
-                        Color.black.opacity(0.5)
-                            .ignoresSafeArea()
-                            .onTapGesture {
-                                showStats = false
+                    CryptogramTheme.Colors.surface
+                        .opacity(0.95)
+                        .ignoresSafeArea()
+                        .onTapGesture { showStats = false }
+                        .overlay(
+                            VStack(spacing: 0) {
+                                Spacer(minLength: 0)
+                                UserStatsView(viewModel: viewModel)
+                                    .padding(.top, 24)
                             }
-                        
-                        // Stats content
-                        VStack {
-                            Spacer()
-                            UserStatsView(viewModel: viewModel)
-                                .background(CryptogramTheme.Colors.surface)
-                                .cornerRadius(20)
-                                .padding(.horizontal, 16)
-                                .frame(maxHeight: UIScreen.main.bounds.height * 0.9)
-                        }
-                    }
+                        )
+                        .transition(.opacity)
+                        .animation(.easeInOut(duration: PuzzleViewConstants.Animation.overlayDuration), value: showStats)
+                        .zIndex(OverlayZIndex.statsSettings)
                 }
             }
             .navigationDestination(isPresented: $navigateToPuzzle) {
@@ -158,19 +162,30 @@ struct HomeView: View {
         .buttonStyle(PlainButtonStyle())
     }
     
+    private func toggleLength(_ difficulty: String) {
+        var newSelection = appSettings.selectedDifficulties
+        if newSelection.contains(difficulty) {
+            newSelection.removeAll { $0 == difficulty }
+        } else {
+            newSelection.append(difficulty)
+        }
+        
+        // Ensure at least one difficulty is selected
+        if !newSelection.isEmpty {
+            appSettings.selectedDifficulties = newSelection
+        }
+    }
+    
     private func selectMode(_ mode: PuzzleMode) {
         selectedMode = mode
         
         // Update difficulty settings based on mode
         switch mode {
-        case .short:
-            appSettings.selectedDifficulties = ["easy"]
-        case .medium:
-            appSettings.selectedDifficulties = ["medium"]
-        case .long:
-            appSettings.selectedDifficulties = ["hard"]
         case .random:
-            appSettings.selectedDifficulties = ["easy", "medium", "hard"]
+            // Keep current selected difficulties
+            if appSettings.selectedDifficulties.isEmpty {
+                appSettings.selectedDifficulties = ["easy", "medium", "hard"]
+            }
         case .daily:
             viewModel.loadDailyPuzzle()
             navigateToPuzzle = true
