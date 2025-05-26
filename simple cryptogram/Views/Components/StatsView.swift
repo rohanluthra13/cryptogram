@@ -6,6 +6,7 @@ struct TimerView: View {
     @State private var displayTime: TimeInterval = 0
     var isPaused: Bool = false
     @ObservedObject var settingsViewModel: SettingsViewModel
+    @Environment(\.typography) private var typography
     
     var body: some View {
         VStack {
@@ -43,12 +44,13 @@ struct TimerView: View {
 struct MistakesView: View {
     let mistakeCount: Int
     let maxMistakes: Int = 3
+    @Environment(\.typography) private var typography
     
     var body: some View {
         HStack(spacing: 8) {
             ForEach(0..<maxMistakes, id: \.self) { index in
                 Text("X")
-                    .font(.system(size: 18, weight: .bold))
+                    .font(typography.body.weight(.bold))
                     .foregroundColor(index < mistakeCount 
                                     ? Color(hex: "#9B0303") 
                                     : CryptogramTheme.Colors.secondary.opacity(0.3))
@@ -67,6 +69,7 @@ struct HintsView: View {
     let hintCount: Int
     var onRequestHint: () -> Void
     var maxHints: Int = Int.max  // Set to essentially unlimited
+    @Environment(\.typography) private var typography
     
     private let hintIconColor = Color(hex: "#01780F").opacity(0.5)
     
@@ -76,35 +79,35 @@ struct HintsView: View {
                 Image(systemName: "lightbulb.fill")
                     .rotationEffect(.degrees(45))
                     .foregroundColor(CryptogramTheme.Colors.secondary.opacity(0.3))
-                    .font(.system(size: 16))
+                    .font(typography.body)
             } else if hintCount == 1 {
                 Image(systemName: "lightbulb.fill")
                     .rotationEffect(.degrees(45))
                     .foregroundColor(hintIconColor)
-                    .font(.system(size: 16))
+                    .font(typography.body)
             } else if hintCount == 2 {
                 ForEach(0..<2, id: \.self) { _ in
                     Image(systemName: "lightbulb.fill")
                         .rotationEffect(.degrees(45))
                         .foregroundColor(hintIconColor)
-                        .font(.system(size: 16))
+                        .font(typography.body)
                 }
             } else if hintCount == 3 {
                 ForEach(0..<3, id: \.self) { _ in
                     Image(systemName: "lightbulb.fill")
                         .rotationEffect(.degrees(45))
                         .foregroundColor(hintIconColor)
-                        .font(.system(size: 16))
+                        .font(typography.body)
                 }
             } else if hintCount > 3 {
                 ForEach(0..<3, id: \.self) { _ in
                     Image(systemName: "lightbulb.fill")
                         .rotationEffect(.degrees(45))
                         .foregroundColor(hintIconColor)
-                        .font(.system(size: 16))
+                        .font(typography.body)
                 }
                 Text("+\(hintCount - 3)")
-                    .font(.system(size: 10, weight: .bold))
+                    .font(typography.caption.weight(.bold))
                     .foregroundColor(hintIconColor)
                     .frame(minWidth: 18, maxWidth: 32, alignment: .leading)
                     .lineLimit(1)
@@ -112,7 +115,7 @@ struct HintsView: View {
             Button(action: onRequestHint) {
                 Image(systemName: "plus")
                     .foregroundColor(CryptogramTheme.Colors.text)
-                    .font(.system(size: 18))
+                    .font(typography.body)
             }
         }
         .padding(8)
@@ -134,6 +137,7 @@ struct StatsView: View {
     var isPaused: Bool = false
     @ObservedObject var viewModel: PuzzleViewModel // required for UserStatsView
     @ObservedObject var settingsViewModel: SettingsViewModel
+    @Environment(\.typography) private var typography
     
     var body: some View {
         VStack(spacing: 0) {
@@ -145,7 +149,7 @@ struct StatsView: View {
                 Spacer()
                 Button(action: { /* settings action here */ }) {
                     Image(systemName: "gearshape")
-                        .font(.system(size: 20, weight: .regular))
+                        .font(typography.button)
                         .foregroundColor(CryptogramTheme.Colors.text)
                 }
                 .accessibilityLabel("Settings")
@@ -158,7 +162,7 @@ struct StatsView: View {
                 Spacer()
                 Button(action: { /* user stats action here */ }) {
                     Image(systemName: "chart.bar.xaxis")
-                        .font(.system(size: 20, weight: .regular))
+                        .font(typography.button)
                         .foregroundColor(CryptogramTheme.Colors.text)
                 }
                 .accessibilityLabel("User Stats")

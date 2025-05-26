@@ -1,5 +1,17 @@
 import SwiftUI
 
+// MARK: - Typography Environment
+private struct TypographyEnvironmentKey: EnvironmentKey {
+    static let defaultValue = CryptogramTheme.Typography()
+}
+
+extension EnvironmentValues {
+    var typography: CryptogramTheme.Typography {
+        get { self[TypographyEnvironmentKey.self] }
+        set { self[TypographyEnvironmentKey.self] = newValue }
+    }
+}
+
 // MARK: - Button Modifier
 struct CryptogramButton: ViewModifier {
     let isSelected: Bool
@@ -92,6 +104,16 @@ struct InfoOverlayTextStyle: ViewModifier {
     }
 }
 
+// MARK: - Typography Injection Modifier
+struct TypographyInjection: ViewModifier {
+    @EnvironmentObject private var appSettings: AppSettings
+    
+    func body(content: Content) -> some View {
+        content
+            .environment(\.typography, CryptogramTheme.Typography(fontOption: appSettings.fontFamily))
+    }
+}
+
 // MARK: - View Extensions
 extension View {
     func cryptogramButton(isSelected: Bool = false, isEnabled: Bool = true) -> some View {
@@ -116,5 +138,9 @@ extension View {
     
     func infoOverlayTextStyle() -> some View {
         modifier(InfoOverlayTextStyle())
+    }
+    
+    func injectTypography() -> some View {
+        modifier(TypographyInjection())
     }
 }

@@ -9,6 +9,7 @@ struct SettingsContentView: View {
     // State properties for info panels
     @State private var showLengthSelector = false
     @State private var showTextSizeSelector = false
+    @State private var showFontSelector = false
     
     // Computed bindings for AppSettings
     private var selectedEncodingType: Binding<String> {
@@ -221,6 +222,69 @@ struct SettingsContentView: View {
                             }
                         }
                         
+                        // Font selection
+                        VStack(spacing: 0) {
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    showFontSelector.toggle()
+                                }
+                            } label: {
+                                HStack {
+                                    Text("font")
+                                        .font(CryptogramTheme.Typography.default.body)
+                                        .foregroundColor(CryptogramTheme.Colors.text)
+                                    
+                                    Spacer()
+                                    
+                                    Text(appSettings.fontFamily.displayName)
+                                        .font(CryptogramTheme.Typography(fontOption: appSettings.fontFamily).body)
+                                        .foregroundColor(CryptogramTheme.Colors.text.opacity(0.7))
+                                    
+                                    Image(systemName: showFontSelector ? "chevron.up" : "chevron.down")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundColor(CryptogramTheme.Colors.text)
+                                        .padding(.leading, 4)
+                                }
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 10)
+                                .background(Color.clear)
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                            
+                            if showFontSelector {
+                                VStack(spacing: 8) {
+                                    ForEach(FontOption.allCases, id: \.self) { font in
+                                        Button {
+                                            appSettings.fontFamily = font
+                                        } label: {
+                                            HStack {
+                                                Text(font.displayName)
+                                                    .font(CryptogramTheme.Typography(fontOption: font).body)
+                                                    .foregroundColor(appSettings.fontFamily == font ? CryptogramTheme.Colors.primary : CryptogramTheme.Colors.text)
+                                                
+                                                Spacer()
+                                                
+                                                Text(font.previewText)
+                                                    .font(CryptogramTheme.Typography(fontOption: font).footnote)
+                                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(0.6))
+                                                
+                                                if appSettings.fontFamily == font {
+                                                    Image(systemName: "checkmark")
+                                                        .font(.system(size: 14, weight: .medium))
+                                                        .foregroundColor(CryptogramTheme.Colors.primary)
+                                                }
+                                            }
+                                            .padding(.horizontal, 16)
+                                            .padding(.vertical, 8)
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+                                    }
+                                }
+                                .padding(.vertical, 4)
+                                .transition(.move(edge: .top).combined(with: .opacity))
+                            }
+                        }
+                        
                         // Layout selection with visual previews
                         NavBarLayoutSelector(selection: $settingsViewModel.selectedNavBarLayout)
                         
@@ -235,6 +299,8 @@ struct SettingsContentView: View {
             ResetAccountSection(viewModel: puzzleViewModel)
         }
         .animation(.easeInOut(duration: 0.3), value: showLengthSelector)
+        .animation(.easeInOut(duration: 0.3), value: showTextSizeSelector)
+        .animation(.easeInOut(duration: 0.3), value: showFontSelector)
     }
 }
 

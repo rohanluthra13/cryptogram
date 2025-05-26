@@ -3,29 +3,31 @@ import SwiftUI
 struct AuthorInfoView: View {
     let author: Author
     var excludedPlaces: [String] = [] // Example usage for filtering out certain places
+    @Environment(\.typography) private var typography
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(author.fullName ?? author.name)
-                .font(.headline)
+                .font(typography.title)
             if let birth = author.birthDate, !birth.isEmpty {
                 Text("Born: \(birth)")
-                    .font(.subheadline)
+                    .font(typography.body)
             }
             if let pob = author.placeOfBirth, !pob.isEmpty, !excludedPlaces.contains(where: { pob.localizedCaseInsensitiveContains($0) }) {
                 Text("Place of Birth: \(pob)")
-                    .font(.subheadline)
+                    .font(typography.body)
             }
             if let death = author.deathDate, !death.isEmpty {
                 Text("Died: \(death)")
-                    .font(.subheadline)
+                    .font(typography.body)
             }
             if let pod = author.placeOfDeath, !pod.isEmpty, !excludedPlaces.contains(where: { pod.localizedCaseInsensitiveContains($0) }) {
                 Text("Place of Death: \(pod)")
-                    .font(.subheadline)
+                    .font(typography.body)
             }
             if let summary = author.summary, !summary.isEmpty {
                 Text(summary)
-                    .font(.body)
+                    .font(typography.body)
                     .padding(.top, 4)
             }
         }

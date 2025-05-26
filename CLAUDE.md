@@ -120,6 +120,8 @@ Views/
 10. **ThemeManager** (`Views/Theme/ThemeManager.swift`): Centralized theming
     - Dynamic color management for light/dark modes
     - Custom color assets in `Assets.xcassets/Colors/`
+    - Typography system with dynamic font selection
+    - Font options: System (SF Pro), Rounded, Serif (New York), Monospaced
 
 ### State Management
 - **AppSettings** (`Configuration/StateManagement/AppSettings.swift`): Central source of truth for all app settings
@@ -181,6 +183,7 @@ The app uses SQLite with the following main tables:
 - Author information cards
 - Haptic feedback for user interactions
 - Navigation between home and puzzle views
+- Font selection system (System, Rounded, Serif, Monospaced)
 
 ### Testing Approach
 - **Comprehensive Test Suite**: 127+ tests covering all managers
@@ -221,6 +224,10 @@ When adding new features:
 7. Test on both light and dark themes
 8. Ensure new settings are persisted via AppSettings' didSet observers
 9. Handle errors appropriately using DatabaseError patterns
+10. For UI features involving fonts:
+    - Use `@Environment(\.typography)` in views to access dynamic typography
+    - Typography is injected via `.injectTypography()` on ContentView
+    - Puzzle cells remain monospaced regardless of font selection
 
 ### Navigation Flow
 The app follows this navigation structure:

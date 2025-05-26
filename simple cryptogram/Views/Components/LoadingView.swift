@@ -2,11 +2,12 @@ import SwiftUI
 
 struct LoadingView: View {
     let message: String
+    @Environment(\.typography) private var typography
     
     var body: some View {
         VStack(spacing: 20) {
             Text(message)
-                .font(CryptogramTheme.Typography.body)
+                .font(typography.body)
                 .foregroundColor(CryptogramTheme.Colors.text)
                 .multilineTextAlignment(.center)
         }

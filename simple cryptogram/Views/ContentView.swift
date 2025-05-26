@@ -8,6 +8,7 @@ struct ContentView: View {
         NavigationView {
             HomeView()
         }
+        .injectTypography()
         .onChange(of: viewModel.currentError) { _, newError in
             if let error = newError {
                 showError = true

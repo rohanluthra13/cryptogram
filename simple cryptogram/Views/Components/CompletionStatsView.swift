@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CompletionStatsView: View {
     @EnvironmentObject private var viewModel: PuzzleViewModel
+    @Environment(\.typography) private var typography
     let maxMistakes: Int = 3
     
     // Green color for checkmark icons, matching hint icon color
@@ -17,7 +18,7 @@ struct CompletionStatsView: View {
                     HStack(spacing: 8) {
                         Text("time:")
                             .foregroundColor(CryptogramTheme.Colors.text)
-                            .font(.footnote)
+                            .font(typography.footnote)
                         Text(formatTime(completionTime))
                             .foregroundColor(CryptogramTheme.Colors.text)
                     }
@@ -27,7 +28,7 @@ struct CompletionStatsView: View {
                 HStack(spacing: 8) {
                     Text("mistakes:")
                         .foregroundColor(CryptogramTheme.Colors.text)
-                        .font(.footnote)
+                        .font(typography.footnote)
                     
                     if viewModel.mistakeCount == 0 {
                         // Show "none!" text with green tick
@@ -36,7 +37,7 @@ struct CompletionStatsView: View {
                                 .foregroundColor(CryptogramTheme.Colors.text)
                             
                             Image(systemName: "checkmark")
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(typography.caption.weight(.semibold))
                                 .foregroundColor(checkmarkColor)
                         }
                     } else {
@@ -44,7 +45,7 @@ struct CompletionStatsView: View {
                         HStack(spacing: 8) {
                             ForEach(0..<maxMistakes, id: \.self) { index in
                                 Text("X")
-                                    .font(.system(size: 16, weight: .bold))
+                                    .font(typography.body.weight(.bold))
                                     .foregroundColor(index < viewModel.mistakeCount 
                                                   ? Color.red.opacity(0.9) 
                                                   : CryptogramTheme.Colors.secondary.opacity(0.3))
@@ -57,7 +58,7 @@ struct CompletionStatsView: View {
                 HStack(spacing: 8) {
                     Text("hints used:")
                         .foregroundColor(CryptogramTheme.Colors.text)
-                        .font(.footnote)
+                        .font(typography.footnote)
                     
                     if viewModel.hintCount == 0 {
                         // Show "none!" text with green tick
@@ -66,7 +67,7 @@ struct CompletionStatsView: View {
                                 .foregroundColor(CryptogramTheme.Colors.text)
                             
                             Image(systemName: "checkmark")
-                                .font(.system(size: 14, weight: .semibold))
+                                .font(typography.caption.weight(.semibold))
                                 .foregroundColor(checkmarkColor)
                         }
                     } else {
@@ -74,14 +75,14 @@ struct CompletionStatsView: View {
                         Image(systemName: "lightbulb")
                             .rotationEffect(.degrees(45))
                             .foregroundColor(CryptogramTheme.Colors.text)
-                            .font(.system(size: 14))
+                            .font(typography.caption)
                         
                         Text("\(viewModel.hintCount)")
                             .foregroundColor(CryptogramTheme.Colors.text)
                     }
                 }
             }
-            .font(.footnote)
+            .font(typography.footnote)
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
             

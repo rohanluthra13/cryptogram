@@ -4,6 +4,7 @@ struct HomeView: View {
     @EnvironmentObject private var viewModel: PuzzleViewModel
     @EnvironmentObject private var appSettings: AppSettings
     @EnvironmentObject private var themeManager: ThemeManager
+    @Environment(\.typography) private var typography
     @State private var showSettings = false
     @State private var showStats = false
     @State private var navigateToPuzzle = false
@@ -44,7 +45,7 @@ struct HomeView: View {
                                 randomButton
                                 
                                 Text("or select length")
-                                    .font(.footnote)
+                                    .font(typography.footnote)
                                     .italic()
                                     .foregroundColor(CryptogramTheme.Colors.text.opacity(0.7))
                                     .padding(.vertical, 4)
@@ -172,7 +173,7 @@ struct HomeView: View {
             }
         }) {
             Text("play")
-                .font(.system(size: 16))
+                .font(typography.body)
                 .foregroundColor(CryptogramTheme.Colors.text)
                 .padding(.vertical, 8)
         }
@@ -184,7 +185,7 @@ struct HomeView: View {
             selectMode(.daily)
         }) {
             Text("daily puzzle")
-                .font(.system(size: 16))
+                .font(typography.body)
                 .foregroundColor(CryptogramTheme.Colors.text)
                 .padding(.vertical, 8)
         }
@@ -198,10 +199,10 @@ struct HomeView: View {
         }) {
             HStack(spacing: 4) {
                 Text("just play")
-                    .font(.system(size: 16))
+                    .font(typography.body)
                     .foregroundColor(CryptogramTheme.Colors.text)
                 Image(systemName: "dice")
-                    .font(.system(size: 10))
+                    .font(typography.caption)
                     .foregroundColor(CryptogramTheme.Colors.text)
                     .rotationEffect(.degrees(30))
             }
@@ -216,7 +217,7 @@ struct HomeView: View {
             selectMode(.random)
         }) {
             Text(title)
-                .font(.system(size: 16))
+                .font(typography.body)
                 .foregroundColor(CryptogramTheme.Colors.text)
                 .padding(.vertical, 8)
         }

@@ -34,6 +34,10 @@ final class AppSettings: ObservableObject {
         didSet { persistence.setValue(textSize.rawValue, for: "appSettings.textSize") }
     }
     
+    @Published var fontFamily: FontOption = .system {
+        didSet { persistence.setValue(fontFamily.rawValue, for: "appSettings.fontFamily") }
+    }
+    
     @Published var soundFeedbackEnabled: Bool = true {
         didSet { persistence.setValue(soundFeedbackEnabled, for: "appSettings.soundFeedbackEnabled") }
     }
@@ -69,6 +73,7 @@ final class AppSettings: ObservableObject {
         var autoSubmitLetter: Bool = false
         var navigationBarLayout: NavigationBarLayout = .centerLayout
         var textSize: TextSizeOption = .medium
+        var fontFamily: FontOption = .system
         var soundFeedbackEnabled: Bool = true
         var hapticFeedbackEnabled: Bool = true
         var isDarkMode: Bool = false
@@ -116,6 +121,11 @@ final class AppSettings: ObservableObject {
         if let textSizeRaw = persistence.value(for: "appSettings.textSize", type: String.self),
            let textSize = TextSizeOption(rawValue: textSizeRaw) {
             self.textSize = textSize
+        }
+        
+        if let fontFamilyRaw = persistence.value(for: "appSettings.fontFamily", type: String.self),
+           let fontFamily = FontOption(rawValue: fontFamilyRaw) {
+            self.fontFamily = fontFamily
         }
         
         if let soundFeedbackEnabled = persistence.value(for: "appSettings.soundFeedbackEnabled", type: Bool.self) {
@@ -169,6 +179,7 @@ final class AppSettings: ObservableObject {
         userDefaults.autoSubmitLetter = autoSubmitLetter
         userDefaults.navigationBarLayout = navigationBarLayout
         userDefaults.textSize = textSize
+        userDefaults.fontFamily = fontFamily
         userDefaults.soundFeedbackEnabled = soundFeedbackEnabled
         userDefaults.hapticFeedbackEnabled = hapticFeedbackEnabled
         userDefaults.isDarkMode = isDarkMode
@@ -182,6 +193,7 @@ final class AppSettings: ObservableObject {
         autoSubmitLetter = userDefaults.autoSubmitLetter
         navigationBarLayout = userDefaults.navigationBarLayout
         textSize = userDefaults.textSize
+        fontFamily = userDefaults.fontFamily
         soundFeedbackEnabled = userDefaults.soundFeedbackEnabled
         hapticFeedbackEnabled = userDefaults.hapticFeedbackEnabled
         isDarkMode = userDefaults.isDarkMode
@@ -195,6 +207,7 @@ final class AppSettings: ObservableObject {
         autoSubmitLetter = false
         navigationBarLayout = .centerLayout
         textSize = .medium
+        fontFamily = .system
         soundFeedbackEnabled = true
         hapticFeedbackEnabled = true
         isDarkMode = false

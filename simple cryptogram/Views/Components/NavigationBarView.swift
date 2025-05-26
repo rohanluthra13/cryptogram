@@ -12,6 +12,7 @@ struct NavigationBarView: View {
     var showCenterButtons: Bool = true
     
     @Binding var layout: NavigationBarLayout
+    @Environment(\.typography) private var typography
     
     private let buttonSize: CGFloat = 44
     private let spacing: CGFloat = 16
@@ -64,7 +65,7 @@ struct NavigationBarView: View {
     private func navButton(_ direction: NavDirection) -> some View {
         Button(action: direction == .left ? onMoveLeft : onMoveRight) {
             Image(systemName: direction.icon)
-                .font(.title3)
+                .font(typography.button)
                 .frame(width: buttonSize, height: buttonSize)
                 .foregroundColor(CryptogramTheme.Colors.text)
                 .accessibilityLabel(direction.label)
@@ -80,7 +81,7 @@ struct NavigationBarView: View {
             }
         }) {
             Image(systemName: type.icon)
-                .font(.title3)
+                .font(typography.button)
                 .frame(width: buttonSize, height: buttonSize)
                 .foregroundColor(CryptogramTheme.Colors.text)
                 .accessibilityLabel(type.label)

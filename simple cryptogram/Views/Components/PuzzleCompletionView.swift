@@ -5,6 +5,7 @@ struct PuzzleCompletionView: View {
     @EnvironmentObject private var themeManager: ThemeManager
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
     @EnvironmentObject private var appSettings: AppSettings
+    @Environment(\.typography) private var typography
     @Binding var showCompletionView: Bool
     @State private var showSettings = false
     @Environment(\.dismiss) private var dismiss
@@ -110,7 +111,7 @@ struct PuzzleCompletionView: View {
                     // Header - different for success vs failure
                     if viewModel.isFailed {
                         Text("Game Over")
-                            .font(.system(.title, design: .rounded))
+                            .font(typography.title)
                             .foregroundColor(CryptogramTheme.Colors.error)
                             .opacity(showQuote ? 1 : 0)
                             .scaleEffect(showQuote ? 1 : 0.9)
@@ -119,7 +120,7 @@ struct PuzzleCompletionView: View {
                     // Quote
                     if let quote = viewModel.currentPuzzle?.solution {
                         Text(displayedQuote.uppercased())
-                            .font(.system(.body, design: .default))
+                            .font(typography.body)
                             .multilineTextAlignment(.center)
                             .foregroundColor(CryptogramTheme.Colors.text)
                             .padding(.horizontal, 32)
@@ -137,7 +138,7 @@ struct PuzzleCompletionView: View {
                             source.replacingOccurrences(of: "Author:", with: "").trimmingCharacters(in: .whitespacesAndNewlines) : 
                             source
                         Text(processedSource)
-                            .font(.caption)
+                            .font(typography.caption)
                             .foregroundColor(CryptogramTheme.Colors.text)
                             .fontWeight(isAuthorVisible ? .bold : .regular)
                             .padding(.top, 4)
@@ -161,7 +162,7 @@ struct PuzzleCompletionView: View {
                                     VStack(alignment: .leading, spacing: 8) {
                                         if showSummaryLine {
                                             Text(summaryTyped)
-                                                .font(.caption)
+                                                .font(typography.caption)
                                                 .foregroundColor(CryptogramTheme.Colors.text)
                                                 .transition(.opacity)
                                         }
@@ -169,10 +170,10 @@ struct PuzzleCompletionView: View {
                                             HStack(alignment: .top, spacing: 0) {
                                                 Text("Born:")
                                                     .bold()
-                                                    .font(.caption)
+                                                    .font(typography.caption)
                                                     .foregroundColor(CryptogramTheme.Colors.text)
                                                 Text(bornTyped)
-                                                    .font(.caption)
+                                                    .font(typography.caption)
                                                     .foregroundColor(CryptogramTheme.Colors.text)
                                             }
                                             .transition(.opacity)
@@ -181,10 +182,10 @@ struct PuzzleCompletionView: View {
                                             HStack(alignment: .top, spacing: 0) {
                                                 Text("Died:")
                                                     .bold()
-                                                    .font(.caption)
+                                                    .font(typography.caption)
                                                     .foregroundColor(CryptogramTheme.Colors.text)
                                                 Text(diedTyped)
-                                                    .font(.caption)
+                                                    .font(typography.caption)
                                                     .foregroundColor(CryptogramTheme.Colors.text)
                                             }
                                             .transition(.opacity)
@@ -224,7 +225,7 @@ struct PuzzleCompletionView: View {
                                     Spacer()
                                 } else {
                                     Text(verbatim: summaryTyped.isEmpty ? "\u{00a0}" : summaryTyped)
-                                        .font(.caption)
+                                        .font(typography.caption)
                                         .foregroundColor(CryptogramTheme.Colors.text)
                                         .padding(.horizontal, 6)
                                         .frame(maxWidth: .infinity, alignment: .top)
@@ -235,7 +236,7 @@ struct PuzzleCompletionView: View {
                             }
                         } else {
                             Text(verbatim: "\u{00a0}")
-                                .font(.caption)
+                                .font(typography.caption)
                                 .foregroundColor(CryptogramTheme.Colors.text)
                                 .padding(.horizontal, 6)
                                 .frame(maxWidth: .infinity, alignment: .top)
@@ -254,7 +255,7 @@ struct PuzzleCompletionView: View {
                 VStack(spacing: 8) {
                     if viewModel.isFailed {
                         Text("Too many mistakes!")
-                            .font(.headline)
+                            .font(typography.title)
                             .foregroundColor(CryptogramTheme.Colors.error)
                             .padding(.vertical, 5)
                             .opacity(showStats ? 1 : 0)
@@ -269,10 +270,10 @@ struct PuzzleCompletionView: View {
                         Button(action: { loadNextPuzzle() }) {
                             VStack(spacing: 8) {
                                 Image(systemName: viewModel.isFailed ? "arrow.counterclockwise" : "arrow.right")
-                                    .font(.system(size: 22))
+                                    .font(typography.title)
                                     .foregroundColor(CryptogramTheme.Colors.text)
                                 Text(viewModel.isFailed ? "Try Again" : "Next Puzzle")
-                                    .font(.caption)
+                                    .font(typography.caption)
                                     .foregroundColor(CryptogramTheme.Colors.text)
                             }
                         }
@@ -280,10 +281,10 @@ struct PuzzleCompletionView: View {
                         Button(action: { goHome() }) {
                             VStack(spacing: 8) {
                                 Image(systemName: "house")
-                                    .font(.system(size: 22))
+                                    .font(typography.title)
                                     .foregroundColor(CryptogramTheme.Colors.text)
                                 Text("Home")
-                                    .font(.caption)
+                                    .font(typography.caption)
                                     .foregroundColor(CryptogramTheme.Colors.text)
                             }
                         }

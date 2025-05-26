@@ -15,6 +15,7 @@ struct OverlayManager: ViewModifier {
     @EnvironmentObject private var viewModel: PuzzleViewModel
     @EnvironmentObject private var themeManager: ThemeManager
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
+    @Environment(\.typography) private var typography
     @ObservedObject var uiState: PuzzleViewState
     @Namespace private var statsOverlayNamespace
     
@@ -71,7 +72,7 @@ struct OverlayManager: ViewModifier {
                 VStack {
                     Spacer()
                     Text("paused")
-                        .font(CryptogramTheme.Typography.body)
+                        .font(typography.body)
                         .fontWeight(.bold)
                         .foregroundColor(CryptogramTheme.Colors.text)
                         .padding(.horizontal, 32)
@@ -100,7 +101,7 @@ struct OverlayManager: ViewModifier {
                 VStack {
                     Spacer()
                     Text("game over")
-                        .font(CryptogramTheme.Typography.body)
+                        .font(typography.body)
                         .fontWeight(.bold)
                         .foregroundColor(CryptogramTheme.Colors.text)
                         .padding(.horizontal, 32)

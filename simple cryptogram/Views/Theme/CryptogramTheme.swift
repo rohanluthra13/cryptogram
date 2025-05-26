@@ -38,10 +38,39 @@ struct CryptogramTheme {
     }
     
     struct Typography {
-        static let title = Font.system(.title, design: .rounded)
-        static let body = Font.system(.body, design: .rounded)
-        static let cell = Font.system(.title2, design: .monospaced)
-        static let button = Font.system(.body, design: .rounded)
+        let fontOption: FontOption
+        
+        init(fontOption: FontOption = .system) {
+            self.fontOption = fontOption
+        }
+        
+        var title: Font {
+            Font.system(.title, design: fontOption.design)
+        }
+        
+        var body: Font {
+            Font.system(.body, design: fontOption.design)
+        }
+        
+        var cell: Font {
+            // Always use monospaced for puzzle cells for better alignment
+            Font.system(.title2, design: .monospaced)
+        }
+        
+        var button: Font {
+            Font.system(.body, design: fontOption.design)
+        }
+        
+        var caption: Font {
+            Font.system(.caption, design: fontOption.design)
+        }
+        
+        var footnote: Font {
+            Font.system(.footnote, design: fontOption.design)
+        }
+        
+        // Convenience static instance for default
+        static let `default` = Typography()
     }
     
     struct Animation {
