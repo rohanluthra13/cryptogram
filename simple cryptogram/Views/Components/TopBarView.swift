@@ -48,6 +48,22 @@ struct TopBarView: View {
             }
             .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
             
+            // Right: info button
+            if shouldShowControls {
+                Button(action: {
+                    withAnimation {
+                        uiState.showInfoOverlay.toggle()
+                    }
+                }) {
+                    Image(systemName: "questionmark")
+                        .font(.system(size: PuzzleViewConstants.Sizes.questionMarkSize))
+                        .foregroundColor(CryptogramTheme.Colors.text)
+                        .opacity(uiState.showInfoOverlay ? PuzzleViewConstants.Colors.activeIconOpacity : PuzzleViewConstants.Colors.iconOpacity)
+                        .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
+                        .accessibilityLabel("About / Info")
+                }
+                .frame(minWidth: 0, maxWidth: .infinity, alignment: .trailing)
+            }
         }
         .padding(.top, 0)
         .padding(.horizontal, PuzzleViewConstants.Spacing.topBarPadding)

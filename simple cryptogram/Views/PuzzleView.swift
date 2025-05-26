@@ -49,10 +49,6 @@ struct PuzzleView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
             .zIndex(0)
 
-            // --- Floating Question Mark Button ---
-            FloatingInfoButton(uiState: uiState)
-                .environmentObject(viewModel)
-
             // --- Persistent Bottom Banner Above All Overlays ---
             BottomBarView(uiState: uiState)
         }
