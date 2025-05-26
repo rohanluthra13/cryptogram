@@ -254,21 +254,28 @@ struct SettingsContentView: View {
                             .buttonStyle(PlainButtonStyle())
                             
                             if showFontSelector {
-                                HStack(spacing: 16) {
+                                VStack(spacing: 8) {
                                     ForEach(FontOption.allCases, id: \.self) { font in
                                         Button {
                                             appSettings.fontFamily = font
+                                            withAnimation(.easeInOut(duration: 0.2)) {
+                                                showFontSelector = false
+                                            }
                                         } label: {
-                                            Text(font.rawValue.lowercased())
-                                                .font(.system(.footnote, design: font.design))
-                                                .fontWeight(appSettings.fontFamily == font ? .bold : .regular)
-                                                .foregroundColor(CryptogramTheme.Colors.text.opacity(appSettings.fontFamily == font ? 1 : 0.6))
+                                            HStack {
+                                                Spacer()
+                                                Text(font.rawValue.lowercased())
+                                                    .font(.system(.footnote, design: font.design))
+                                                    .fontWeight(appSettings.fontFamily == font ? .bold : .regular)
+                                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(appSettings.fontFamily == font ? 1 : 0.6))
+                                                Spacer()
+                                            }
+                                            .padding(.vertical, 4)
                                         }
                                         .buttonStyle(PlainButtonStyle())
                                     }
                                 }
                                 .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
                                 .transition(.move(edge: .top).combined(with: .opacity))
                             }
                         }
