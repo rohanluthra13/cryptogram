@@ -122,38 +122,77 @@ struct HomeView: View {
                 
                 // Settings overlay
                 if showSettings {
-                    CryptogramTheme.Colors.surface
-                        .opacity(0.95)
-                        .edgesIgnoringSafeArea(.all)
-                        .onTapGesture {
-                            showSettings = false
+                    ZStack {
+                        CryptogramTheme.Colors.surface
+                            .opacity(0.95)
+                            .edgesIgnoringSafeArea(.all)
+                            .onTapGesture {
+                                showSettings = false
+                            }
+                            .overlay(
+                                SettingsContentView()
+                                    .padding(.horizontal, PuzzleViewConstants.Overlay.overlayHorizontalPadding)
+                                    .padding(.vertical, 20)
+                                    .background(Color.clear)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {}  // Empty gesture to prevent tap-through
+                                    .environmentObject(viewModel)
+                                    .environmentObject(themeManager)
+                            )
+                        
+                        // X button positioned at screen level
+                        VStack {
+                            HStack {
+                                Spacer()
+                                Button(action: { showSettings = false }) {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 10, weight: .medium))
+                                        .foregroundColor(CryptogramTheme.Colors.text.opacity(0.6))
+                                        .frame(width: 22, height: 22)
+                                }
+                                .padding(.top, 50)
+                                .padding(.trailing, 20)
+                            }
+                            Spacer()
                         }
-                        .overlay(
-                            SettingsContentView()
-                                .padding(.horizontal, PuzzleViewConstants.Overlay.overlayHorizontalPadding)
-                                .padding(.vertical, 20)
-                                .environmentObject(viewModel)
-                                .environmentObject(themeManager)
-                        )
-                        .zIndex(OverlayZIndex.statsSettings)
+                    }
+                    .zIndex(OverlayZIndex.statsSettings)
                 }
                 
                 // Stats overlay
                 if showStats {
-                    CryptogramTheme.Colors.surface
-                        .opacity(0.95)
-                        .ignoresSafeArea()
-                        .onTapGesture { showStats = false }
-                        .overlay(
-                            VStack(spacing: 0) {
-                                Spacer(minLength: 0)
-                                UserStatsView(viewModel: viewModel)
-                                    .padding(.top, 24)
+                    ZStack {
+                        CryptogramTheme.Colors.surface
+                            .opacity(0.95)
+                            .ignoresSafeArea()
+                            .onTapGesture { showStats = false }
+                            .overlay(
+                                VStack(spacing: 0) {
+                                    Spacer(minLength: 0)
+                                    UserStatsView(viewModel: viewModel)
+                                        .padding(.top, 24)
+                                }
+                            )
+                        
+                        // X button positioned at screen level
+                        VStack {
+                            HStack {
+                                Spacer()
+                                Button(action: { showStats = false }) {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 10, weight: .medium))
+                                        .foregroundColor(CryptogramTheme.Colors.text.opacity(0.6))
+                                        .frame(width: 22, height: 22)
+                                }
+                                .padding(.top, 50)
+                                .padding(.trailing, 20)
                             }
-                        )
-                        .transition(.opacity)
-                        .animation(.easeInOut(duration: PuzzleViewConstants.Animation.overlayDuration), value: showStats)
-                        .zIndex(OverlayZIndex.statsSettings)
+                            Spacer()
+                        }
+                    }
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: PuzzleViewConstants.Animation.overlayDuration), value: showStats)
+                    .zIndex(OverlayZIndex.statsSettings)
                 }
             }
             .navigationDestination(isPresented: $navigateToPuzzle) {
@@ -162,6 +201,8 @@ struct HomeView: View {
             }
             .onAppear {
                 showBottomBarTemporarily()
+                // Reset to initial state when returning to HomeView
+                showLengthSelection = false
             }
         }
     }

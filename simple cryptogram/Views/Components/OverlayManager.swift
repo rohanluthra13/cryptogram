@@ -54,6 +54,22 @@ struct OverlayManager: ViewModifier {
                     .padding(.horizontal, PuzzleViewConstants.Overlay.overlayHorizontalPadding)
                     Spacer()
                 }
+                
+                // X button positioned at screen level
+                VStack {
+                    HStack {
+                        Spacer()
+                        Button(action: { uiState.showInfoOverlay = false }) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(CryptogramTheme.Colors.text.opacity(0.6))
+                                .frame(width: 22, height: 22)
+                        }
+                        .padding(.top, 50)
+                        .padding(.trailing, 20)
+                    }
+                    Spacer()
+                }
             }
             .transition(.opacity)
             .animation(.easeInOut(duration: PuzzleViewConstants.Animation.overlayDuration), value: uiState.showInfoOverlay)
@@ -120,21 +136,39 @@ struct OverlayManager: ViewModifier {
     @ViewBuilder
     private var statsOverlay: some View {
         if uiState.showStatsOverlay {
-            CryptogramTheme.Colors.surface
-                .opacity(0.95)
-                .ignoresSafeArea()
-                .onTapGesture { uiState.showStatsOverlay = false }
-                .overlay(
-                    VStack(spacing: 0) {
-                        Spacer(minLength: 0)
-                        UserStatsView(viewModel: viewModel)
-                            .padding(.top, 24)
+            ZStack {
+                CryptogramTheme.Colors.surface
+                    .opacity(0.95)
+                    .ignoresSafeArea()
+                    .onTapGesture { uiState.showStatsOverlay = false }
+                    .overlay(
+                        VStack(spacing: 0) {
+                            Spacer(minLength: 0)
+                            UserStatsView(viewModel: viewModel)
+                                .padding(.top, 24)
+                        }
+                    )
+                
+                // X button positioned at screen level
+                VStack {
+                    HStack {
+                        Spacer()
+                        Button(action: { uiState.showStatsOverlay = false }) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(CryptogramTheme.Colors.text.opacity(0.6))
+                                .frame(width: 22, height: 22)
+                        }
+                        .padding(.top, 50)
+                        .padding(.trailing, 20)
                     }
-                )
-                .matchedGeometryEffect(id: "statsOverlay", in: statsOverlayNamespace)
-                .transition(.opacity)
-                .animation(.easeInOut(duration: PuzzleViewConstants.Animation.overlayDuration), value: uiState.showStatsOverlay)
-                .zIndex(OverlayZIndex.statsSettings)
+                    Spacer()
+                }
+            }
+            .matchedGeometryEffect(id: "statsOverlay", in: statsOverlayNamespace)
+            .transition(.opacity)
+            .animation(.easeInOut(duration: PuzzleViewConstants.Animation.overlayDuration), value: uiState.showStatsOverlay)
+            .zIndex(OverlayZIndex.statsSettings)
         }
     }
     
@@ -142,24 +176,42 @@ struct OverlayManager: ViewModifier {
     @ViewBuilder
     private var settingsOverlay: some View {
         if uiState.showSettings {
-            CryptogramTheme.Colors.surface
-                .opacity(0.95)
-                .edgesIgnoringSafeArea(.all)
-                .onTapGesture {
-                    uiState.showSettings = false
+            ZStack {
+                CryptogramTheme.Colors.surface
+                    .opacity(0.95)
+                    .edgesIgnoringSafeArea(.all)
+                    .onTapGesture {
+                        uiState.showSettings = false
+                    }
+                    .overlay(
+                        SettingsContentView()
+                            .padding(.horizontal, PuzzleViewConstants.Overlay.overlayHorizontalPadding)
+                            .padding(.vertical, 20)
+                            .background(Color.clear)
+                            .contentShape(Rectangle())
+                            .onTapGesture {}
+                            .environmentObject(viewModel)
+                            .environmentObject(themeManager)
+                            .environmentObject(settingsViewModel)
+                    )
+                
+                // X button positioned at screen level
+                VStack {
+                    HStack {
+                        Spacer()
+                        Button(action: { uiState.showSettings = false }) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(CryptogramTheme.Colors.text.opacity(0.6))
+                                .frame(width: 22, height: 22)
+                        }
+                        .padding(.top, 50)
+                        .padding(.trailing, 20)
+                    }
+                    Spacer()
                 }
-                .overlay(
-                    SettingsContentView()
-                        .padding(.horizontal, PuzzleViewConstants.Overlay.overlayHorizontalPadding)
-                        .padding(.vertical, 20)
-                        .background(Color.clear)
-                        .contentShape(Rectangle())
-                        .onTapGesture {}
-                        .environmentObject(viewModel)
-                        .environmentObject(themeManager)
-                        .environmentObject(settingsViewModel)
-                )
-                .zIndex(OverlayZIndex.statsSettings)
+            }
+            .zIndex(OverlayZIndex.statsSettings)
         }
     }
     
