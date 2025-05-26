@@ -2,6 +2,7 @@ import SwiftUI
 
 struct UserStatsView: View {
     @ObservedObject var viewModel: PuzzleViewModel
+    @Environment(\.typography) private var typography
     
     var body: some View {
         VStack {
@@ -11,10 +12,10 @@ struct UserStatsView: View {
                 VStack(spacing: 24) {
                     HStack {
                         Text("total completed:")
-                            .font(.footnote)
+                            .font(typography.footnote)
                             .foregroundColor(CryptogramTheme.Colors.text)
                         Text("\(viewModel.totalCompletions)")
-                            .font(.footnote)
+                            .font(typography.footnote)
                             .fontWeight(.bold)
                             .foregroundColor(CryptogramTheme.Colors.text)
                         Spacer()
@@ -22,10 +23,10 @@ struct UserStatsView: View {
                     .padding(.leading, 80)
                     HStack {
                         Text("total played:")
-                            .font(.footnote)
+                            .font(typography.footnote)
                             .foregroundColor(CryptogramTheme.Colors.text)
                         Text("\(viewModel.totalAttempts)")
-                            .font(.footnote)
+                            .font(typography.footnote)
                             .fontWeight(.bold)
                             .foregroundColor(CryptogramTheme.Colors.text)
                         Spacer()
@@ -33,10 +34,10 @@ struct UserStatsView: View {
                     .padding(.leading, 80)
                     HStack {
                         Text("win rate:")
-                            .font(.footnote)
+                            .font(typography.footnote)
                             .foregroundColor(CryptogramTheme.Colors.text)
                         Text("\(viewModel.winRatePercentage)%")
-                            .font(.footnote)
+                            .font(typography.footnote)
                             .fontWeight(.bold)
                             .foregroundColor(CryptogramTheme.Colors.text)
                         Spacer()
@@ -44,10 +45,10 @@ struct UserStatsView: View {
                     .padding(.leading, 80)
                     HStack {
                         Text("average time:")
-                            .font(.footnote)
+                            .font(typography.footnote)
                             .foregroundColor(CryptogramTheme.Colors.text)
                         Text(viewModel.averageTime.map { formatTime($0) } ?? "--:--")
-                            .font(.footnote)
+                            .font(typography.footnote)
                             .fontWeight(.bold)
                             .foregroundColor(CryptogramTheme.Colors.text)
                         Spacer()
