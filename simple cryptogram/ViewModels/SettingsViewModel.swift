@@ -10,11 +10,6 @@ class SettingsViewModel: ObservableObject {
     static let difficultySelectionChangedNotification = Notification.Name("DifficultySelectionChanged")
     
     // Computed properties that forward to AppSettings
-    var selectedMode: DifficultyMode {
-        get { AppSettings.shared?.difficultyMode ?? .normal }
-        set { AppSettings.shared?.difficultyMode = newValue }
-    }
-    
     var selectedNavBarLayout: NavigationBarLayout {
         get { AppSettings.shared?.navigationBarLayout ?? .centerLayout }
         set { AppSettings.shared?.navigationBarLayout = newValue }

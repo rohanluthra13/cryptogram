@@ -27,7 +27,7 @@ class PuzzleProgressManager: ObservableObject {
             completedAt: session.endTime ?? Date(),
             failedAt: nil,
             completionTime: timeTaken,
-            mode: UserSettings.currentMode.rawValue,
+            mode: "normal",
             hintCount: session.hintCount,
             mistakeCount: session.mistakeCount
         )
@@ -47,7 +47,7 @@ class PuzzleProgressManager: ObservableObject {
             completedAt: nil,
             failedAt: Date(),
             completionTime: nil,
-            mode: UserSettings.currentMode.rawValue,
+            mode: "normal",
             hintCount: session.hintCount,
             mistakeCount: session.mistakeCount
         )

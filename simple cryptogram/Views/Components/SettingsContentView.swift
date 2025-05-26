@@ -7,7 +7,6 @@ struct SettingsContentView: View {
     @EnvironmentObject private var appSettings: AppSettings
     
     // State properties for info panels
-    @State private var showDifficultyInfo = false
     @State private var showLengthSelector = false
     @State private var showTextSizeSelector = false
     
@@ -26,8 +25,7 @@ struct SettingsContentView: View {
         )
     }
     
-    // Info text for difficulty
-    private let difficultyInfoText = "normal mode gives you some starting letters.\nexpert mode does not."
+    // Info text for length
     private let lengthInfoText = "short: quotes under 50 characters\nmedium: quotes 50-99 characters\nlong: quotes 100+ characters"
     
     var body: some View {
@@ -39,31 +37,8 @@ struct SettingsContentView: View {
             // Gameplay Section
             SettingsSection(title: "gameplay") {
                 VStack(spacing: 15) {
-                    // Difficulty toggle with info support
-                    ToggleOptionRow(
-                        leftOption: (DifficultyMode.normal, DifficultyMode.normal.displayName.lowercased()),
-                        rightOption: (DifficultyMode.expert, DifficultyMode.expert.displayName.lowercased()),
-                        selection: $settingsViewModel.selectedMode,
-                        showInfoButton: true,
-                        onInfoButtonTap: {
-                            withAnimation {
-                                showDifficultyInfo.toggle()
-                                if showLengthSelector { showLengthSelector = false }
-                            }
-                        }
-                    )
-                    
-                    ZStack {
-                        // Info panel for difficulty
-                        InfoPanel(
-                            infoText: difficultyInfoText,
-                            isVisible: $showDifficultyInfo
-                        )
-                        .padding(.top, 8)
-                        
-                        // Encoding toggle and length dropdown (hidden when info is shown)
-                        if !showDifficultyInfo {
-                            VStack(spacing: 15) {
+                    // Encoding toggle and length dropdown
+                    VStack(spacing: 15) {
                                 // Encoding toggle
                                 ToggleOptionRow(
                                     leftOption: ("Letters", "abc"),
@@ -132,14 +107,12 @@ struct SettingsContentView: View {
                                     .transition(.move(edge: .top).combined(with: .opacity))
                                     .padding(.top, 0)
                                 }
-                            }
-                        }
                     }
                 }
             }
             
-            // Appearance Section - only visible when no info panels are shown
-            if !showDifficultyInfo && !showLengthSelector {
+            // Appearance Section - only visible when length selector is not shown
+            if !showLengthSelector {
                 SettingsSection(title: "theme & layout") {
                     VStack(spacing: 15) {
                         // Dark mode toggle with icons
@@ -261,7 +234,6 @@ struct SettingsContentView: View {
             // Reset account section at the bottom, no header
             ResetAccountSection(viewModel: puzzleViewModel)
         }
-        .animation(.easeInOut(duration: 0.3), value: showDifficultyInfo)
         .animation(.easeInOut(duration: 0.3), value: showLengthSelector)
     }
 }

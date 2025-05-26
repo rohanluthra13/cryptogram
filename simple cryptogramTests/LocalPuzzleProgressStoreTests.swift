@@ -67,7 +67,7 @@ struct LocalPuzzleProgressStoreTests {
             completedAt: nil,
             failedAt: failedAt,
             completionTime: nil,
-            mode: "Expert",
+            mode: "Normal",
             hintCount: 0,
             mistakeCount: 3
         )
@@ -219,7 +219,7 @@ struct LocalPuzzleProgressStoreTests {
             completedAt: nil,
             failedAt: nil,
             completionTime: nil,
-            mode: "Expert",
+            mode: "Normal",
             hintCount: 2,
             mistakeCount: 1
         )
@@ -306,7 +306,7 @@ struct LocalPuzzleProgressStoreTests {
                 completedAt: i % 3 == 0 ? Date() : nil,
                 failedAt: i % 3 == 0 ? nil : Date(),
                 completionTime: i % 3 == 0 ? Double(100 + i) : nil,
-                mode: i % 3 == 0 ? "Expert" : "Normal",
+                mode: "Normal",
                 hintCount: i / 2,
                 mistakeCount: i
             )

@@ -24,7 +24,7 @@ struct DatabaseServiceTests {
     // MARK: - Error Handling Tests
     
     @Test func fetchRandomPuzzleWithValidDatabase() async throws {
-        let difficulties = ["Normal", "Expert"]
+        let difficulties = ["easy", "medium", "hard"]
         
         do {
             let puzzle = try DatabaseService.shared.fetchRandomPuzzle(encodingType: "Letters", selectedDifficulties: difficulties)
@@ -55,26 +55,26 @@ struct DatabaseServiceTests {
     // MARK: - Query Tests
     
     @Test func fetchRandomPuzzleWithDifficulties() async throws {
-        // Test with normal difficulty
-        let normalPuzzle = try DatabaseService.shared.fetchRandomPuzzle(encodingType: "Letters", selectedDifficulties: ["Normal"])
-        #expect(normalPuzzle?.difficulty == "Normal", "Should return puzzle with requested difficulty")
+        // Test with easy difficulty
+        let easyPuzzle = try DatabaseService.shared.fetchRandomPuzzle(encodingType: "Letters", selectedDifficulties: ["easy"])
+        #expect(easyPuzzle?.difficulty == "easy", "Should return puzzle with requested difficulty")
         
-        // Test with expert difficulty
-        let expertPuzzle = try DatabaseService.shared.fetchRandomPuzzle(encodingType: "Letters", selectedDifficulties: ["Expert"])
-        #expect(expertPuzzle?.difficulty == "Expert", "Should return puzzle with requested difficulty")
+        // Test with medium difficulty
+        let mediumPuzzle = try DatabaseService.shared.fetchRandomPuzzle(encodingType: "Letters", selectedDifficulties: ["medium"])
+        #expect(mediumPuzzle?.difficulty == "medium", "Should return puzzle with requested difficulty")
         
-        // Test with both difficulties
-        let anyPuzzle = try DatabaseService.shared.fetchRandomPuzzle(encodingType: "Letters", selectedDifficulties: ["Normal", "Expert"])
-        #expect(["Normal", "Expert"].contains(anyPuzzle?.difficulty ?? ""), "Should return puzzle with one of requested difficulties")
+        // Test with all difficulties
+        let anyPuzzle = try DatabaseService.shared.fetchRandomPuzzle(encodingType: "Letters", selectedDifficulties: ["easy", "medium", "hard"])
+        #expect(["easy", "medium", "hard"].contains(anyPuzzle?.difficulty ?? ""), "Should return puzzle with one of requested difficulties")
     }
     
     @Test func fetchRandomPuzzleExcludesCurrent() async throws {
         // Get a puzzle
-        let firstPuzzle = try DatabaseService.shared.fetchRandomPuzzle(encodingType: "Letters", selectedDifficulties: ["Normal", "Expert"])
+        let firstPuzzle = try DatabaseService.shared.fetchRandomPuzzle(encodingType: "Letters", selectedDifficulties: ["easy", "medium", "hard"])
         #expect(firstPuzzle != nil)
         
         // Get another puzzle, excluding the first
-        let secondPuzzle = try DatabaseService.shared.fetchRandomPuzzle(current: firstPuzzle, encodingType: "Letters", selectedDifficulties: ["Normal", "Expert"])
+        let secondPuzzle = try DatabaseService.shared.fetchRandomPuzzle(current: firstPuzzle, encodingType: "Letters", selectedDifficulties: ["easy", "medium", "hard"])
         #expect(secondPuzzle != nil)
         
         // Verify they're different
@@ -85,12 +85,12 @@ struct DatabaseServiceTests {
     
     @Test func fetchPuzzleWithDifferentEncodingTypes() async throws {
         // Test letter encoding
-        let letterPuzzle = try DatabaseService.shared.fetchRandomPuzzle(encodingType: "Letters", selectedDifficulties: ["Normal", "Expert"])
+        let letterPuzzle = try DatabaseService.shared.fetchRandomPuzzle(encodingType: "Letters", selectedDifficulties: ["easy", "medium", "hard"])
         #expect(letterPuzzle != nil)
         #expect(!(letterPuzzle?.encodedText.isEmpty ?? true), "Letter encoded text should not be empty")
         
         // Test number encoding
-        let numberPuzzle = try DatabaseService.shared.fetchRandomPuzzle(encodingType: "Numbers", selectedDifficulties: ["Normal", "Expert"])
+        let numberPuzzle = try DatabaseService.shared.fetchRandomPuzzle(encodingType: "Numbers", selectedDifficulties: ["easy", "medium", "hard"])
         #expect(numberPuzzle != nil)
         #expect(!(numberPuzzle?.encodedText.isEmpty ?? true), "Number encoded text should not be empty")
         

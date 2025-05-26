@@ -233,9 +233,8 @@ class GameStateManager: ObservableObject {
     
     // MARK: - Private Methods
     private func applyDifficultyPrefills() {
-        let difficulty = UserSettings.currentMode
-        guard difficulty == .normal,
-              let solution = currentPuzzle?.solution.uppercased() else { return }
+        // Always apply prefills (previously normal mode behavior)
+        guard let solution = currentPuzzle?.solution.uppercased() else { return }
         
         let uniqueLetters = Set(solution.filter { $0.isLetter })
         
@@ -265,10 +264,7 @@ class GameStateManager: ObservableObject {
     }
     
     func updateCompletedLetters() {
-        guard UserSettings.currentMode == .normal else {
-            completedLetters = []
-            return
-        }
+        // Always update completed letters (previously normal mode behavior)
         
         let allLetters = Set(cells.filter { !$0.isSymbol }.map { $0.encodedChar })
         var newCompleted: Set<String> = []

@@ -66,11 +66,6 @@ class MigrationUtility {
     /// Migrate values from UserSettings static properties if not already migrated from @AppStorage
     @MainActor
     private static func migrateUserSettingsIfNeeded(to settings: AppSettings, defaults: UserDefaults) {
-        // Only migrate difficulty mode if not already set
-        if settings.difficultyMode == .normal && UserSettings.difficultyMode != .normal {
-            settings.difficultyMode = UserSettings.difficultyMode
-        }
-        
         // Only migrate selected difficulties if not customized
         let defaultDifficulties = ["easy", "medium", "hard"]
         if settings.selectedDifficulties == defaultDifficulties {

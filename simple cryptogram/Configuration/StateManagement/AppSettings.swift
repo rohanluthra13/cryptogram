@@ -17,10 +17,6 @@ final class AppSettings: ObservableObject {
         didSet { persistence.setValue(encodingType, for: "appSettings.encodingType") }
     }
     
-    @Published var difficultyMode: DifficultyMode = .normal {
-        didSet { persistence.setValue(difficultyMode.rawValue, for: "appSettings.difficultyMode") }
-    }
-    
     @Published var selectedDifficulties: [String] = ["easy", "medium", "hard"] {
         didSet { persistence.setValue(selectedDifficulties, for: "appSettings.selectedDifficulties") }
     }
@@ -69,7 +65,6 @@ final class AppSettings: ObservableObject {
     // MARK: - User-Defined Defaults
     private struct UserDefaults {
         var encodingType: String = "Letters"
-        var difficultyMode: DifficultyMode = .normal
         var selectedDifficulties: [String] = ["easy", "medium", "hard"]
         var autoSubmitLetter: Bool = false
         var navigationBarLayout: NavigationBarLayout = .centerLayout
@@ -102,11 +97,6 @@ final class AppSettings: ObservableObject {
         // Game Settings
         if let encodingType = persistence.value(for: "appSettings.encodingType", type: String.self) {
             self.encodingType = encodingType
-        }
-        
-        if let difficultyModeRaw = persistence.value(for: "appSettings.difficultyMode", type: String.self),
-           let difficultyMode = DifficultyMode(rawValue: difficultyModeRaw) {
-            self.difficultyMode = difficultyMode
         }
         
         if let selectedDifficulties = persistence.value(for: "appSettings.selectedDifficulties", type: [String].self) {
@@ -175,7 +165,6 @@ final class AppSettings: ObservableObject {
     /// Save current settings as user defaults
     private func saveCurrentAsUserDefaults() {
         userDefaults.encodingType = encodingType
-        userDefaults.difficultyMode = difficultyMode
         userDefaults.selectedDifficulties = selectedDifficulties
         userDefaults.autoSubmitLetter = autoSubmitLetter
         userDefaults.navigationBarLayout = navigationBarLayout
@@ -189,7 +178,6 @@ final class AppSettings: ObservableObject {
     /// Reset all settings to user-defined defaults
     func reset() {
         encodingType = userDefaults.encodingType
-        difficultyMode = userDefaults.difficultyMode
         selectedDifficulties = userDefaults.selectedDifficulties
         autoSubmitLetter = userDefaults.autoSubmitLetter
         navigationBarLayout = userDefaults.navigationBarLayout
@@ -203,7 +191,6 @@ final class AppSettings: ObservableObject {
     /// Reset all settings to factory defaults
     func resetToFactory() {
         encodingType = "Letters"
-        difficultyMode = .normal
         selectedDifficulties = ["easy", "medium", "hard"]
         autoSubmitLetter = false
         navigationBarLayout = .centerLayout

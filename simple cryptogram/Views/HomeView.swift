@@ -32,38 +32,25 @@ struct HomeView: View {
                         .padding(.horizontal, 40)
                         .padding(.top, 100)
                         
-                        // Settings box
-                        VStack(spacing: 15) {
-                            // Difficulty toggle
-                            ToggleOptionRow(
-                                leftOption: (DifficultyMode.normal, DifficultyMode.normal.displayName.lowercased()),
-                                rightOption: (DifficultyMode.expert, DifficultyMode.expert.displayName.lowercased()),
-                                selection: Binding(
-                                    get: { appSettings.difficultyMode },
-                                    set: { appSettings.difficultyMode = $0 }
-                                )
+                        // Settings box - Quote length checkboxes
+                        HStack(spacing: 4) {
+                            MultiCheckboxRow(
+                                title: "short",
+                                isSelected: appSettings.selectedDifficulties.contains("easy"),
+                                action: { toggleLength("easy") }
                             )
-                            
-                            // Quote length checkboxes
-                            HStack(spacing: 4) {
-                                MultiCheckboxRow(
-                                    title: "short",
-                                    isSelected: appSettings.selectedDifficulties.contains("easy"),
-                                    action: { toggleLength("easy") }
-                                )
-                                MultiCheckboxRow(
-                                    title: "medium",
-                                    isSelected: appSettings.selectedDifficulties.contains("medium"),
-                                    action: { toggleLength("medium") }
-                                )
-                                MultiCheckboxRow(
-                                    title: "long",
-                                    isSelected: appSettings.selectedDifficulties.contains("hard"),
-                                    action: { toggleLength("hard") }
-                                )
-                            }
-                            .frame(maxWidth: .infinity)
+                            MultiCheckboxRow(
+                                title: "medium",
+                                isSelected: appSettings.selectedDifficulties.contains("medium"),
+                                action: { toggleLength("medium") }
+                            )
+                            MultiCheckboxRow(
+                                title: "long",
+                                isSelected: appSettings.selectedDifficulties.contains("hard"),
+                                action: { toggleLength("hard") }
+                            )
                         }
+                        .frame(maxWidth: .infinity)
                         .padding(.horizontal, 20)
                         .padding(.vertical, 16)
                         .overlay(
