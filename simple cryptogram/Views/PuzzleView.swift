@@ -18,6 +18,10 @@ struct PuzzleView: View {
     
     var body: some View {
         ZStack {
+            // Background
+            CryptogramTheme.Colors.background
+                .ignoresSafeArea()
+            
             // --- Persistent Top Bar (always visible) ---
             VStack {
                 TopBarView(uiState: uiState)

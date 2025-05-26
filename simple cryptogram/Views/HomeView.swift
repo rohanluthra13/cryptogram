@@ -203,6 +203,7 @@ struct HomeView: View {
                 Image(systemName: "dice")
                     .font(.system(size: 10))
                     .foregroundColor(CryptogramTheme.Colors.text)
+                    .rotationEffect(.degrees(30))
             }
             .padding(.vertical, 8)
         }

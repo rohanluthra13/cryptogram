@@ -151,6 +151,9 @@ struct OverlayManager: ViewModifier {
                     SettingsContentView()
                         .padding(.horizontal, PuzzleViewConstants.Overlay.overlayHorizontalPadding)
                         .padding(.vertical, 20)
+                        .background(Color.clear)
+                        .contentShape(Rectangle())
+                        .onTapGesture {}
                         .environmentObject(viewModel)
                         .environmentObject(themeManager)
                         .environmentObject(settingsViewModel)
