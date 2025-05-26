@@ -48,21 +48,6 @@ struct TopBarView: View {
             }
             .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
             
-            // Right: home button
-            if shouldShowControls {
-                // Home button
-                Button(action: {
-                    dismiss()
-                }) {
-                    Image(systemName: "house")
-                        .font(.title3)
-                        .foregroundColor(CryptogramTheme.Colors.text)
-                        .opacity(PuzzleViewConstants.Colors.iconOpacity)
-                        .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
-                        .accessibilityLabel("Return to Home")
-                }
-                .frame(minWidth: 0, maxWidth: .infinity, alignment: .trailing)
-            }
         }
         .padding(.top, 0)
         .padding(.horizontal, PuzzleViewConstants.Spacing.topBarPadding)

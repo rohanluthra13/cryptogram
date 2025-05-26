@@ -2,6 +2,7 @@ import SwiftUI
 
 struct BottomBarView: View {
     @ObservedObject var uiState: PuzzleViewState
+    @Environment(\.dismiss) private var dismiss
     
     private var shouldShowBar: Bool {
         !uiState.showInfoOverlay && 
@@ -30,6 +31,20 @@ struct BottomBarView: View {
                                 .opacity(PuzzleViewConstants.Colors.iconOpacity)
                                 .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
                                 .accessibilityLabel("Stats/Chart")
+                        }
+                        
+                        Spacer()
+                        
+                        // Home button (center)
+                        Button(action: {
+                            dismiss()
+                        }) {
+                            Image(systemName: "house")
+                                .font(.title3)
+                                .foregroundColor(CryptogramTheme.Colors.text)
+                                .opacity(PuzzleViewConstants.Colors.iconOpacity)
+                                .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
+                                .accessibilityLabel("Return to Home")
                         }
                         
                         Spacer()
