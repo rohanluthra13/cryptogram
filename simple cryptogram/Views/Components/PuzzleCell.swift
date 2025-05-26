@@ -13,10 +13,26 @@ struct PuzzleCell: View {
     @EnvironmentObject private var viewModel: PuzzleViewModel
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
     @EnvironmentObject private var appSettings: AppSettings
+    @Environment(\.typography) private var typography
     
     // Combine completion state with toggle
     private var effectiveCompleted: Bool {
         isCompleted // Always show highlights for completed letters
+    }
+    
+    // Adjust font size based on font family for better readability
+    private var adjustedInputSize: CGFloat {
+        let baseSize = settingsViewModel.textSize.inputSize
+        switch typography.fontOption {
+        case .serif:
+            // Serif fonts tend to be slightly smaller visually
+            return baseSize + 1
+        case .rounded:
+            // Rounded fonts are slightly larger visually
+            return baseSize - 0.5
+        default:
+            return baseSize
+        }
     }
 
     var body: some View {
@@ -49,7 +65,7 @@ struct PuzzleCell: View {
                             .cornerRadius(2)
                     }
                     Text(cell.userInput)
-                        .font(.system(size: settingsViewModel.textSize.inputSize, weight: .medium, design: .monospaced))
+                        .font(.system(size: adjustedInputSize, weight: .medium, design: typography.fontOption.design))
                         .foregroundColor(userInputColor)
                         .frame(height: 30)
                         .frame(width: 28)

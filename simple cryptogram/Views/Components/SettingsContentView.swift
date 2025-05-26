@@ -260,7 +260,7 @@ struct SettingsContentView: View {
                                             appSettings.fontFamily = font
                                         } label: {
                                             Text(font.rawValue.lowercased())
-                                                .font(typography.footnote)
+                                                .font(.system(.footnote, design: font.design))
                                                 .fontWeight(appSettings.fontFamily == font ? .bold : .regular)
                                                 .foregroundColor(CryptogramTheme.Colors.text.opacity(appSettings.fontFamily == font ? 1 : 0.6))
                                         }
