@@ -5,6 +5,7 @@ struct SettingsContentView: View {
     @EnvironmentObject private var themeManager: ThemeManager
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
     @EnvironmentObject private var appSettings: AppSettings
+    @Environment(\.typography) private var typography
     
     // State properties for info panels
     @State private var showLengthSelector = false
@@ -58,15 +59,15 @@ struct SettingsContentView: View {
                                         Spacer()
                                         
                                         Text("quote length: ")
-                                            .font(.footnote)
+                                            .font(typography.footnote)
                                             .foregroundColor(CryptogramTheme.Colors.text) +
                                         Text(settingsViewModel.quoteLengthDisplayText)
-                                            .font(.footnote)
+                                            .font(typography.footnote)
                                             .fontWeight(.bold)
                                             .foregroundColor(CryptogramTheme.Colors.text)
                                         
                                         Image(systemName: showLengthSelector ? "chevron.up" : "chevron.down")
-                                            .font(.system(size: 12, weight: .medium))
+                                            .font(.system(size: 12, weight: .medium, design: typography.fontOption.design))
                                             .foregroundColor(CryptogramTheme.Colors.text)
                                             .padding(.leading, 4)
                                         
@@ -140,7 +141,7 @@ struct SettingsContentView: View {
                                 themeManager.applyTheme()
                             }) {
                                 Image(systemName: !isDarkMode.wrappedValue ? "arrow.right" : "arrow.left")
-                                    .font(.system(size: 13, weight: .medium))
+                                    .font(.system(size: 13, weight: .medium, design: typography.fontOption.design))
                                     .foregroundColor(CryptogramTheme.Colors.text)
                             }
                             .accessibilityLabel("Toggle dark mode")
@@ -172,14 +173,14 @@ struct SettingsContentView: View {
                                 HStack {
                                     Spacer()
                                     Text("text size: ")
-                                        .font(.footnote)
+                                        .font(typography.footnote)
                                         .foregroundColor(CryptogramTheme.Colors.text)
                                     Text(settingsViewModel.textSize.displayName.lowercased())
-                                        .font(.footnote)
+                                        .font(typography.footnote)
                                         .fontWeight(.bold)
                                         .foregroundColor(CryptogramTheme.Colors.text)
                                     Image(systemName: showTextSizeSelector ? "chevron.up" : "chevron.down")
-                                        .font(.system(size: 12, weight: .medium))
+                                        .font(.system(size: 12, weight: .medium, design: typography.fontOption.design))
                                         .foregroundColor(CryptogramTheme.Colors.text)
                                         .padding(.leading, 4)
                                     Spacer()
@@ -200,7 +201,7 @@ struct SettingsContentView: View {
                                                 Text("A")
                                                     .font(.system(size: opt.inputSize,
                                                                   weight: settingsViewModel.textSize == opt ? .bold : .regular,
-                                                                  design: .monospaced))
+                                                                  design: typography.fontOption.design))
                                                     .foregroundColor(CryptogramTheme.Colors.text.opacity(settingsViewModel.textSize == opt ? 1 : 0.4))
                                                 Rectangle()
                                                     .frame(height: 1)
@@ -208,7 +209,7 @@ struct SettingsContentView: View {
                                                 Text(opt == .small ? "4" : opt == .medium ? "2" : "0")
                                                     .font(.system(size: opt.encodedSize,
                                                                   weight: settingsViewModel.textSize == opt ? .bold : .regular,
-                                                                  design: .monospaced))
+                                                                  design: typography.fontOption.design))
                                                     .foregroundColor(CryptogramTheme.Colors.text.opacity(settingsViewModel.textSize == opt ? 1 : 0.4))
                                             }
                                             .frame(width: 28)
@@ -223,27 +224,28 @@ struct SettingsContentView: View {
                         }
                         
                         // Font selection
-                        VStack(spacing: 0) {
+                        VStack(spacing: 8) {
                             Button {
                                 withAnimation(.easeInOut(duration: 0.3)) {
                                     showFontSelector.toggle()
                                 }
                             } label: {
                                 HStack {
-                                    Text("font")
-                                        .font(CryptogramTheme.Typography.default.body)
-                                        .foregroundColor(CryptogramTheme.Colors.text)
-                                    
                                     Spacer()
-                                    
-                                    Text(appSettings.fontFamily.displayName)
-                                        .font(CryptogramTheme.Typography(fontOption: appSettings.fontFamily).body)
-                                        .foregroundColor(CryptogramTheme.Colors.text.opacity(0.7))
+                                    Text("font: ")
+                                        .font(typography.footnote)
+                                        .foregroundColor(CryptogramTheme.Colors.text) +
+                                    Text(appSettings.fontFamily.rawValue.lowercased())
+                                        .font(typography.footnote)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(CryptogramTheme.Colors.text)
                                     
                                     Image(systemName: showFontSelector ? "chevron.up" : "chevron.down")
-                                        .font(.system(size: 12, weight: .medium))
+                                        .font(.system(size: 12, weight: .medium, design: typography.fontOption.design))
                                         .foregroundColor(CryptogramTheme.Colors.text)
                                         .padding(.leading, 4)
+                                    
+                                    Spacer()
                                 }
                                 .padding(.horizontal, 16)
                                 .padding(.vertical, 10)
@@ -252,35 +254,21 @@ struct SettingsContentView: View {
                             .buttonStyle(PlainButtonStyle())
                             
                             if showFontSelector {
-                                VStack(spacing: 8) {
+                                HStack(spacing: 16) {
                                     ForEach(FontOption.allCases, id: \.self) { font in
                                         Button {
                                             appSettings.fontFamily = font
                                         } label: {
-                                            HStack {
-                                                Text(font.displayName)
-                                                    .font(CryptogramTheme.Typography(fontOption: font).body)
-                                                    .foregroundColor(appSettings.fontFamily == font ? CryptogramTheme.Colors.primary : CryptogramTheme.Colors.text)
-                                                
-                                                Spacer()
-                                                
-                                                Text(font.previewText)
-                                                    .font(CryptogramTheme.Typography(fontOption: font).footnote)
-                                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(0.6))
-                                                
-                                                if appSettings.fontFamily == font {
-                                                    Image(systemName: "checkmark")
-                                                        .font(.system(size: 14, weight: .medium))
-                                                        .foregroundColor(CryptogramTheme.Colors.primary)
-                                                }
-                                            }
-                                            .padding(.horizontal, 16)
-                                            .padding(.vertical, 8)
+                                            Text(font.rawValue.lowercased())
+                                                .font(typography.footnote)
+                                                .fontWeight(appSettings.fontFamily == font ? .bold : .regular)
+                                                .foregroundColor(CryptogramTheme.Colors.text.opacity(appSettings.fontFamily == font ? 1 : 0.6))
                                         }
                                         .buttonStyle(PlainButtonStyle())
                                     }
                                 }
-                                .padding(.vertical, 4)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
                                 .transition(.move(edge: .top).combined(with: .opacity))
                             }
                         }

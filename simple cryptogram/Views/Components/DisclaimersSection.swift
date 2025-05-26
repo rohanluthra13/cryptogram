@@ -10,6 +10,7 @@ struct DisclaimersSection: View {
     @State private var currentDisclaimerIndex = 0
     @State private var currentCharIndex = 0
     private let typingSpeed: Double = 0.045
+    @Environment(\.typography) private var typography
 
     var body: some View {
         VStack {
@@ -25,12 +26,12 @@ struct DisclaimersSection: View {
                     VStack(spacing: 16) {
                         HStack(alignment: .top, spacing: 8) {
                             Text("•")
-                                .font(.footnote)
+                                .font(typography.footnote)
                                 .fontWeight(.regular)
                                 .foregroundColor(CryptogramTheme.Colors.text.opacity(0.4))
                                 .padding(.top, 1.5)
                             Text(displayedDisclaimer1)
-                                .font(.footnote)
+                                .font(typography.footnote)
                                 .fontWeight(.regular)
                                 .foregroundColor(CryptogramTheme.Colors.text.opacity(0.4))
                                 .multilineTextAlignment(.leading)
@@ -40,12 +41,12 @@ struct DisclaimersSection: View {
                         if currentDisclaimerIndex > 0 || displayedDisclaimer1.count == disclaimer1.count {
                             HStack(alignment: .top, spacing: 8) {
                                 Text("•")
-                                    .font(.footnote)
+                                    .font(typography.footnote)
                                     .fontWeight(.regular)
                                     .foregroundColor(CryptogramTheme.Colors.text.opacity(0.4))
                                     .padding(.top, 1.5)
                                 Text(displayedDisclaimer2)
-                                    .font(.footnote)
+                                    .font(typography.footnote)
                                     .fontWeight(.regular)
                                     .foregroundColor(CryptogramTheme.Colors.text.opacity(0.4))
                                     .multilineTextAlignment(.leading)

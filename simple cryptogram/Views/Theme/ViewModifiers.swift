@@ -72,10 +72,11 @@ struct CryptogramGrid: ViewModifier {
 // MARK: - Settings Modifiers
 struct SettingsToggleStyle: ViewModifier {
     let isSelected: Bool
+    @Environment(\.typography) private var typography
     
     func body(content: Content) -> some View {
         content
-            .font(.footnote)
+            .font(typography.footnote)
             .fontWeight(isSelected ? .bold : .regular)
             .foregroundColor(isSelected ? 
                           CryptogramTheme.Colors.text : 
@@ -84,9 +85,11 @@ struct SettingsToggleStyle: ViewModifier {
 }
 
 struct SettingsSectionStyle: ViewModifier {
+    @Environment(\.typography) private var typography
+    
     func body(content: Content) -> some View {
         content
-            .font(.subheadline)
+            .font(typography.body)
             .foregroundColor(CryptogramTheme.Colors.text)
             .frame(maxWidth: .infinity, alignment: .center)
     }
@@ -94,9 +97,11 @@ struct SettingsSectionStyle: ViewModifier {
 
 // MARK: - Info Overlay Modifier
 struct InfoOverlayTextStyle: ViewModifier {
+    @Environment(\.typography) private var typography
+    
     func body(content: Content) -> some View {
         content
-            .font(.system(size: 13, weight: .medium))
+            .font(.system(size: 13, weight: .medium, design: typography.fontOption.design))
             .foregroundColor(CryptogramTheme.Colors.text)
             .multilineTextAlignment(.leading)
             .padding(.horizontal, 16)

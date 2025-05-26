@@ -7,6 +7,7 @@ struct ToggleOptionRow<T: Equatable>: View {
     var showInfoButton: Bool = false
     var onInfoButtonTap: (() -> Void)? = nil
     var onSelectionChanged: (() -> Void)? = nil
+    @Environment(\.typography) private var typography
     
     var body: some View {
         HStack {
@@ -34,7 +35,7 @@ struct ToggleOptionRow<T: Equatable>: View {
                 onSelectionChanged?()
             }) {
                 Image(systemName: selection == leftOption.value ? "arrow.right" : "arrow.left")
-                    .font(.system(size: 13, weight: .medium))
+                    .font(.system(size: 13, weight: .medium, design: typography.fontOption.design))
                     .foregroundColor(CryptogramTheme.Colors.text)
             }
             .accessibilityLabel("Toggle between \(leftOption.label) and \(rightOption.label)")
@@ -62,7 +63,7 @@ struct ToggleOptionRow<T: Equatable>: View {
                     onInfoButtonTap?()
                 }) {
                     Text("i")
-                        .font(.system(size: 15, weight: .medium))
+                        .font(.system(size: 15, weight: .medium, design: typography.fontOption.design))
                         .foregroundColor(CryptogramTheme.Colors.text)
                 }
                 .accessibilityLabel("Information")
@@ -76,6 +77,7 @@ struct ToggleOptionRow<T: Equatable>: View {
 struct ToggleOptionRowPreview: View {
     @State private var selection = "Option1"
     @State private var showInfo = false
+    @Environment(\.typography) private var typography
     
     var body: some View {
         VStack(spacing: 20) {
@@ -95,7 +97,7 @@ struct ToggleOptionRowPreview: View {
             
             if showInfo {
                 Text("This is info content")
-                    .font(.footnote)
+                    .font(typography.footnote)
                     .foregroundColor(CryptogramTheme.Colors.text)
                     .padding()
             }
