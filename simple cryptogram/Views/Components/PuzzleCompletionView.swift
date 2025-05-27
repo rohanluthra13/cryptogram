@@ -40,6 +40,7 @@ struct PuzzleCompletionView: View {
     var summaryTypingSpeed: Double { 0.015 }
 
     var hideStats: Bool = false
+    var isDailyPuzzle: Bool = false
 
     // State for managing typing animations
     @State private var summaryTypingWorkItem: DispatchWorkItem?
@@ -325,9 +326,15 @@ struct PuzzleCompletionView: View {
                             .opacity(showStats ? 1 : 0)
                             .offset(y: showStats ? 0 : 20)
                     }
-                    // Single button for next puzzle
-                    Button(action: { loadNextPuzzle() }) {
-                        Image(systemName: viewModel.isFailed ? "arrow.counterclockwise" : "arrow.right")
+                    // Button: Home for daily puzzles, Next/Retry for regular puzzles
+                    Button(action: { 
+                        if isDailyPuzzle {
+                            goHome()
+                        } else {
+                            loadNextPuzzle()
+                        }
+                    }) {
+                        Image(systemName: isDailyPuzzle ? "house" : (viewModel.isFailed ? "arrow.counterclockwise" : "arrow.right"))
                             .font(.system(size: 22))
                             .foregroundColor(CryptogramTheme.Colors.text)
                             .frame(width: 44, height: 44)
@@ -340,10 +347,12 @@ struct PuzzleCompletionView: View {
             .frame(maxHeight: .infinity)
             .padding(CryptogramTheme.Layout.gridPadding)
             
-            // Bottom bar with three icons
-            BottomBarView(uiState: uiState)
-                .opacity(showNextButton ? 1 : 0)
-                .animation(.easeInOut(duration: 0.5), value: showNextButton)
+            // Bottom bar with three icons (only for non-daily puzzles)
+            if !isDailyPuzzle {
+                BottomBarView(uiState: uiState)
+                    .opacity(showNextButton ? 1 : 0)
+                    .animation(.easeInOut(duration: 0.5), value: showNextButton)
+            }
             
             // Settings overlay
             if uiState.showSettings {

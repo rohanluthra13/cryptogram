@@ -230,7 +230,7 @@ struct OverlayManager: ViewModifier {
     @ViewBuilder
     private var dailyCompletionOverlay: some View {
         if uiState.showDailyCompletionView {
-            PuzzleCompletionView(showCompletionView: $uiState.showDailyCompletionView, hideStats: true)
+            PuzzleCompletionView(showCompletionView: $uiState.showDailyCompletionView, isDailyPuzzle: true)
                 .environmentObject(themeManager)
                 .environmentObject(viewModel)
                 .zIndex(OverlayZIndex.dailyCompletion)

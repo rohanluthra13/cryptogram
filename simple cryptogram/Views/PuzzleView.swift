@@ -67,9 +67,31 @@ struct PuzzleView: View {
                 
                 // Then transition to completion view with a slight delay
                 withAnimation(.easeOut(duration: PuzzleViewConstants.Animation.puzzleSwitchDuration).delay(PuzzleViewConstants.Animation.completionDelay)) {
-                    uiState.showCompletionView = true
+                    // Show different completion view for daily puzzles
+                    if viewModel.isDailyPuzzle {
+                        uiState.showDailyCompletionView = true
+                    } else {
+                        uiState.showCompletionView = true
+                    }
                 }
                 // Daily puzzle completion state is now handled internally by DailyPuzzleManager
+            }
+        }
+        .onChange(of: viewModel.isFailed) { oldValue, isFailed in
+            if isFailed {
+                // Add haptic feedback for failure
+                let generator = UINotificationFeedbackGenerator()
+                generator.notificationOccurred(.error)
+                
+                // Show completion view after a delay
+                withAnimation(.easeOut(duration: PuzzleViewConstants.Animation.puzzleSwitchDuration).delay(2.0)) {
+                    // Show different completion view for daily puzzles
+                    if viewModel.isDailyPuzzle {
+                        uiState.showDailyCompletionView = true
+                    } else {
+                        uiState.showCompletionView = true
+                    }
+                }
             }
         }
         .navigationBarHidden(true)
