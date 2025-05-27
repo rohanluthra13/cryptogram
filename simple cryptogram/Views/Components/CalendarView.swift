@@ -3,9 +3,19 @@ import SwiftUI
 struct CalendarView: View {
     @EnvironmentObject private var viewModel: PuzzleViewModel
     @StateObject private var dailyPuzzleManager = DailyPuzzleManager()
-    @State private var currentDate = Date()
+    @Environment(\.typography) private var typography
+    @State private var currentDate: Date
     @Binding var showCalendar: Bool
     var onSelectDate: (Date) -> Void
+    
+    init(showCalendar: Binding<Bool>, onSelectDate: @escaping (Date) -> Void) {
+        self._showCalendar = showCalendar
+        self.onSelectDate = onSelectDate
+        // Initialize to the first day of current month
+        let calendar = Calendar.current
+        let now = Date()
+        self._currentDate = State(initialValue: calendar.dateInterval(of: .month, for: now)?.start ?? now)
+    }
     
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -15,6 +25,7 @@ struct CalendarView: View {
     
     private let dayLabels = ["M", "T", "W", "T", "F", "S", "S"]
     private let minDate = DateComponents(calendar: .current, year: 2025, month: 4, day: 23).date!
+    private let minMonth = DateComponents(calendar: .current, year: 2025, month: 4, day: 1).date!
     
     private var calendar: Calendar {
         var cal = Calendar.current
@@ -74,14 +85,26 @@ struct CalendarView: View {
     }
     
     private func canNavigateToPreviousMonth() -> Bool {
-        let previousMonth = calendar.date(byAdding: .month, value: -1, to: currentDate) ?? Date()
-        return previousMonth >= minDate
+        // Get the start of the current displayed month
+        let currentMonthStart = calendar.dateInterval(of: .month, for: currentDate)?.start ?? currentDate
+        
+        // Get the start of the minimum allowed month (April 2025)
+        let minMonthStart = calendar.dateInterval(of: .month, for: minMonth)?.start ?? minMonth
+        
+        // Can navigate back if current month is after the minimum month
+        let canNavigate = currentMonthStart > minMonthStart
+        return canNavigate
     }
     
     private func canNavigateToNextMonth() -> Bool {
-        let nextMonth = calendar.date(byAdding: .month, value: 1, to: currentDate) ?? Date()
-        let today = Date()
-        return calendar.compare(nextMonth, to: today, toGranularity: .month) != .orderedDescending
+        // Get the start of the current displayed month
+        let currentMonthStart = calendar.dateInterval(of: .month, for: currentDate)?.start ?? currentDate
+        
+        // Get the start of today's month
+        let todayMonthStart = calendar.dateInterval(of: .month, for: Date())?.start ?? Date()
+        
+        // Can navigate forward if current displayed month is before today's month
+        return currentMonthStart < todayMonthStart
     }
     
     var body: some View {
@@ -89,30 +112,34 @@ struct CalendarView: View {
             // Month navigation
             HStack {
                 Button(action: {
-                    if canNavigateToPreviousMonth() {
+                    withAnimation {
                         currentDate = calendar.date(byAdding: .month, value: -1, to: currentDate) ?? currentDate
                     }
                 }) {
                     Image(systemName: "chevron.left")
                         .foregroundColor(canNavigateToPreviousMonth() ? Color("Text") : Color("Text").opacity(0.3))
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
                 .disabled(!canNavigateToPreviousMonth())
                 
                 Spacer()
                 
                 Text(dateFormatter.string(from: currentDate))
-                    .font(.headline)
+                    .font(.system(size: 15, weight: .regular, design: typography.fontOption.design))
                     .foregroundColor(Color("Text"))
                 
                 Spacer()
                 
                 Button(action: {
-                    if canNavigateToNextMonth() {
+                    withAnimation {
                         currentDate = calendar.date(byAdding: .month, value: 1, to: currentDate) ?? currentDate
                     }
                 }) {
                     Image(systemName: "chevron.right")
                         .foregroundColor(canNavigateToNextMonth() ? Color("Text") : Color("Text").opacity(0.3))
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
                 .disabled(!canNavigateToNextMonth())
             }
@@ -124,7 +151,7 @@ struct CalendarView: View {
                 HStack(spacing: 0) {
                     ForEach(dayLabels, id: \.self) { label in
                         Text(label)
-                            .font(.caption)
+                            .font(typography.caption)
                             .foregroundColor(Color("Text"))
                             .frame(maxWidth: .infinity)
                     }
@@ -163,13 +190,11 @@ struct CalendarView: View {
         }
         .padding(.vertical)
         .frame(width: 350)
-        .background(Color("Background"))
-        .cornerRadius(20)
-        .shadow(radius: 10)
     }
 }
 
 struct DayCell: View {
+    @Environment(\.typography) private var typography
     let date: Date
     let isAvailable: Bool
     let isCompleted: Bool
@@ -185,17 +210,17 @@ struct DayCell: View {
         Button(action: onTap) {
             VStack(spacing: 8) {
                 if isCompleted {
-                    Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(isAvailable ? Color("PrimaryApp") : Color("Text").opacity(0.3))
-                        .font(.system(size: 20))
+                    Image(systemName: "checkmark")
+                        .foregroundColor(isAvailable ? Color(hex: "#01780F").opacity(0.5) : Color("Text").opacity(0.3))
+                        .font(.system(size: 16))
                 } else {
-                    Image(systemName: "circle")
+                    Image(systemName: "square")
                         .foregroundColor(isAvailable ? Color("Text") : Color("Text").opacity(0.3))
-                        .font(.system(size: 20))
+                        .font(.system(size: 18))
                 }
                 
                 Text(dayNumber)
-                    .font(.caption)
+                    .font(typography.caption)
                     .foregroundColor(isAvailable ? Color("Text") : Color("Text").opacity(0.3))
             }
             .frame(height: 50)
