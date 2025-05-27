@@ -69,16 +69,34 @@ class LocalPuzzleProgressStore: PuzzleProgressStore {
         }
         // Versioned migration to add missing columns
         if currentVersion < 1 {
-            let stmts = [
-                "ALTER TABLE puzzle_progress_attempts ADD COLUMN mode TEXT DEFAULT 'normal'",
-                "ALTER TABLE puzzle_progress_attempts ADD COLUMN hint_count INTEGER DEFAULT 0",
-                "ALTER TABLE puzzle_progress_attempts ADD COLUMN mistake_count INTEGER DEFAULT 0"
-            ]
+            // Check if columns already exist before trying to add them
             do {
-                for s in stmts { 
-                    try db.run(s) 
+                let tableInfo = try db.prepare("PRAGMA table_info(puzzle_progress_attempts)")
+                var existingColumns = Set<String>()
+                for row in tableInfo {
+                    if let columnName = row[1] as? String {
+                        existingColumns.insert(columnName)
+                    }
                 }
-                // Update schema version
+                
+                // Only add columns that don't exist
+                var stmtsToRun: [String] = []
+                if !existingColumns.contains("mode") {
+                    stmtsToRun.append("ALTER TABLE puzzle_progress_attempts ADD COLUMN mode TEXT DEFAULT 'normal'")
+                }
+                if !existingColumns.contains("hint_count") {
+                    stmtsToRun.append("ALTER TABLE puzzle_progress_attempts ADD COLUMN hint_count INTEGER DEFAULT 0")
+                }
+                if !existingColumns.contains("mistake_count") {
+                    stmtsToRun.append("ALTER TABLE puzzle_progress_attempts ADD COLUMN mistake_count INTEGER DEFAULT 0")
+                }
+                
+                // Run any necessary ALTER statements
+                for s in stmtsToRun {
+                    try db.run(s)
+                }
+                
+                // Update schema version regardless (table might already have columns from previous install)
                 try db.run(metadataTable.insert(or: .replace,
                     metaKey <- "schema_version", metaValue <- "1"))
             } catch {

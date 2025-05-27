@@ -99,6 +99,16 @@ struct PuzzleView: View {
         .animation(.easeIn(duration: PuzzleViewConstants.Animation.pausedAnimationDuration), value: viewModel.isPaused)
         .onAppear {
             uiState.showBottomBarTemporarily()
+            
+            // Check if daily puzzle is already completed and skip directly to completion view
+            if viewModel.isDailyPuzzle && viewModel.isComplete && viewModel.session.endTime != nil {
+                // Skip the wiggle animation and go straight to completion view
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                    withAnimation(.easeOut(duration: PuzzleViewConstants.Animation.puzzleSwitchDuration)) {
+                        uiState.showDailyCompletionView = true
+                    }
+                }
+            }
         }
         .onDisappear {
             // viewModel.pauseTimer()
