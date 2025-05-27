@@ -21,6 +21,7 @@ struct PuzzleCompletionView: View {
     @State private var displayedQuote = ""
     @State private var authorIsBold = false
     @State private var isAuthorVisible = false
+    @State private var showCalendar = false
     
     // Typewriter animation properties
     var typingSpeed: Double = 0.09
@@ -326,21 +327,41 @@ struct PuzzleCompletionView: View {
                             .opacity(showStats ? 1 : 0)
                             .offset(y: showStats ? 0 : 20)
                     }
-                    // Button: Home for daily puzzles, Next/Retry for regular puzzles
-                    Button(action: { 
-                        if isDailyPuzzle {
-                            goHome()
-                        } else {
-                            loadNextPuzzle()
+                    // Buttons: For daily puzzles show Home and Calendar, for regular puzzles show Next/Retry
+                    if isDailyPuzzle {
+                        HStack(spacing: 40) {
+                            Button(action: { 
+                                goHome()
+                            }) {
+                                Image(systemName: "house")
+                                    .font(.system(size: 22))
+                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                    .frame(width: 44, height: 44)
+                            }
+                            
+                            Button(action: {
+                                showCalendar = true
+                            }) {
+                                Image(systemName: "calendar")
+                                    .font(.system(size: 22))
+                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                    .frame(width: 44, height: 44)
+                            }
                         }
-                    }) {
-                        Image(systemName: isDailyPuzzle ? "house" : (viewModel.isFailed ? "arrow.counterclockwise" : "arrow.right"))
-                            .font(.system(size: 22))
-                            .foregroundColor(CryptogramTheme.Colors.text)
-                            .frame(width: 44, height: 44)
+                        .opacity(showNextButton ? 1 : 0)
+                        .offset(y: showNextButton ? 0 : 15)
+                    } else {
+                        Button(action: { 
+                            loadNextPuzzle()
+                        }) {
+                            Image(systemName: viewModel.isFailed ? "arrow.counterclockwise" : "arrow.right")
+                                .font(.system(size: 22))
+                                .foregroundColor(CryptogramTheme.Colors.text)
+                                .frame(width: 44, height: 44)
+                        }
+                        .opacity(showNextButton ? 1 : 0)
+                        .offset(y: showNextButton ? 0 : 15)
                     }
-                    .opacity(showNextButton ? 1 : 0)
-                    .offset(y: showNextButton ? 0 : 15)
                 }
                 .padding(.bottom, 120)
             }
@@ -369,6 +390,46 @@ struct PuzzleCompletionView: View {
                     .environmentObject(themeManager)
                     .transition(.move(edge: .bottom))
                     .zIndex(200)
+            }
+            
+            // Calendar overlay
+            if showCalendar {
+                ZStack {
+                    CryptogramTheme.Colors.surface
+                        .opacity(0.95)
+                        .ignoresSafeArea()
+                        .onTapGesture { showCalendar = false }
+                        .overlay(
+                            CalendarView(
+                                showCalendar: $showCalendar,
+                                onSelectDate: { date in
+                                    viewModel.loadDailyPuzzle(for: date)
+                                    showCompletionView = false
+                                }
+                            )
+                            .environmentObject(viewModel)
+                            .environmentObject(appSettings)
+                        )
+                    
+                    // X button positioned at screen level
+                    VStack {
+                        HStack {
+                            Spacer()
+                            Button(action: { showCalendar = false }) {
+                                Image(systemName: "xmark")
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(0.6))
+                                    .frame(width: 22, height: 22)
+                            }
+                            .padding(.top, 50)
+                            .padding(.trailing, 20)
+                        }
+                        Spacer()
+                    }
+                }
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.3), value: showCalendar)
+                .zIndex(300)
             }
         }
         .onAppear {
