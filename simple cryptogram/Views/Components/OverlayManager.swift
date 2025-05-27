@@ -222,6 +222,8 @@ struct OverlayManager: ViewModifier {
             PuzzleCompletionView(showCompletionView: $uiState.showCompletionView)
                 .environmentObject(themeManager)
                 .environmentObject(viewModel)
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.2), value: uiState.showCompletionView)
                 .zIndex(OverlayZIndex.completion)
         }
     }

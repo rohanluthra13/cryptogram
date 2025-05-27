@@ -22,35 +22,38 @@ struct PuzzleView: View {
             CryptogramTheme.Colors.background
                 .ignoresSafeArea()
             
-            // --- Persistent Top Bar (always visible) ---
-            VStack {
-                TopBarView(uiState: uiState)
+            // Only show puzzle content if it's not a completed daily puzzle
+            if !viewModel.isCompletedDailyPuzzle {
+                // --- Persistent Top Bar (always visible) ---
+                VStack {
+                    TopBarView(uiState: uiState)
+                        .environmentObject(viewModel)
+                        .environmentObject(settingsViewModel)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                .zIndex(0)
+
+                // --- Main Content Block (puzzle, nav bar, keyboard) pushed to bottom ---
+                VStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    MainContentView(
+                        uiState: uiState,
+                        layoutBinding: layoutBinding
+                    )
                     .environmentObject(viewModel)
-                    .environmentObject(settingsViewModel)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .zIndex(0)
+                    
+                    // --- Bottom Banner Placeholder (for keyboard spacing) ---
+                    Color.clear
+                        .frame(height: PuzzleViewConstants.Spacing.bottomBarHeight)
+                        .frame(maxWidth: .infinity)
+                        .ignoresSafeArea(edges: .bottom)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                .zIndex(0)
 
-            // --- Main Content Block (puzzle, nav bar, keyboard) pushed to bottom ---
-            VStack(spacing: 0) {
-                Spacer(minLength: 0)
-                MainContentView(
-                    uiState: uiState,
-                    layoutBinding: layoutBinding
-                )
-                .environmentObject(viewModel)
-                
-                // --- Bottom Banner Placeholder (for keyboard spacing) ---
-                Color.clear
-                    .frame(height: PuzzleViewConstants.Spacing.bottomBarHeight)
-                    .frame(maxWidth: .infinity)
-                    .ignoresSafeArea(edges: .bottom)
+                // --- Persistent Bottom Banner Above All Overlays ---
+                BottomBarView(uiState: uiState)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-            .zIndex(0)
-
-            // --- Persistent Bottom Banner Above All Overlays ---
-            BottomBarView(uiState: uiState)
         }
         .overlayManager(uiState: uiState)
         .environmentObject(viewModel)
@@ -98,16 +101,12 @@ struct PuzzleView: View {
         .animation(.easeIn(duration: PuzzleViewConstants.Animation.failedAnimationDuration), value: viewModel.isFailed)
         .animation(.easeIn(duration: PuzzleViewConstants.Animation.pausedAnimationDuration), value: viewModel.isPaused)
         .onAppear {
-            uiState.showBottomBarTemporarily()
-            
-            // Check if daily puzzle is already completed and skip directly to completion view
-            if viewModel.isDailyPuzzle && viewModel.isComplete && viewModel.session.endTime != nil {
-                // Skip the wiggle animation and go straight to completion view
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    withAnimation(.easeOut(duration: PuzzleViewConstants.Animation.puzzleSwitchDuration)) {
-                        uiState.showDailyCompletionView = true
-                    }
-                }
+            if viewModel.isCompletedDailyPuzzle {
+                // Show completion view immediately for completed daily puzzles
+                uiState.showDailyCompletionView = true
+            } else {
+                // Normal puzzle flow
+                uiState.showBottomBarTemporarily()
             }
         }
         .onDisappear {

@@ -245,6 +245,12 @@ struct HomeView: View {
                 showBottomBarTemporarily()
                 // Reset to initial state when returning to HomeView
                 showLengthSelection = false
+                
+                // Check if we should show calendar on return
+                if appSettings.shouldShowCalendarOnReturn {
+                    appSettings.shouldShowCalendarOnReturn = false
+                    showCalendar = true
+                }
             }
         }
     }

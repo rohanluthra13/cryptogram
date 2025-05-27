@@ -31,6 +31,7 @@ class PuzzleViewModel: ObservableObject {
     
     // MARK: - Author Info (keeping in ViewModel for now)
     @Published var currentAuthor: Author?
+    @Published var isLoadingPuzzle: Bool = false
     private var lastAuthorName: String?
     
     // MARK: - Error Handling
@@ -94,6 +95,10 @@ class PuzzleViewModel: ObservableObject {
     var globalBestTime: TimeInterval? { statisticsManager.globalBestTime }
     var winRatePercentage: Int { statisticsManager.winRatePercentage }
     var averageTime: TimeInterval? { statisticsManager.averageTime }
+    
+    var isCompletedDailyPuzzle: Bool {
+        return isDailyPuzzle && isComplete && session.endTime != nil
+    }
     
     // MARK: - Initialization
     init(initialPuzzle: Puzzle? = nil, progressStore: PuzzleProgressStore? = nil) {
@@ -251,6 +256,7 @@ class PuzzleViewModel: ObservableObject {
     }
     
     func loadDailyPuzzle(for date: Date) {
+        isLoadingPuzzle = true
         do {
             let (puzzle, progress) = try dailyManager.loadDailyPuzzle(for: date)
             
@@ -270,7 +276,9 @@ class PuzzleViewModel: ObservableObject {
             }
             
             loadAuthorIfNeeded(name: puzzle.hint ?? "")
+            isLoadingPuzzle = false
         } catch {
+            isLoadingPuzzle = false
             currentError = error as? DatabaseError ?? DatabaseError.connectionFailed
             dailyManager.resetDailyPuzzleState()
             loadNewPuzzle()

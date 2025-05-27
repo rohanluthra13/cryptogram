@@ -21,7 +21,6 @@ struct PuzzleCompletionView: View {
     @State private var displayedQuote = ""
     @State private var authorIsBold = false
     @State private var isAuthorVisible = false
-    @State private var showCalendar = false
     
     // Typewriter animation properties
     var typingSpeed: Double = 0.09
@@ -340,7 +339,7 @@ struct PuzzleCompletionView: View {
                             }
                             
                             Button(action: {
-                                showCalendar = true
+                                goToCalendar()
                             }) {
                                 Image(systemName: "calendar")
                                     .font(.system(size: 22))
@@ -392,45 +391,6 @@ struct PuzzleCompletionView: View {
                     .zIndex(200)
             }
             
-            // Calendar overlay
-            if showCalendar {
-                ZStack {
-                    CryptogramTheme.Colors.surface
-                        .opacity(0.95)
-                        .ignoresSafeArea()
-                        .onTapGesture { showCalendar = false }
-                        .overlay(
-                            CalendarView(
-                                showCalendar: $showCalendar,
-                                onSelectDate: { date in
-                                    viewModel.loadDailyPuzzle(for: date)
-                                    showCompletionView = false
-                                }
-                            )
-                            .environmentObject(viewModel)
-                            .environmentObject(appSettings)
-                        )
-                    
-                    // X button positioned at screen level
-                    VStack {
-                        HStack {
-                            Spacer()
-                            Button(action: { showCalendar = false }) {
-                                Image(systemName: "xmark")
-                                    .font(.system(size: 10, weight: .medium))
-                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(0.6))
-                                    .frame(width: 22, height: 22)
-                            }
-                            .padding(.top, 50)
-                            .padding(.trailing, 20)
-                        }
-                        Spacer()
-                    }
-                }
-                .transition(.opacity)
-                .animation(.easeInOut(duration: 0.3), value: showCalendar)
-                .zIndex(300)
-            }
         }
         .onAppear {
             // Reset author summary state on appear
@@ -539,11 +499,24 @@ struct PuzzleCompletionView: View {
     }
     
     func goHome() {
-        // Hide the completion view and dismiss to return to home
-        withAnimation(.easeOut(duration: 0.3)) {
+        // Dismiss immediately without waiting for animation
+        dismiss()
+        // Hide completion view after dismissal starts
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             showCompletionView = false
         }
+    }
+    
+    func goToCalendar() {
+        // Set flag to show calendar when we return to home
+        appSettings.shouldShowCalendarOnReturn = true
+        
+        // Dismiss immediately
         dismiss()
+        // Hide completion view after dismissal starts
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            showCompletionView = false
+        }
     }
 }
 

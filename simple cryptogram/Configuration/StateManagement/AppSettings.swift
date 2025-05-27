@@ -46,6 +46,9 @@ final class AppSettings: ObservableObject {
         didSet { persistence.setValue(hapticFeedbackEnabled, for: "appSettings.hapticFeedbackEnabled") }
     }
     
+    // MARK: - Navigation State
+    @Published var shouldShowCalendarOnReturn: Bool = false
+    
     // MARK: - Theme Settings
     @Published var isDarkMode: Bool = false {
         didSet { persistence.setValue(isDarkMode, for: "appSettings.isDarkMode") }
