@@ -52,6 +52,31 @@ struct WeeklySnapshot: View {
         return .incomplete
     }
     
+    // Get quote for a completed puzzle
+    private func getQuote(for date: Date) -> String? {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        let dateStr = formatter.string(from: date)
+        let key = "dailyPuzzleProgress-\(dateStr)"
+        
+        if let data = UserDefaults.standard.data(forKey: key),
+           let progress = try? JSONDecoder().decode(DailyPuzzleProgress.self, from: data),
+           progress.isCompleted {
+            // Try to fetch the puzzle to get the solution
+            if let puzzle = try? DatabaseService.shared.fetchDailyPuzzle(for: date) {
+                return puzzle.solution
+            }
+        }
+        return nil
+    }
+    
+    // Get full day name for a date
+    private func getDayName(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE" // Full day name
+        return formatter.string(from: date)
+    }
+    
     private func statusIcon(for status: PuzzleStatus) -> some View {
         Group {
             switch status {
@@ -73,35 +98,80 @@ struct WeeklySnapshot: View {
                 HStack(spacing: 12) {
                 ForEach(Array(lastSevenDays.enumerated()), id: \.element.date) { index, item in
                     let status = getStatus(for: item.date)
+                    let isToday = Calendar.current.isDateInToday(item.date)
                     
                     Button(action: {
                         viewModel.loadDailyPuzzle(for: item.date)
                         navigateToPuzzle = true
                     }) {
-                        VStack(spacing: 8) {
-                            // Status icon
-                            statusIcon(for: status)
-                                .frame(height: 20)
-                            
-                            // Day of week
-                            Text(item.dayName)
-                                .font(typography.caption)
-                                .foregroundColor(CryptogramTheme.Colors.text)
-                            
-                            // Date
-                            Text(item.dateStr)
-                                .font(typography.caption)
-                                .foregroundColor(CryptogramTheme.Colors.text.opacity(0.6))
+                        if isToday {
+                            // Special layout for today's card
+                            VStack {
+                                // Quote or status text at top
+                                if status == .completed, let quote = getQuote(for: item.date) {
+                                    Text(quote.uppercased())
+                                        .font(typography.footnote)
+                                        .foregroundColor(CryptogramTheme.Colors.text.opacity(0.8))
+                                        .multilineTextAlignment(.center)
+                                        .lineLimit(2)
+                                        .truncationMode(.tail)
+                                        .padding(.horizontal, 8)
+                                } else if status == .incomplete || status == .failed {
+                                    Text("not yet completed")
+                                        .font(typography.footnote)
+                                        .foregroundColor(CryptogramTheme.Colors.text.opacity(0.5))
+                                        .italic()
+                                }
+                                
+                                Spacer()
+                                
+                                // Day and date on same line at bottom
+                                HStack(spacing: 8) {
+                                    Text(getDayName(for: item.date))
+                                        .font(typography.caption)
+                                        .foregroundColor(CryptogramTheme.Colors.text)
+                                    
+                                    Text(item.dateStr)
+                                        .font(typography.caption)
+                                        .foregroundColor(CryptogramTheme.Colors.text.opacity(0.6))
+                                }
+                            }
+                            .padding(.vertical, 8)
+                            .frame(width: 250, height: 85)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .strokeBorder(
+                                        CryptogramTheme.Colors.border.opacity(0.5),
+                                        lineWidth: 1.5
+                                    )
+                            )
+                        } else {
+                            // Regular layout for other days
+                            VStack(spacing: 8) {
+                                // Status icon
+                                statusIcon(for: status)
+                                    .frame(height: 20)
+                                
+                                // Day of week
+                                Text(item.dayName)
+                                    .font(typography.caption)
+                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                
+                                // Date
+                                Text(item.dateStr)
+                                    .font(typography.caption)
+                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(0.6))
+                            }
+                            .padding(.bottom, 8)
+                            .frame(width: 75, height: 85)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .strokeBorder(
+                                        CryptogramTheme.Colors.border.opacity(0.3),
+                                        lineWidth: 1
+                                    )
+                            )
                         }
-                        .padding(.bottom, 8) // Add padding at bottom
-                        .frame(width: 75, height: 85)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .strokeBorder(
-                                    CryptogramTheme.Colors.border.opacity(0.3),
-                                    lineWidth: 1
-                                )
-                        )
                     }
                     .buttonStyle(PlainButtonStyle())
                     .id(index)
