@@ -12,6 +12,7 @@ struct HomeView: View {
     @State private var showLengthSelection = false
     @State private var isBottomBarVisible = true
     @State private var bottomBarHideWorkItem: DispatchWorkItem?
+    @State private var showCalendar = false
     
     enum PuzzleMode {
         case random
@@ -195,6 +196,45 @@ struct HomeView: View {
                     .animation(.easeInOut(duration: PuzzleViewConstants.Animation.overlayDuration), value: showStats)
                     .zIndex(OverlayZIndex.statsSettings)
                 }
+                
+                // Calendar overlay
+                if showCalendar {
+                    ZStack {
+                        CryptogramTheme.Colors.surface
+                            .opacity(0.95)
+                            .ignoresSafeArea()
+                            .onTapGesture { showCalendar = false }
+                            .overlay(
+                                CalendarView(
+                                    showCalendar: $showCalendar,
+                                    onSelectDate: { date in
+                                        viewModel.loadDailyPuzzle(for: date)
+                                        navigateToPuzzle = true
+                                    }
+                                )
+                                .environmentObject(viewModel)
+                            )
+                        
+                        // X button positioned at screen level
+                        VStack {
+                            HStack {
+                                Spacer()
+                                Button(action: { showCalendar = false }) {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 10, weight: .medium))
+                                        .foregroundColor(CryptogramTheme.Colors.text.opacity(0.6))
+                                        .frame(width: 22, height: 22)
+                                }
+                                .padding(.top, 50)
+                                .padding(.trailing, 20)
+                            }
+                            Spacer()
+                        }
+                    }
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: PuzzleViewConstants.Animation.overlayDuration), value: showCalendar)
+                    .zIndex(OverlayZIndex.statsSettings)
+                }
             }
             .navigationDestination(isPresented: $navigateToPuzzle) {
                 PuzzleView()
@@ -223,15 +263,26 @@ struct HomeView: View {
     }
     
     private var dailyPuzzleButton: some View {
-        Button(action: {
-            selectMode(.daily)
-        }) {
-            Text("daily puzzle")
-                .font(typography.body)
-                .foregroundColor(CryptogramTheme.Colors.text)
-                .padding(.vertical, 8)
+        VStack(spacing: 12) {
+            Button(action: {
+                selectMode(.daily)
+            }) {
+                Text("daily puzzle")
+                    .font(typography.body)
+                    .foregroundColor(CryptogramTheme.Colors.text)
+                    .padding(.vertical, 8)
+            }
+            .buttonStyle(PlainButtonStyle())
+            
+            Button(action: {
+                showCalendar = true
+            }) {
+                Image(systemName: "calendar")
+                    .font(.system(size: 24))
+                    .foregroundColor(CryptogramTheme.Colors.text.opacity(0.8))
+            }
+            .buttonStyle(PlainButtonStyle())
         }
-        .buttonStyle(PlainButtonStyle())
     }
     
     private var randomButton: some View {

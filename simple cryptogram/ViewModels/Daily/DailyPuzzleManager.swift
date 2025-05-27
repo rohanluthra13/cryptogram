@@ -109,7 +109,8 @@ class DailyPuzzleManager: ObservableObject {
             return false 
         }
         
-        let dateStr = Self.currentDateString()
+        // Use the current puzzle date instead of today's date
+        let dateStr = currentPuzzleDate != nil ? Self.dateString(from: currentPuzzleDate!) : Self.currentDateString()
         if let data = UserDefaults.standard.data(forKey: dailyProgressKey(for: dateStr)),
            let progress = try? JSONDecoder().decode(DailyPuzzleProgress.self, from: data),
            progress.quoteId == puzzle.quoteId {
