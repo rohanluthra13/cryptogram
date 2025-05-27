@@ -182,9 +182,9 @@ struct PuzzleCompletionView: View {
                                     withAnimation { isAuthorVisible.toggle() }
                                 }) {
                                     Text("i")
-                                        .font(.system(size: 16, weight: .medium, design: .rounded))
+                                        .font(.system(size: 14, weight: .medium, design: .rounded))
                                         .foregroundColor(CryptogramTheme.Colors.text.opacity(0.6))
-                                        .frame(width: 20, height: 20)
+                                        .frame(width: 18, height: 18)
                                 }
                                 .opacity(showAttribution ? 1 : 0)
                                 .padding(.trailing, 60) // Position it more to the right
