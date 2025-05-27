@@ -178,86 +178,88 @@ struct PuzzleCompletionView: View {
                     // Author summary area (fixed height to prevent shifting)
                     ZStack(alignment: .top) {
                         if isAuthorVisible {
-                            VStack(spacing: 0) {
-                                if let author = viewModel.currentAuthor {
-                                    let summaryText = (author.summary ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-                                    let bornDate = formattedDate(author.birthDate)
-                                    let diedDate = formattedDate(author.deathDate)
-                                    let bornLine = (bornDate != nil) ? "Born: \(bornDate!)" + (author.placeOfBirth?.isEmpty == false ? " (\(author.placeOfBirth!))" : "") : nil
-                                    let diedLine = (diedDate != nil) ? "Died: \(diedDate!)" + (author.placeOfDeath?.isEmpty == false ? " (\(author.placeOfDeath!))" : "") : nil
-                                    VStack(alignment: .leading, spacing: 8) {
-                                        if showSummaryLine {
-                                            Text(summaryTyped)
-                                                .font(typography.caption)
-                                                .foregroundColor(CryptogramTheme.Colors.text)
+                            ScrollView(.vertical, showsIndicators: false) {
+                                VStack(spacing: 0) {
+                                    if let author = viewModel.currentAuthor {
+                                        let summaryText = (author.summary ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                                        let bornDate = formattedDate(author.birthDate)
+                                        let diedDate = formattedDate(author.deathDate)
+                                        let bornLine = (bornDate != nil) ? "Born: \(bornDate!)" + (author.placeOfBirth?.isEmpty == false ? " (\(author.placeOfBirth!))" : "") : nil
+                                        let diedLine = (diedDate != nil) ? "Died: \(diedDate!)" + (author.placeOfDeath?.isEmpty == false ? " (\(author.placeOfDeath!))" : "") : nil
+                                        VStack(alignment: .leading, spacing: 8) {
+                                            if showSummaryLine {
+                                                Text(summaryTyped)
+                                                    .font(typography.caption)
+                                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                                    .transition(.opacity)
+                                            }
+                                            if let bornLine = bornLine, showBornLine {
+                                                HStack(alignment: .top, spacing: 0) {
+                                                    Text("Born:")
+                                                        .bold()
+                                                        .font(typography.caption)
+                                                        .foregroundColor(CryptogramTheme.Colors.text)
+                                                    Text(bornTyped)
+                                                        .font(typography.caption)
+                                                        .foregroundColor(CryptogramTheme.Colors.text)
+                                                }
                                                 .transition(.opacity)
-                                        }
-                                        if let bornLine = bornLine, showBornLine {
-                                            HStack(alignment: .top, spacing: 0) {
-                                                Text("Born:")
-                                                    .bold()
-                                                    .font(typography.caption)
-                                                    .foregroundColor(CryptogramTheme.Colors.text)
-                                                Text(bornTyped)
-                                                    .font(typography.caption)
-                                                    .foregroundColor(CryptogramTheme.Colors.text)
                                             }
-                                            .transition(.opacity)
-                                        }
-                                        if let diedLine = diedLine, showDiedLine {
-                                            HStack(alignment: .top, spacing: 0) {
-                                                Text("Died:")
-                                                    .bold()
-                                                    .font(typography.caption)
-                                                    .foregroundColor(CryptogramTheme.Colors.text)
-                                                Text(diedTyped)
-                                                    .font(typography.caption)
-                                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                            if let diedLine = diedLine, showDiedLine {
+                                                HStack(alignment: .top, spacing: 0) {
+                                                    Text("Died:")
+                                                        .bold()
+                                                        .font(typography.caption)
+                                                        .foregroundColor(CryptogramTheme.Colors.text)
+                                                    Text(diedTyped)
+                                                        .font(typography.caption)
+                                                        .foregroundColor(CryptogramTheme.Colors.text)
+                                                }
+                                                .transition(.opacity)
                                             }
-                                            .transition(.opacity)
                                         }
-                                    }
-                                    .padding(.horizontal, 10)
-                                    .onAppear {
-                                        showSummaryLine = false; showBornLine = false; showDiedLine = false
-                                        summaryTyped = ""; bornTyped = ""; diedTyped = ""
-                                        // Animate summary line typing
-                                        withAnimation(.easeOut(duration: 0.3)) { showSummaryLine = true }
-                                        typeLine(line: summaryText, setter: { summaryTyped = $0 }) {
-                                            if bornLine != nil {
-                                                withAnimation(.easeOut(duration: 0.3)) { showBornLine = true }
-                                                typeLine(line: String(bornLine!.dropFirst(5)), setter: { bornTyped = $0 }) {
-                                                    if diedLine != nil {
-                                                        let diedDelay = (bornLine != nil) ? 0.2 : 0.0
-                                                        DispatchQueue.main.asyncAfter(deadline: .now() + diedDelay) {
-                                                            withAnimation(.easeOut(duration: 0.3)) { showDiedLine = true }
-                                                            typeLine(line: String(diedLine!.dropFirst(5)), setter: { diedTyped = $0 }, completion: {})
+                                        .padding(.horizontal, 10)
+                                        .onAppear {
+                                            showSummaryLine = false; showBornLine = false; showDiedLine = false
+                                            summaryTyped = ""; bornTyped = ""; diedTyped = ""
+                                            // Animate summary line typing
+                                            withAnimation(.easeOut(duration: 0.3)) { showSummaryLine = true }
+                                            typeLine(line: summaryText, setter: { summaryTyped = $0 }) {
+                                                if bornLine != nil {
+                                                    withAnimation(.easeOut(duration: 0.3)) { showBornLine = true }
+                                                    typeLine(line: String(bornLine!.dropFirst(5)), setter: { bornTyped = $0 }) {
+                                                        if diedLine != nil {
+                                                            let diedDelay = (bornLine != nil) ? 0.2 : 0.0
+                                                            DispatchQueue.main.asyncAfter(deadline: .now() + diedDelay) {
+                                                                withAnimation(.easeOut(duration: 0.3)) { showDiedLine = true }
+                                                                typeLine(line: String(diedLine!.dropFirst(5)), setter: { diedTyped = $0 }, completion: {})
+                                                            }
                                                         }
                                                     }
+                                                } else if diedLine != nil {
+                                                    withAnimation(.easeOut(duration: 0.3)) { showDiedLine = true }
+                                                    typeLine(line: String(diedLine!.dropFirst(5)), setter: { diedTyped = $0 }, completion: {})
                                                 }
-                                            } else if diedLine != nil {
-                                                withAnimation(.easeOut(duration: 0.3)) { showDiedLine = true }
-                                                typeLine(line: String(diedLine!.dropFirst(5)), setter: { diedTyped = $0 }, completion: {})
                                             }
                                         }
+                                        .onDisappear {
+                                            showSummaryLine = false; showBornLine = false; showDiedLine = false
+                                            summaryTyped = ""; bornTyped = ""; diedTyped = ""
+                                        }
+                                        .animation(.easeOut(duration: 0.13), value: showSummaryLine)
+                                        .animation(.easeOut(duration: 0.13), value: showBornLine)
+                                        .animation(.easeOut(duration: 0.13), value: showDiedLine)
+                                        Spacer()
+                                    } else {
+                                        Text(verbatim: summaryTyped.isEmpty ? "\u{00a0}" : summaryTyped)
+                                            .font(typography.caption)
+                                            .foregroundColor(CryptogramTheme.Colors.text)
+                                            .padding(.horizontal, 6)
+                                            .frame(maxWidth: .infinity, alignment: .top)
+                                            .onTapGesture { skipSummaryTyping() }
+                                            .animation(.easeOut(duration: 0.13), value: summaryTyped)
+                                        Spacer()
                                     }
-                                    .onDisappear {
-                                        showSummaryLine = false; showBornLine = false; showDiedLine = false
-                                        summaryTyped = ""; bornTyped = ""; diedTyped = ""
-                                    }
-                                    .animation(.easeOut(duration: 0.13), value: showSummaryLine)
-                                    .animation(.easeOut(duration: 0.13), value: showBornLine)
-                                    .animation(.easeOut(duration: 0.13), value: showDiedLine)
-                                    Spacer()
-                                } else {
-                                    Text(verbatim: summaryTyped.isEmpty ? "\u{00a0}" : summaryTyped)
-                                        .font(typography.caption)
-                                        .foregroundColor(CryptogramTheme.Colors.text)
-                                        .padding(.horizontal, 6)
-                                        .frame(maxWidth: .infinity, alignment: .top)
-                                        .onTapGesture { skipSummaryTyping() }
-                                        .animation(.easeOut(duration: 0.13), value: summaryTyped)
-                                    Spacer()
                                 }
                             }
                         } else {
