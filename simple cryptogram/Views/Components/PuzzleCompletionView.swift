@@ -135,22 +135,45 @@ struct PuzzleCompletionView: View {
                     }
                     // Author attribution - removed the redundant attribution with dash
                     Spacer().frame(height: 8).opacity(showAttribution ? 1 : 0)
-                    // Source/hint
+                    // Source/hint with info button
                     if let source = viewModel.currentPuzzle?.hint, !source.isEmpty {
                         let processedSource = source.hasPrefix("Author:") ? 
                             source.replacingOccurrences(of: "Author:", with: "").trimmingCharacters(in: .whitespacesAndNewlines) : 
                             source
-                        Text(processedSource)
-                            .font(typography.caption)
-                            .foregroundColor(CryptogramTheme.Colors.text)
-                            .fontWeight(isAuthorVisible ? .bold : .regular)
-                            .padding(.top, 4)
-                            .opacity(showAttribution ? 1 : 0)
-                            .onTapGesture {
-                                guard let name = viewModel.currentPuzzle?.authorName else { return }
-                                viewModel.loadAuthorIfNeeded(name: name)
-                                withAnimation { isAuthorVisible.toggle() }
+                        
+                        // Container to keep author centered while adding info button
+                        ZStack {
+                            // Centered author name
+                            Text(processedSource)
+                                .font(typography.caption)
+                                .foregroundColor(CryptogramTheme.Colors.text)
+                                .fontWeight(isAuthorVisible ? .bold : .regular)
+                                .padding(.top, 4)
+                                .opacity(showAttribution ? 1 : 0)
+                                .onTapGesture {
+                                    guard let name = viewModel.currentPuzzle?.authorName else { return }
+                                    viewModel.loadAuthorIfNeeded(name: name)
+                                    withAnimation { isAuthorVisible.toggle() }
+                                }
+                            
+                            // Info button positioned to the right
+                            HStack {
+                                Spacer()
+                                Button(action: {
+                                    guard let name = viewModel.currentPuzzle?.authorName else { return }
+                                    viewModel.loadAuthorIfNeeded(name: name)
+                                    withAnimation { isAuthorVisible.toggle() }
+                                }) {
+                                    Text("i")
+                                        .font(.system(size: 16, weight: .medium, design: .rounded))
+                                        .foregroundColor(CryptogramTheme.Colors.text.opacity(0.6))
+                                        .frame(width: 20, height: 20)
+                                }
+                                .opacity(showAttribution ? 1 : 0)
+                                .padding(.trailing, 60) // Position it more to the right
                             }
+                            .padding(.top, 4)
+                        }
                     }
                     // Author summary area (fixed height to prevent shifting)
                     ZStack(alignment: .top) {
