@@ -192,6 +192,34 @@ struct CalendarView: View {
         }
         .padding(.vertical)
         .frame(width: 350)
+        .contentShape(Rectangle())
+        .gesture(
+            DragGesture(minimumDistance: 20)
+                .onEnded { value in
+                    let threshold: CGFloat = 50
+                    let horizontalMovement = value.translation.width
+                    let verticalMovement = abs(value.translation.height)
+                    
+                    // Only trigger if horizontal movement is greater than vertical (horizontal swipe)
+                    guard abs(horizontalMovement) > verticalMovement else { return }
+                    
+                    if horizontalMovement > threshold {
+                        // Swipe right - go to previous month
+                        if canNavigateToPreviousMonth() {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                currentDate = calendar.date(byAdding: .month, value: -1, to: currentDate) ?? currentDate
+                            }
+                        }
+                    } else if horizontalMovement < -threshold {
+                        // Swipe left - go to next month
+                        if canNavigateToNextMonth() {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                currentDate = calendar.date(byAdding: .month, value: 1, to: currentDate) ?? currentDate
+                            }
+                        }
+                    }
+                }
+        )
     }
 }
 
