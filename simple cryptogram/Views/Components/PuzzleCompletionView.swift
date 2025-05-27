@@ -41,39 +41,56 @@ struct PuzzleCompletionView: View {
 
     var hideStats: Bool = false
 
+    // State for managing typing animations
+    @State private var summaryTypingWorkItem: DispatchWorkItem?
+    @State private var bornTypingWorkItem: DispatchWorkItem?
+    @State private var diedTypingWorkItem: DispatchWorkItem?
+    
     // MARK: - Helper for line typing animation
-    private func typeLine(line: String, setter: @escaping (String) -> Void, completion: @escaping () -> Void) {
+    private func typeLine(line: String, setter: @escaping (String) -> Void, completion: @escaping () -> Void) -> DispatchWorkItem {
         let characters = Array(line)
         var currentIndex = 0
+        var workItem: DispatchWorkItem!
+        
         func typeNext() {
-            if currentIndex <= characters.count {
+            if !workItem.isCancelled && currentIndex <= characters.count {
                 setter(String(characters.prefix(currentIndex)))
                 currentIndex += 1
                 if currentIndex <= characters.count {
                     DispatchQueue.main.asyncAfter(deadline: .now() + summaryTypingSpeed) {
-                        typeNext()
+                        if !workItem.isCancelled {
+                            typeNext()
+                        }
                     }
                 } else {
                     completion()
                 }
             }
         }
-        typeNext()
+        
+        workItem = DispatchWorkItem { typeNext() }
+        DispatchQueue.main.async(execute: workItem)
+        return workItem
     }
 
     private func skipSummaryTyping() {
+        // Cancel all ongoing animations
+        summaryTypingWorkItem?.cancel()
+        bornTypingWorkItem?.cancel()
+        diedTypingWorkItem?.cancel()
+        
         showSummaryLine = true
         showBornLine = true
         showDiedLine = true
         if let author = viewModel.currentAuthor {
             summaryTyped = (author.summary ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             if let birthDate = formattedDate(author.birthDate) {
-                bornTyped = (author.placeOfBirth?.isEmpty == false) ? "\(birthDate) (\(author.placeOfBirth!))" : birthDate
+                bornTyped = (author.placeOfBirth?.isEmpty == false) ? " \(birthDate) (\(author.placeOfBirth!))" : " \(birthDate)"
             } else {
                 bornTyped = ""
             }
             if let deathDate = formattedDate(author.deathDate) {
-                diedTyped = (author.placeOfDeath?.isEmpty == false) ? "\(deathDate) (\(author.placeOfDeath!))" : deathDate
+                diedTyped = (author.placeOfDeath?.isEmpty == false) ? " \(deathDate) (\(author.placeOfDeath!))" : " \(deathDate)"
             } else {
                 diedTyped = ""
             }
@@ -191,6 +208,7 @@ struct PuzzleCompletionView: View {
                                                 Text(summaryTyped)
                                                     .font(typography.caption)
                                                     .foregroundColor(CryptogramTheme.Colors.text)
+                                                    .frame(maxWidth: .infinity, alignment: .leading)
                                                     .transition(.opacity)
                                             }
                                             if let bornLine = bornLine, showBornLine {
@@ -203,6 +221,7 @@ struct PuzzleCompletionView: View {
                                                         .font(typography.caption)
                                                         .foregroundColor(CryptogramTheme.Colors.text)
                                                 }
+                                                .frame(maxWidth: .infinity, alignment: .leading)
                                                 .transition(.opacity)
                                             }
                                             if let diedLine = diedLine, showDiedLine {
@@ -215,34 +234,46 @@ struct PuzzleCompletionView: View {
                                                         .font(typography.caption)
                                                         .foregroundColor(CryptogramTheme.Colors.text)
                                                 }
+                                                .frame(maxWidth: .infinity, alignment: .leading)
                                                 .transition(.opacity)
                                             }
                                         }
                                         .padding(.horizontal, 10)
+                                        .onTapGesture {
+                                            skipSummaryTyping()
+                                        }
                                         .onAppear {
                                             showSummaryLine = false; showBornLine = false; showDiedLine = false
                                             summaryTyped = ""; bornTyped = ""; diedTyped = ""
+                                            // Cancel any existing animations
+                                            summaryTypingWorkItem?.cancel()
+                                            bornTypingWorkItem?.cancel()
+                                            diedTypingWorkItem?.cancel()
                                             // Animate summary line typing
                                             withAnimation(.easeOut(duration: 0.3)) { showSummaryLine = true }
-                                            typeLine(line: summaryText, setter: { summaryTyped = $0 }) {
+                                            summaryTypingWorkItem = typeLine(line: summaryText, setter: { summaryTyped = $0 }) {
                                                 if bornLine != nil {
                                                     withAnimation(.easeOut(duration: 0.3)) { showBornLine = true }
-                                                    typeLine(line: String(bornLine!.dropFirst(5)), setter: { bornTyped = $0 }) {
+                                                    bornTypingWorkItem = typeLine(line: " " + String(bornLine!.dropFirst(5)), setter: { bornTyped = $0 }) {
                                                         if diedLine != nil {
                                                             let diedDelay = (bornLine != nil) ? 0.2 : 0.0
                                                             DispatchQueue.main.asyncAfter(deadline: .now() + diedDelay) {
                                                                 withAnimation(.easeOut(duration: 0.3)) { showDiedLine = true }
-                                                                typeLine(line: String(diedLine!.dropFirst(5)), setter: { diedTyped = $0 }, completion: {})
+                                                                diedTypingWorkItem = typeLine(line: " " + String(diedLine!.dropFirst(5)), setter: { diedTyped = $0 }, completion: {})
                                                             }
                                                         }
                                                     }
                                                 } else if diedLine != nil {
                                                     withAnimation(.easeOut(duration: 0.3)) { showDiedLine = true }
-                                                    typeLine(line: String(diedLine!.dropFirst(5)), setter: { diedTyped = $0 }, completion: {})
+                                                    diedTypingWorkItem = typeLine(line: " " + String(diedLine!.dropFirst(5)), setter: { diedTyped = $0 }, completion: {})
                                                 }
                                             }
                                         }
                                         .onDisappear {
+                                            // Cancel any ongoing animations
+                                            summaryTypingWorkItem?.cancel()
+                                            bornTypingWorkItem?.cancel()
+                                            diedTypingWorkItem?.cancel()
                                             showSummaryLine = false; showBornLine = false; showDiedLine = false
                                             summaryTyped = ""; bornTyped = ""; diedTyped = ""
                                         }
