@@ -247,8 +247,12 @@ class PuzzleViewModel: ObservableObject {
     }
     
     func loadDailyPuzzle() {
+        loadDailyPuzzle(for: Date())
+    }
+    
+    func loadDailyPuzzle(for date: Date) {
         do {
-            let (puzzle, progress) = try dailyManager.loadDailyPuzzle()
+            let (puzzle, progress) = try dailyManager.loadDailyPuzzle(for: date)
             
             if let progress = progress {
                 // Restore from saved progress

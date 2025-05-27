@@ -36,7 +36,11 @@ struct HomeView: View {
                         if !showLengthSelection {
                             VStack(spacing: 50) {
                                 playButton
-                                dailyPuzzleButton
+                                
+                                VStack(spacing: 0) {
+                                    dailyPuzzleButton
+                                    WeeklySnapshot(navigateToPuzzle: $navigateToPuzzle)
+                                }
                             }
                             .transition(.opacity.combined(with: .scale))
                         } else {

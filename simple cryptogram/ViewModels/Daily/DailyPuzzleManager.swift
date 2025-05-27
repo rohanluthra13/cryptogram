@@ -9,6 +9,7 @@ class DailyPuzzleManager: ObservableObject {
     
     // MARK: - Dependencies
     private let databaseService: DatabaseService
+    private var currentPuzzleDate: Date?
     
     // Computed property for encodingType
     private var encodingType: String {
@@ -22,8 +23,13 @@ class DailyPuzzleManager: ObservableObject {
     
     // MARK: - Public Methods
     func loadDailyPuzzle() throws -> (puzzle: Puzzle, progress: DailyPuzzleProgress?) {
+        return try loadDailyPuzzle(for: Date())
+    }
+    
+    func loadDailyPuzzle(for date: Date) throws -> (puzzle: Puzzle, progress: DailyPuzzleProgress?) {
         isDailyPuzzle = true
-        let dateStr = Self.currentDateString()
+        currentPuzzleDate = date
+        let dateStr = Self.dateString(from: date)
         
         // Check for saved progress first
         if let data = UserDefaults.standard.data(forKey: dailyProgressKey(for: dateStr)),
@@ -34,7 +40,7 @@ class DailyPuzzleManager: ObservableObject {
         }
         
         // No saved progress - load fresh daily puzzle
-        guard let puzzle = try databaseService.fetchDailyPuzzle(encodingType: encodingType) else {
+        guard let puzzle = try databaseService.fetchDailyPuzzle(for: date, encodingType: encodingType) else {
             isDailyPuzzle = false
             throw DatabaseError.noDataFound
         }
@@ -49,7 +55,8 @@ class DailyPuzzleManager: ObservableObject {
     ) {
         guard isDailyPuzzle else { return }
         
-        let dateStr = Self.currentDateString()
+        // Use the stored puzzle date
+        let dateStr = Self.dateString(from: currentPuzzleDate ?? Date())
         let userInputs = cells.map { $0.userInput }
         let isPreFilled = cells.map { $0.isPreFilled }
         let isRevealed = cells.map { $0.isRevealed }
@@ -118,6 +125,7 @@ class DailyPuzzleManager: ObservableObject {
     func resetDailyPuzzleState() {
         isDailyPuzzle = false
         isDailyPuzzleCompletedPublished = false
+        currentPuzzleDate = nil
     }
     
     // MARK: - Private Methods
@@ -126,10 +134,14 @@ class DailyPuzzleManager: ObservableObject {
     }
     
     private static func currentDateString() -> String {
+        return dateString(from: Date())
+    }
+    
+    private static func dateString(from date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         formatter.timeZone = TimeZone.current
-        return formatter.string(from: Date())
+        return formatter.string(from: date)
     }
     
     private func updateCompletedStatus(_ completed: Bool) {
