@@ -63,6 +63,7 @@ Views/
 ├── Components/
 │   ├── PuzzleCompletionView.swift - Post-game completion screen
 │   ├── TopBarView.swift - Top navigation bar
+│   ├── WeeklySnapshot.swift - Weekly progress view (currently unused, available for future use)
 │   └── ... other components
 ```
 
@@ -103,9 +104,11 @@ Views/
    - Performance metrics
 
 7. **DailyPuzzleManager** (`ViewModels/Daily/DailyPuzzleManager.swift`): Daily puzzles
-   - Date-based puzzle loading
-   - Daily puzzle progress persistence
+   - Date-based puzzle loading (supports loading puzzles for any date)
+   - Daily puzzle progress persistence in UserDefaults
    - Calendar integration
+   - Tracks current puzzle date for proper progress saving
+   - Supports viewing historical daily puzzles
 
 8. **DatabaseService** (`Services/DatabaseService.swift`): Data layer
    - SQLite operations with error handling
@@ -179,6 +182,9 @@ The app uses SQLite with the following main tables:
 - Letter and number encoding modes
 - Pre-filled letters at puzzle start (20% of unique letters revealed)
 - Daily puzzle system with calendar-based access
+  - Users can access any past daily puzzle
+  - Progress is saved separately for each day
+  - Completed daily puzzles show completion view immediately when revisited
 - Comprehensive statistics tracking
 - Author information cards
 - Haptic feedback for user interactions
