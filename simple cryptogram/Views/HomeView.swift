@@ -213,6 +213,7 @@ struct HomeView: View {
                                     }
                                 )
                                 .environmentObject(viewModel)
+                                .environmentObject(appSettings)
                             )
                         
                         // X button positioned at screen level

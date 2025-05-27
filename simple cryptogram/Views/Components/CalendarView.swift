@@ -2,6 +2,7 @@ import SwiftUI
 
 struct CalendarView: View {
     @EnvironmentObject private var viewModel: PuzzleViewModel
+    @EnvironmentObject private var appSettings: AppSettings
     @StateObject private var dailyPuzzleManager = DailyPuzzleManager()
     @Environment(\.typography) private var typography
     @State private var currentDate: Date
@@ -151,7 +152,7 @@ struct CalendarView: View {
                 HStack(spacing: 0) {
                     ForEach(dayLabels, id: \.self) { label in
                         Text(label)
-                            .font(typography.caption)
+                            .font(.system(size: appSettings.textSize.calendarLabelSize, design: typography.fontOption.design))
                             .foregroundColor(Color("Text"))
                             .frame(maxWidth: .infinity)
                     }
@@ -163,6 +164,7 @@ struct CalendarView: View {
                         .frame(height: 1),
                     alignment: .bottom
                 )
+                .padding(.bottom, 12) // Add extra space after the header row
                 
                 // Calendar days
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 0), count: 7), spacing: 15) {
@@ -195,6 +197,7 @@ struct CalendarView: View {
 
 struct DayCell: View {
     @Environment(\.typography) private var typography
+    @EnvironmentObject private var appSettings: AppSettings
     let date: Date
     let isAvailable: Bool
     let isCompleted: Bool
@@ -209,18 +212,24 @@ struct DayCell: View {
     var body: some View {
         Button(action: onTap) {
             VStack(spacing: 8) {
-                if isCompleted {
-                    Image(systemName: "checkmark")
-                        .foregroundColor(isAvailable ? Color(hex: "#01780F").opacity(0.5) : Color("Text").opacity(0.3))
-                        .font(.system(size: 16))
-                } else {
-                    Image(systemName: "square")
-                        .foregroundColor(isAvailable ? Color("Text") : Color("Text").opacity(0.3))
-                        .font(.system(size: 18))
+                ZStack {
+                    // Use a fixed frame to ensure consistent positioning
+                    Color.clear
+                        .frame(width: 20, height: 20)
+                    
+                    if isCompleted {
+                        Image(systemName: "checkmark")
+                            .foregroundColor(isAvailable ? Color(hex: "#01780F").opacity(0.5) : Color("Text").opacity(0.3))
+                            .font(.system(size: 16))
+                    } else {
+                        Image(systemName: "square")
+                            .foregroundColor(isAvailable ? Color("Text") : Color("Text").opacity(0.3))
+                            .font(.system(size: 18))
+                    }
                 }
                 
                 Text(dayNumber)
-                    .font(typography.caption)
+                    .font(.system(size: appSettings.textSize.calendarDaySize, design: typography.fontOption.design))
                     .foregroundColor(isAvailable ? Color("Text") : Color("Text").opacity(0.3))
             }
             .frame(height: 50)
