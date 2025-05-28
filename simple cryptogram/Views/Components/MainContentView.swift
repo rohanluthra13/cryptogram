@@ -40,19 +40,12 @@ struct MainContentView: View {
                             viewModel.refreshPuzzleWithCurrentSettings()
                         }
                     },
-                    onTryAgain: { 
-                        viewModel.reset()
-                        // Re-apply difficulty settings to the same puzzle
-                        if let currentPuzzle = viewModel.currentPuzzle {
-                            viewModel.startNewPuzzle(puzzle: currentPuzzle)
-                        }
-                    },
                     isPaused: viewModel.isPaused,
-                    isFailed: viewModel.isFailed,
                     showCenterButtons: true, // Show all buttons in the nav bar
                     isDailyPuzzle: viewModel.isDailyPuzzle,
                     layout: layoutBinding
                 )
+                .allowsHitTesting(!viewModel.isFailed)
                 
                 // Keyboard View
                 KeyboardView(

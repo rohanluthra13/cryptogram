@@ -5,10 +5,8 @@ struct NavigationBarView: View {
     var onMoveRight: () -> Void
     var onTogglePause: () -> Void
     var onNextPuzzle: () -> Void
-    var onTryAgain: (() -> Void)? = nil
     
     var isPaused: Bool
-    var isFailed: Bool = false
     var showCenterButtons: Bool = true
     var isDailyPuzzle: Bool = false
     
@@ -58,7 +56,7 @@ struct NavigationBarView: View {
     
     private var actionGroup: some View {
         HStack(spacing: spacing) {
-            actionButton(isFailed ? .tryAgain : .pause(isPaused: isPaused))
+            actionButton(.pause(isPaused: isPaused))
             if !isDailyPuzzle {
                 actionButton(.nextPuzzle)
             }
@@ -79,7 +77,6 @@ struct NavigationBarView: View {
         Button(action: {
             switch type {
             case .pause: onTogglePause()
-            case .tryAgain: (onTryAgain ?? onNextPuzzle)()
             case .nextPuzzle: onNextPuzzle()
             }
         }) {
@@ -99,13 +96,11 @@ struct NavigationBarView: View {
     
     private enum ActionType {
         case pause(isPaused: Bool)
-        case tryAgain
         case nextPuzzle
         
         var icon: String {
             switch self {
             case .pause(let isPaused): return isPaused ? "play" : "pause"
-            case .tryAgain: return "arrow.counterclockwise"
             case .nextPuzzle: return "arrow.2.circlepath"
             }
         }
@@ -113,7 +108,6 @@ struct NavigationBarView: View {
         var label: String {
             switch self {
             case .pause(let isPaused): return isPaused ? "Resume" : "Pause"
-            case .tryAgain: return "Try Again"
             case .nextPuzzle: return "New Puzzle"
             }
         }
@@ -138,7 +132,6 @@ struct NavigationBarView: View {
             onTogglePause: {},
             onNextPuzzle: {},
             isPaused: true,
-            isFailed: true,
             layout: .constant(.centerLayout)
         )
     }

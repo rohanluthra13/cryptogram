@@ -129,8 +129,6 @@ struct PuzzleCompletionView: View {
             VStack(spacing: 0) {
                 // Main content (quote, author, summary)
                 VStack(spacing: 24) {
-                    // Header
-                    }
                     // Quote
                     if let quote = viewModel.currentPuzzle?.solution {
                         Text(displayedQuote.uppercased())

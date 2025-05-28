@@ -213,6 +213,11 @@ class PuzzleViewModel: ObservableObject {
         handleUserAction()
     }
     
+    func continueAfterFailure() {
+        gameState.clearFailureState()
+        handleUserAction()
+    }
+    
     func togglePause() {
         gameState.togglePause()
     }

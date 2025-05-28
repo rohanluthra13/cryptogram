@@ -10,6 +10,7 @@ struct PuzzleSession {
     var isComplete: Bool
     var isFailed: Bool
     var revealedIndices: Set<Int>
+    var hasContinuedAfterFailure: Bool = false
     
     var completionTime: TimeInterval? {
         guard let start = startTime, let end = endTime else { return nil }
@@ -95,5 +96,12 @@ struct PuzzleSession {
         revealedIndices = []
         isPaused = false
         pauseStartTime = nil
+        hasContinuedAfterFailure = false
+    }
+    
+    mutating func clearFailureState() {
+        isFailed = false
+        hasContinuedAfterFailure = true
+        // Don't reset mistake count - allow unlimited mistakes from here
     }
 } 

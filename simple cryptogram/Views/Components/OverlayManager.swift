@@ -111,19 +111,53 @@ struct OverlayManager: ViewModifier {
     private var gameOverOverlay: some View {
         if viewModel.isFailed && !uiState.showCompletionView && !uiState.showSettings && !uiState.showStatsOverlay {
             ZStack {
-                Color.black.opacity(0.5)
+                CryptogramTheme.Colors.background
                     .ignoresSafeArea()
-                    .allowsHitTesting(false)
-                VStack {
+                    .opacity(0.98)
+                    .onTapGesture { } // Consume taps on background
+                VStack(spacing: 48) {
                     Spacer()
+                    
                     Text("game over")
                         .font(typography.body)
                         .fontWeight(.bold)
                         .foregroundColor(CryptogramTheme.Colors.text)
                         .padding(.horizontal, 32)
                         .padding(.vertical, 12)
-                        .padding(.bottom, 240)
-                        .allowsHitTesting(false)
+                    
+                    // Button stack
+                    VStack(spacing: 32) {
+                        // Continue button
+                        Button(action: {
+                            viewModel.continueAfterFailure()
+                        }) {
+                            Text("continue")
+                                .font(typography.caption)
+                                .foregroundColor(CryptogramTheme.Colors.text)
+                        }
+                        
+                        // New Puzzle button
+                        Button(action: {
+                            viewModel.refreshPuzzleWithCurrentSettings()
+                        }) {
+                            Text("new puzzle")
+                                .font(typography.caption)
+                                .foregroundColor(CryptogramTheme.Colors.text)
+                        }
+                        
+                        // Start Again button
+                        Button(action: {
+                            viewModel.reset()
+                            if let currentPuzzle = viewModel.currentPuzzle {
+                                viewModel.startNewPuzzle(puzzle: currentPuzzle)
+                            }
+                        }) {
+                            Text("start again")
+                                .font(typography.caption)
+                                .foregroundColor(CryptogramTheme.Colors.text)
+                        }
+                    }
+                    .padding(.bottom, 180)
                 }
             }
             .zIndex(OverlayZIndex.pauseGameOver)

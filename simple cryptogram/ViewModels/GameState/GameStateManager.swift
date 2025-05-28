@@ -184,7 +184,7 @@ class GameStateManager: ObservableObject {
         session.incrementMistakes()
         objectWillChange.send()
         
-        if session.mistakeCount >= 3 && !session.isFailed {
+        if session.mistakeCount >= 3 && !session.isFailed && !session.hasContinuedAfterFailure {
             markFailed()
         }
     }
@@ -297,6 +297,11 @@ class GameStateManager: ObservableObject {
     
     private func markFailed() {
         session.markFailed()
+        objectWillChange.send()
+    }
+    
+    func clearFailureState() {
+        session.clearFailureState()
         objectWillChange.send()
     }
 }
