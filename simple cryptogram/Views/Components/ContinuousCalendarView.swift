@@ -171,7 +171,6 @@ struct ContinuousCalendarView: View {
                         isDateAvailable: isDateAvailable,
                         isPuzzleCompleted: isPuzzleCompleted,
                         onSelectDate: { date in
-                            showCalendar = false
                             onSelectDate(date)
                         }
                     )

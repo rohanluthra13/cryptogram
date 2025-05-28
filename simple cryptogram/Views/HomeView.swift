@@ -10,6 +10,7 @@ struct HomeView: View {
     @State private var navigateToPuzzle = false
     @State private var showPuzzle = false
     @State private var puzzleOffset: CGFloat = 0
+    @State private var puzzleOpenedFromCalendar = false
     @State private var selectedMode: PuzzleMode = .random
     @State private var showLengthSelection = false
     @State private var isBottomBarVisible = true
@@ -289,6 +290,7 @@ struct HomeView: View {
                                     showCalendar: $showCalendar,
                                     onSelectDate: { date in
                                         viewModel.loadDailyPuzzle(for: date)
+                                        puzzleOpenedFromCalendar = true
                                         showPuzzle = true
                                     }
                                 )
@@ -334,13 +336,13 @@ struct HomeView: View {
                                     }
                                     .onEnded { value in
                                         if value.startLocation.x < 30 && value.translation.width > 100 {
-                                            // Set calendar flag if needed
-                                            if viewModel.isDailyPuzzle {
-                                                appSettings.shouldShowCalendarOnReturn = true
-                                            }
                                             withAnimation(.easeInOut(duration: 0.3)) {
                                                 showPuzzle = false
                                                 puzzleOffset = 0
+                                            }
+                                            // Reset flag after animation completes
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                                puzzleOpenedFromCalendar = false
                                             }
                                         } else {
                                             withAnimation(.spring()) {
@@ -358,10 +360,12 @@ struct HomeView: View {
                 // Reset to initial state when returning to HomeView
                 showLengthSelection = false
                 
-                // Check if we should show calendar on return
-                if appSettings.shouldShowCalendarOnReturn {
-                    appSettings.shouldShowCalendarOnReturn = false
-                    showCalendar = true
+                // Calendar return is now handled by keeping calendar visible
+            }
+            .onChange(of: showPuzzle) { oldValue, newValue in
+                // When showing puzzle not from calendar, hide calendar
+                if !oldValue && newValue && !puzzleOpenedFromCalendar {
+                    showCalendar = false
                 }
             }
         }
