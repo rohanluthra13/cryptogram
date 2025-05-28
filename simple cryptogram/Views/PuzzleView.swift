@@ -86,15 +86,7 @@ struct PuzzleView: View {
                 let generator = UINotificationFeedbackGenerator()
                 generator.notificationOccurred(.error)
                 
-                // Show completion view after a delay
-                withAnimation(.easeOut(duration: PuzzleViewConstants.Animation.puzzleSwitchDuration).delay(2.0)) {
-                    // Show different completion view for daily puzzles
-                    if viewModel.isDailyPuzzle {
-                        uiState.showDailyCompletionView = true
-                    } else {
-                        uiState.showCompletionView = true
-                    }
-                }
+                // Don't show completion view - just keep the game over overlay
             }
         }
         .navigationBarHidden(true)

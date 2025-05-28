@@ -129,14 +129,7 @@ struct PuzzleCompletionView: View {
             VStack(spacing: 0) {
                 // Main content (quote, author, summary)
                 VStack(spacing: 24) {
-                    // Header - different for success vs failure
-                    if viewModel.isFailed {
-                        Text("Game Over")
-                            .font(typography.title)
-                            .foregroundColor(CryptogramTheme.Colors.error)
-                            .opacity(showQuote ? 1 : 0)
-                            .scaleEffect(showQuote ? 1 : 0.9)
-                            .padding(.top, 20)
+                    // Header
                     }
                     // Quote
                     if let quote = viewModel.currentPuzzle?.solution {
@@ -313,13 +306,6 @@ struct PuzzleCompletionView: View {
 
                 // Stats and button container
                 VStack(spacing: 8) {
-                    if viewModel.isFailed {
-                        Text("Too many mistakes!")
-                            .font(typography.title)
-                            .foregroundColor(CryptogramTheme.Colors.error)
-                            .padding(.vertical, 5)
-                            .opacity(showStats ? 1 : 0)
-                    }
                     if !hideStats {
                         CompletionStatsView()
                             .environmentObject(viewModel)
@@ -353,7 +339,7 @@ struct PuzzleCompletionView: View {
                         Button(action: { 
                             loadNextPuzzle()
                         }) {
-                            Image(systemName: viewModel.isFailed ? "arrow.counterclockwise" : "arrow.right")
+                            Image(systemName: "arrow.right")
                                 .font(.system(size: 22))
                                 .foregroundColor(CryptogramTheme.Colors.text)
                                 .frame(width: 44, height: 44)
@@ -488,13 +474,8 @@ struct PuzzleCompletionView: View {
             // Reset current session and load next puzzle
             viewModel.reset()
             
-            if viewModel.isFailed && viewModel.currentPuzzle != nil {
-                // For "Try Again": reuse the same puzzle but apply difficulty settings
-                viewModel.startNewPuzzle(puzzle: viewModel.currentPuzzle!)
-            } else {
-                // For "Next Puzzle": get a new puzzle with current settings
-                viewModel.refreshPuzzleWithCurrentSettings()
-            }
+            // For "Next Puzzle": get a new puzzle with current settings
+            viewModel.refreshPuzzleWithCurrentSettings()
         }
     }
     
