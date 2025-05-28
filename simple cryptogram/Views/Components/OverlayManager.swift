@@ -19,6 +19,12 @@ struct OverlayManager: ViewModifier {
     @ObservedObject var uiState: PuzzleViewState
     @Namespace private var statsOverlayNamespace
     
+    // Game over typing animation state
+    @State private var gameOverTypedText = ""
+    @State private var showGameOverButtons = false
+    @State private var currentGameOverMessage = ""
+    @State private var gameOverTypingTimer: Timer?
+    
     func body(content: Content) -> some View {
         content
             .overlay(infoOverlay)
@@ -107,6 +113,17 @@ struct OverlayManager: ViewModifier {
     }
     
     // MARK: - Game Over Overlay
+    private let gameOverMessages = [
+        "uh oh that's 3 mistakes.",
+        "oh no game over.",
+        "sucks to suck huh.",
+        "oops you made a whoopsie.",
+        "third strike, you're out!",
+        "better luck next time.",
+        "so close yet so far.",
+        "practice makes perfect."
+    ]
+    
     @ViewBuilder
     private var gameOverOverlay: some View {
         if viewModel.isFailed && !uiState.showCompletionView && !uiState.showSettings && !uiState.showStatsOverlay {
@@ -118,51 +135,75 @@ struct OverlayManager: ViewModifier {
                 VStack(spacing: 48) {
                     Spacer()
                     
-                    Text("game over")
+                    Text(gameOverTypedText)
                         .font(typography.body)
-                        .fontWeight(.bold)
                         .foregroundColor(CryptogramTheme.Colors.text)
                         .padding(.horizontal, 32)
                         .padding(.vertical, 12)
                     
-                    // Button stack
+                    // Button container - always present to maintain layout
                     VStack(spacing: 32) {
-                        // Continue button
-                        Button(action: {
-                            viewModel.continueAfterFailure()
-                        }) {
+                        if showGameOverButtons {
+                            // Continue button
+                            Button(action: {
+                                viewModel.continueAfterFailure()
+                            }) {
+                                Text("continue")
+                                    .font(typography.caption)
+                                    .foregroundColor(CryptogramTheme.Colors.text)
+                            }
+                            .transition(.opacity)
+                            
+                            // New Puzzle button
+                            Button(action: {
+                                viewModel.refreshPuzzleWithCurrentSettings()
+                            }) {
+                                Text("new puzzle")
+                                    .font(typography.caption)
+                                    .foregroundColor(CryptogramTheme.Colors.text)
+                            }
+                            .transition(.opacity)
+                            
+                            // Start Again button
+                            Button(action: {
+                                viewModel.reset()
+                                if let currentPuzzle = viewModel.currentPuzzle {
+                                    viewModel.startNewPuzzle(puzzle: currentPuzzle)
+                                }
+                            }) {
+                                Text("start again")
+                                    .font(typography.caption)
+                                    .foregroundColor(CryptogramTheme.Colors.text)
+                            }
+                            .transition(.opacity)
+                        } else {
+                            // Invisible placeholders with same height as buttons
                             Text("continue")
                                 .font(typography.caption)
-                                .foregroundColor(CryptogramTheme.Colors.text)
-                        }
-                        
-                        // New Puzzle button
-                        Button(action: {
-                            viewModel.refreshPuzzleWithCurrentSettings()
-                        }) {
+                                .foregroundColor(.clear)
+                            
                             Text("new puzzle")
                                 .font(typography.caption)
-                                .foregroundColor(CryptogramTheme.Colors.text)
-                        }
-                        
-                        // Start Again button
-                        Button(action: {
-                            viewModel.reset()
-                            if let currentPuzzle = viewModel.currentPuzzle {
-                                viewModel.startNewPuzzle(puzzle: currentPuzzle)
-                            }
-                        }) {
+                                .foregroundColor(.clear)
+                            
                             Text("start again")
                                 .font(typography.caption)
-                                .foregroundColor(CryptogramTheme.Colors.text)
+                                .foregroundColor(.clear)
                         }
                     }
                     .padding(.bottom, 180)
+                    .animation(.easeIn(duration: 0.3), value: showGameOverButtons)
                 }
             }
             .zIndex(OverlayZIndex.pauseGameOver)
             .transition(.opacity)
             .animation(.easeInOut(duration: PuzzleViewConstants.Animation.overlayDuration), value: viewModel.isFailed)
+            .onAppear {
+                startGameOverTyping()
+            }
+            .onDisappear {
+                resetGameOverAnimation()
+            }
         }
     }
     
@@ -271,6 +312,48 @@ struct OverlayManager: ViewModifier {
                 .environmentObject(viewModel)
                 .zIndex(OverlayZIndex.dailyCompletion)
         }
+    }
+    
+    // MARK: - Game Over Animation Methods
+    private func startGameOverTyping() {
+        // Reset state
+        gameOverTypedText = ""
+        showGameOverButtons = false
+        
+        // Select a random message
+        currentGameOverMessage = gameOverMessages.randomElement() ?? "game over"
+        
+        // Start typing after 0.5s delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            typeGameOverMessage()
+        }
+    }
+    
+    private func typeGameOverMessage() {
+        gameOverTypingTimer?.invalidate()
+        
+        let characters = Array(currentGameOverMessage)
+        var currentIndex = 0
+        
+        gameOverTypingTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
+            if currentIndex < characters.count {
+                gameOverTypedText.append(characters[currentIndex])
+                currentIndex += 1
+            } else {
+                timer.invalidate()
+                // Show buttons after typing completes
+                withAnimation {
+                    showGameOverButtons = true
+                }
+            }
+        }
+    }
+    
+    private func resetGameOverAnimation() {
+        gameOverTypingTimer?.invalidate()
+        gameOverTypedText = ""
+        showGameOverButtons = false
+        currentGameOverMessage = ""
     }
 }
 
