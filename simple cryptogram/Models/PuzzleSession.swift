@@ -54,12 +54,16 @@ struct PuzzleSession {
     
     mutating func markComplete() {
         isComplete = true
-        endTime = Date()
+        if endTime == nil {
+            endTime = Date()
+        }
     }
     
     mutating func markFailed() {
         isFailed = true
-        endTime = Date()
+        if endTime == nil {
+            endTime = Date()
+        }
     }
     
     mutating func revealCell(at index: Int) {

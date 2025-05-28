@@ -39,6 +39,7 @@ struct TopBarView: View {
                     if !timerInactive {
                         TimerView(
                             startTime: viewModel.startTime ?? Date.distantFuture,
+                            endTime: viewModel.endTime,
                             isPaused: viewModel.isPaused || viewModel.isFailed,
                             settingsViewModel: settingsViewModel
                         )
