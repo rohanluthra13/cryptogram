@@ -122,45 +122,45 @@ struct ContinuousCalendarView: View {
     
     var body: some View {
         VStack(spacing: 20) {
-            // Navigation header
-            HStack {
-                Button(action: {
-                    if currentMonthIndex > 0 {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            currentMonthIndex -= 1
+                // Navigation header
+                HStack {
+                    Button(action: {
+                        if currentMonthIndex > 0 {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                currentMonthIndex -= 1
+                            }
                         }
+                    }) {
+                        Image(systemName: "chevron.left")
+                            .foregroundColor(currentMonthIndex > 0 ? Color("Text") : Color("Text").opacity(0.3))
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }
-                }) {
-                    Image(systemName: "chevron.left")
-                        .foregroundColor(currentMonthIndex > 0 ? Color("Text") : Color("Text").opacity(0.3))
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
-                }
-                .disabled(currentMonthIndex <= 0)
-                
-                Spacer()
-                
-                Text(dateFormatter.string(from: monthDate(for: currentMonthIndex)))
-                    .font(.system(size: 15, weight: .regular, design: typography.fontOption.design))
-                    .foregroundColor(Color("Text"))
-                
-                Spacer()
-                
-                Button(action: {
-                    if currentMonthIndex < maxMonthIndex {
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            currentMonthIndex += 1
+                    .disabled(currentMonthIndex <= 0)
+                    
+                    Spacer()
+                    
+                    Text(dateFormatter.string(from: monthDate(for: currentMonthIndex)))
+                        .font(.system(size: 15, weight: .regular, design: typography.fontOption.design))
+                        .foregroundColor(Color("Text"))
+                    
+                    Spacer()
+                    
+                    Button(action: {
+                        if currentMonthIndex < maxMonthIndex {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                currentMonthIndex += 1
+                            }
                         }
+                    }) {
+                        Image(systemName: "chevron.right")
+                            .foregroundColor(currentMonthIndex < maxMonthIndex ? Color("Text") : Color("Text").opacity(0.3))
+                            .frame(width: 44, height: 44)
+                            .contentShape(Rectangle())
                     }
-                }) {
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(currentMonthIndex < maxMonthIndex ? Color("Text") : Color("Text").opacity(0.3))
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
+                    .disabled(currentMonthIndex >= maxMonthIndex)
                 }
-                .disabled(currentMonthIndex >= maxMonthIndex)
-            }
-            .padding(.horizontal)
+                .padding(.horizontal)
             
             // Calendar container
             ZStack {

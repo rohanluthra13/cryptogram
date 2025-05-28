@@ -25,6 +25,9 @@ struct OverlayManager: ViewModifier {
     @State private var showGameOverButtons = false
     @State private var currentGameOverMessage = ""
     @State private var gameOverTypingTimer: Timer?
+    @State private var showContinueFriction = false
+    @State private var frictionTypedText = ""
+    @State private var frictionTypingTimer: Timer?
     
     func body(content: Content) -> some View {
         content
@@ -167,10 +170,10 @@ struct OverlayManager: ViewModifier {
                     
                     // Button container - always present to maintain layout
                     VStack(spacing: 32) {
-                        if showGameOverButtons {
+                        if showGameOverButtons && !showContinueFriction {
                             // Continue button
                             Button(action: {
-                                viewModel.continueAfterFailure()
+                                startContinueFriction()
                             }) {
                                 Text("continue")
                                     .font(typography.caption)
@@ -200,6 +203,23 @@ struct OverlayManager: ViewModifier {
                                     .foregroundColor(CryptogramTheme.Colors.text)
                             }
                             .transition(.opacity)
+                        } else if showContinueFriction {
+                            // Friction message in place of continue button
+                            Text(frictionTypedText)
+                                .font(typography.caption)
+                                .foregroundColor(CryptogramTheme.Colors.text)
+                                .padding(.horizontal, 32)
+                                .multilineTextAlignment(.center)
+                                .transition(.opacity)
+                            
+                            // Invisible placeholders for other buttons
+                            Text("new puzzle")
+                                .font(typography.caption)
+                                .foregroundColor(.clear)
+                            
+                            Text("try again")
+                                .font(typography.caption)
+                                .foregroundColor(.clear)
                         } else {
                             // Invisible placeholders with same height as buttons
                             Text("continue")
@@ -217,10 +237,11 @@ struct OverlayManager: ViewModifier {
                     }
                     .padding(.bottom, 180)
                     .animation(.easeIn(duration: 0.3), value: showGameOverButtons)
+                    .animation(.easeIn(duration: 0.3), value: showContinueFriction)
                 }
                 
                 // Bottom bar positioned absolutely - doesn't affect other content
-                if showGameOverButtons {
+                if showGameOverButtons && !showContinueFriction {
                     if uiState.isGameOverBottomBarVisible {
                         VStack {
                             Spacer()
@@ -450,9 +471,49 @@ struct OverlayManager: ViewModifier {
     
     private func resetGameOverAnimation() {
         gameOverTypingTimer?.invalidate()
+        frictionTypingTimer?.invalidate()
         gameOverTypedText = ""
         showGameOverButtons = false
         currentGameOverMessage = ""
+        showContinueFriction = false
+        frictionTypedText = ""
+    }
+    
+    private func startContinueFriction() {
+        // Hide buttons and start friction message
+        withAnimation {
+            showGameOverButtons = false
+            showContinueFriction = true
+        }
+        
+        // Reset friction text
+        frictionTypedText = ""
+        
+        // Start typing after a short delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+            typeFrictionMessage()
+        }
+    }
+    
+    private func typeFrictionMessage() {
+        frictionTypingTimer?.invalidate()
+        
+        let message = "since there are no ads this is a bit of friction cause, well, you did make 3 mistakes..."
+        let characters = Array(message)
+        var currentIndex = 0
+        
+        frictionTypingTimer = Timer.scheduledTimer(withTimeInterval: 0.08, repeats: true) { timer in
+            if currentIndex < characters.count {
+                frictionTypedText.append(characters[currentIndex])
+                currentIndex += 1
+            } else {
+                timer.invalidate()
+                // Auto-continue after typing completes
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    viewModel.continueAfterFailure()
+                }
+            }
+        }
     }
 }
 
