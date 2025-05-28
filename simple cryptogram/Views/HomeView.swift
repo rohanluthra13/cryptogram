@@ -20,6 +20,12 @@ struct HomeView: View {
         case daily
     }
     
+    // Computed property to check if today's daily puzzle is completed
+    private var isDailyPuzzleCompleted: Bool {
+        // Check if today's daily puzzle is completed regardless of current puzzle
+        return viewModel.isTodaysDailyPuzzleCompleted
+    }
+    
     var body: some View {
         NavigationStack {
             ZStack {
@@ -346,10 +352,18 @@ struct HomeView: View {
             Button(action: {
                 selectMode(.daily)
             }) {
-                Text("daily puzzle")
-                    .font(typography.body)
-                    .foregroundColor(CryptogramTheme.Colors.text)
-                    .padding(.vertical, 8)
+                HStack(spacing: 8) {
+                    Text("daily puzzle")
+                        .font(typography.body)
+                        .foregroundColor(CryptogramTheme.Colors.text)
+                        .padding(.vertical, 8)
+                    
+                    if isDailyPuzzleCompleted {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(Color(hex: "#01780F").opacity(0.5))
+                    }
+                }
             }
             .buttonStyle(PlainButtonStyle())
             

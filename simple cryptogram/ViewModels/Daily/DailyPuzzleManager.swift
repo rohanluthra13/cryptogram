@@ -129,6 +129,15 @@ class DailyPuzzleManager: ObservableObject {
         currentPuzzleDate = nil
     }
     
+    func isTodaysDailyPuzzleCompleted() -> Bool {
+        let dateStr = Self.currentDateString()
+        if let data = UserDefaults.standard.data(forKey: dailyProgressKey(for: dateStr)),
+           let progress = try? JSONDecoder().decode(DailyPuzzleProgress.self, from: data) {
+            return progress.isCompleted
+        }
+        return false
+    }
+    
     // MARK: - Private Methods
     private func dailyProgressKey(for date: String) -> String {
         "dailyPuzzleProgress-\(date)"

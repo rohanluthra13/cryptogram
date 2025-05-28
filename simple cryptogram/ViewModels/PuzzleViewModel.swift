@@ -72,6 +72,7 @@ class PuzzleViewModel: ObservableObject {
     var isDailyPuzzle: Bool { dailyManager.isDailyPuzzle }
     var isDailyPuzzleCompletedPublished: Bool { dailyManager.isDailyPuzzleCompletedPublished }
     var isDailyPuzzleCompleted: Bool { dailyManager.checkDailyPuzzleCompleted(puzzle: currentPuzzle) }
+    var isTodaysDailyPuzzleCompleted: Bool { dailyManager.isTodaysDailyPuzzleCompleted() }
     
     // Statistics properties
     var completionCountForCurrentPuzzle: Int {
