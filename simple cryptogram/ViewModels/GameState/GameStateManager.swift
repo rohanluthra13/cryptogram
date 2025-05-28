@@ -185,7 +185,10 @@ class GameStateManager: ObservableObject {
         objectWillChange.send()
         
         if session.mistakeCount >= 3 && !session.isFailed && !session.hasContinuedAfterFailure {
-            markFailed()
+            // Delay game over overlay to allow mistake animation to complete
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+                self?.markFailed()
+            }
         }
     }
     

@@ -16,6 +16,7 @@ struct OverlayManager: ViewModifier {
     @EnvironmentObject private var themeManager: ThemeManager
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
     @Environment(\.typography) private var typography
+    @Environment(\.dismiss) private var dismiss
     @ObservedObject var uiState: PuzzleViewState
     @Namespace private var statsOverlayNamespace
     
@@ -132,6 +133,29 @@ struct OverlayManager: ViewModifier {
                     .ignoresSafeArea()
                     .opacity(0.98)
                     .onTapGesture { } // Consume taps on background
+                
+                // Info button in top-right corner
+                VStack {
+                    HStack {
+                        Spacer()
+                        Button(action: {
+                            withAnimation {
+                                uiState.showInfoOverlay.toggle()
+                            }
+                        }) {
+                            Image(systemName: "questionmark")
+                                .font(.system(size: PuzzleViewConstants.Sizes.questionMarkSize, design: typography.fontOption.design))
+                                .foregroundColor(CryptogramTheme.Colors.text)
+                                .opacity(uiState.showInfoOverlay ? PuzzleViewConstants.Colors.activeIconOpacity : PuzzleViewConstants.Colors.iconOpacity)
+                                .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
+                                .accessibilityLabel("About / Info")
+                        }
+                        .padding(.trailing, PuzzleViewConstants.Spacing.topBarPadding)
+                    }
+                    Spacer()
+                }
+                .padding(.top, 0)
+                
                 VStack(spacing: 48) {
                     Spacer()
                     
@@ -164,14 +188,14 @@ struct OverlayManager: ViewModifier {
                             }
                             .transition(.opacity)
                             
-                            // Start Again button
+                            // Try Again button
                             Button(action: {
                                 viewModel.reset()
                                 if let currentPuzzle = viewModel.currentPuzzle {
                                     viewModel.startNewPuzzle(puzzle: currentPuzzle)
                                 }
                             }) {
-                                Text("start again")
+                                Text("try again")
                                     .font(typography.caption)
                                     .foregroundColor(CryptogramTheme.Colors.text)
                             }
@@ -186,13 +210,86 @@ struct OverlayManager: ViewModifier {
                                 .font(typography.caption)
                                 .foregroundColor(.clear)
                             
-                            Text("start again")
+                            Text("try again")
                                 .font(typography.caption)
                                 .foregroundColor(.clear)
                         }
                     }
                     .padding(.bottom, 180)
                     .animation(.easeIn(duration: 0.3), value: showGameOverButtons)
+                }
+                
+                // Bottom bar positioned absolutely - doesn't affect other content
+                if showGameOverButtons {
+                    if uiState.isGameOverBottomBarVisible {
+                        VStack {
+                            Spacer()
+                            HStack {
+                                // Stats button
+                                Button(action: {
+                                    uiState.toggleStats()
+                                }) {
+                                    Image(systemName: "chart.bar")
+                                        .font(.system(size: PuzzleViewConstants.Sizes.statsIconSize))
+                                        .foregroundColor(CryptogramTheme.Colors.text)
+                                        .opacity(PuzzleViewConstants.Colors.iconOpacity)
+                                        .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
+                                        .accessibilityLabel("Stats/Chart")
+                                }
+                                
+                                Spacer()
+                                
+                                // Home button (center)
+                                Button(action: {
+                                    dismiss()
+                                }) {
+                                    Image(systemName: "house")
+                                        .font(.title3)
+                                        .foregroundColor(CryptogramTheme.Colors.text)
+                                        .opacity(PuzzleViewConstants.Colors.iconOpacity)
+                                        .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
+                                        .accessibilityLabel("Return to Home")
+                                }
+                                
+                                Spacer()
+                                
+                                // Settings button
+                                Button(action: {
+                                    uiState.toggleSettings()
+                                }) {
+                                    Image(systemName: "gearshape")
+                                        .font(.system(size: PuzzleViewConstants.Sizes.settingsIconSize))
+                                        .foregroundColor(CryptogramTheme.Colors.text)
+                                        .opacity(PuzzleViewConstants.Colors.iconOpacity)
+                                        .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
+                                        .accessibilityLabel("Settings")
+                                }
+                            }
+                            .frame(height: PuzzleViewConstants.Spacing.bottomBarHeight, alignment: .bottom)
+                            .padding(.horizontal, PuzzleViewConstants.Spacing.bottomBarHorizontalPadding)
+                            .frame(maxWidth: .infinity)
+                            .ignoresSafeArea(edges: .bottom)
+                            .onTapGesture {
+                                uiState.showGameOverBottomBarTemporarily()
+                            }
+                        }
+                        .transition(.opacity)
+                        .animation(.easeInOut(duration: PuzzleViewConstants.Animation.overlayDuration), value: uiState.isGameOverBottomBarVisible)
+                    } else {
+                        // Invisible tap area to bring back bottom bar
+                        VStack {
+                            Spacer()
+                            Rectangle()
+                                .fill(Color.clear)
+                                .frame(height: PuzzleViewConstants.Spacing.bottomBarHeight)
+                                .frame(maxWidth: .infinity)
+                                .ignoresSafeArea(edges: .bottom)
+                                .contentShape(Rectangle())
+                                .onTapGesture {
+                                    uiState.showGameOverBottomBarTemporarily()
+                                }
+                        }
+                    }
                 }
             }
             .zIndex(OverlayZIndex.pauseGameOver)
@@ -323,8 +420,8 @@ struct OverlayManager: ViewModifier {
         // Select a random message
         currentGameOverMessage = gameOverMessages.randomElement() ?? "game over"
         
-        // Start typing after 0.5s delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        // Start typing after 0.7s delay (increased from 0.5s to avoid overlap with mistake animation)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
             typeGameOverMessage()
         }
     }
@@ -345,6 +442,8 @@ struct OverlayManager: ViewModifier {
                 withAnimation {
                     showGameOverButtons = true
                 }
+                // Show bottom bar temporarily (auto-hides after 3s)
+                uiState.showGameOverBottomBarTemporarily()
             }
         }
     }

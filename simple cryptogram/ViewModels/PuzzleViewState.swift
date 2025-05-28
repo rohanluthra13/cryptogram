@@ -17,7 +17,9 @@ class PuzzleViewState: ObservableObject {
     
     // MARK: - Bottom Bar
     @Published var isBottomBarVisible = true
+    @Published var isGameOverBottomBarVisible = false
     private var bottomBarHideWorkItem: DispatchWorkItem?
+    private var gameOverBottomBarHideWorkItem: DispatchWorkItem?
     
     // MARK: - Constants
     let fullGameOverText = "game over"
@@ -50,6 +52,20 @@ class PuzzleViewState: ObservableObject {
         DispatchQueue.main.asyncAfter(deadline: .now() + PuzzleViewConstants.Animation.bottomBarAutoHideDelay, execute: workItem)
     }
     
+    /// Shows the game over bottom bar temporarily, auto-hiding after 3 seconds
+    func showGameOverBottomBarTemporarily() {
+        isGameOverBottomBarVisible = true
+        gameOverBottomBarHideWorkItem?.cancel()
+        
+        let workItem = DispatchWorkItem { [weak self] in
+            withAnimation {
+                self?.isGameOverBottomBarVisible = false
+            }
+        }
+        gameOverBottomBarHideWorkItem = workItem
+        DispatchQueue.main.asyncAfter(deadline: .now() + PuzzleViewConstants.Animation.bottomBarAutoHideDelay, execute: workItem)
+    }
+    
     /// Cancels auto-hide of bottom bar
     func cancelBottomBarHide() {
         bottomBarHideWorkItem?.cancel()
@@ -67,6 +83,7 @@ class PuzzleViewState: ObservableObject {
                 showStatsOverlay = false
             }
             showBottomBarTemporarily()
+            showGameOverBottomBarTemporarily()
         }
     }
     
@@ -81,6 +98,7 @@ class PuzzleViewState: ObservableObject {
                 showSettings = false
             }
             showBottomBarTemporarily()
+            showGameOverBottomBarTemporarily()
         }
     }
     
