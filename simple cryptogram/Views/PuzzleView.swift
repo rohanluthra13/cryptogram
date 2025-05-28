@@ -7,6 +7,7 @@ struct PuzzleView: View {
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
     @EnvironmentObject private var appSettings: AppSettings
     @StateObject private var uiState = PuzzleViewState()
+    @Environment(\.dismiss) private var dismiss
     
     // Create a custom binding for the layout
     private var layoutBinding: Binding<NavigationBarLayout> {
@@ -104,6 +105,25 @@ struct PuzzleView: View {
         .onDisappear {
             // viewModel.pauseTimer()
         }
+        .gesture(
+            DragGesture()
+                .onEnded { value in
+                    // Check if it's a right swipe (positive translation)
+                    if value.translation.width > 100 && abs(value.translation.height) < 50 {
+                        // Trigger haptic feedback
+                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
+                        impactFeedback.impactOccurred()
+                        
+                        // Handle calendar return if needed
+                        if viewModel.isDailyPuzzle && uiState.showDailyCompletionView {
+                            appSettings.shouldShowCalendarOnReturn = true
+                        }
+                        
+                        // Dismiss to previous view
+                        dismiss()
+                    }
+                }
+        )
     }
     
 }
