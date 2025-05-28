@@ -13,6 +13,7 @@ struct HomeView: View {
     @State private var isBottomBarVisible = true
     @State private var bottomBarHideWorkItem: DispatchWorkItem?
     @State private var showCalendar = false
+    @State private var showInfoOverlay = false
     
     enum PuzzleMode {
         case random
@@ -126,7 +127,7 @@ struct HomeView: View {
                 if showSettings {
                     ZStack {
                         CryptogramTheme.Colors.surface
-                            .opacity(0.95)
+                            .opacity(0.98)
                             .edgesIgnoringSafeArea(.all)
                             .onTapGesture {
                                 showSettings = false
@@ -165,7 +166,7 @@ struct HomeView: View {
                 if showStats {
                     ZStack {
                         CryptogramTheme.Colors.surface
-                            .opacity(0.95)
+                            .opacity(0.98)
                             .ignoresSafeArea()
                             .onTapGesture { showStats = false }
                             .overlay(
@@ -197,11 +198,82 @@ struct HomeView: View {
                     .zIndex(OverlayZIndex.statsSettings)
                 }
                 
+                // Floating info button (top-right corner) - only show when no overlays are active
+                if !showInfoOverlay && !showSettings && !showStats && !showCalendar {
+                    VStack {
+                        HStack {
+                            Spacer()
+                            Button(action: {
+                                withAnimation {
+                                    showInfoOverlay.toggle()
+                                }
+                            }) {
+                                Image(systemName: "questionmark")
+                                    .font(.system(size: PuzzleViewConstants.Sizes.questionMarkSize, design: typography.fontOption.design))
+                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                    .opacity(PuzzleViewConstants.Colors.iconOpacity)
+                                    .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
+                                    .accessibilityLabel("About / Info")
+                            }
+                        }
+                        .padding(.top, 0)
+                        .padding(.horizontal, PuzzleViewConstants.Spacing.topBarPadding)
+                        .frame(maxWidth: .infinity)
+                        Spacer()
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .zIndex(OverlayZIndex.floatingInfo)
+                }
+                
+                // Info overlay
+                if showInfoOverlay {
+                    ZStack(alignment: .top) {
+                        // Background layer that dismisses overlay on tap
+                        CryptogramTheme.Colors.background
+                            .ignoresSafeArea()
+                            .opacity(PuzzleViewConstants.Overlay.backgroundOpacity)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                withAnimation {
+                                    showInfoOverlay = false
+                                }
+                            }
+                        // Foreground overlay content - interactive
+                        VStack {
+                            Spacer(minLength: PuzzleViewConstants.Overlay.infoOverlayTopSpacing)
+                            ScrollView {
+                                InfoOverlayView()
+                            }
+                            .padding(.horizontal, PuzzleViewConstants.Overlay.overlayHorizontalPadding)
+                            Spacer()
+                        }
+                        
+                        // X button positioned at screen level
+                        VStack {
+                            HStack {
+                                Spacer()
+                                Button(action: { showInfoOverlay = false }) {
+                                    Image(systemName: "xmark")
+                                        .font(.system(size: 10, weight: .medium))
+                                        .foregroundColor(CryptogramTheme.Colors.text.opacity(0.6))
+                                        .frame(width: 22, height: 22)
+                                }
+                                .padding(.top, 50)
+                                .padding(.trailing, 20)
+                            }
+                            Spacer()
+                        }
+                    }
+                    .transition(.opacity)
+                    .animation(.easeInOut(duration: PuzzleViewConstants.Animation.overlayDuration), value: showInfoOverlay)
+                    .zIndex(OverlayZIndex.info)
+                }
+                
                 // Calendar overlay
                 if showCalendar {
                     ZStack {
                         CryptogramTheme.Colors.surface
-                            .opacity(0.95)
+                            .opacity(0.98)
                             .ignoresSafeArea()
                             .onTapGesture { showCalendar = false }
                             .overlay(
@@ -270,7 +342,7 @@ struct HomeView: View {
     }
     
     private var dailyPuzzleButton: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 36) {
             Button(action: {
                 selectMode(.daily)
             }) {

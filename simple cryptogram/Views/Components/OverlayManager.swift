@@ -138,7 +138,7 @@ struct OverlayManager: ViewModifier {
         if uiState.showStatsOverlay {
             ZStack {
                 CryptogramTheme.Colors.surface
-                    .opacity(0.95)
+                    .opacity(0.98)
                     .ignoresSafeArea()
                     .onTapGesture { uiState.showStatsOverlay = false }
                     .overlay(
@@ -178,7 +178,7 @@ struct OverlayManager: ViewModifier {
         if uiState.showSettings {
             ZStack {
                 CryptogramTheme.Colors.surface
-                    .opacity(0.95)
+                    .opacity(0.98)
                     .edgesIgnoringSafeArea(.all)
                     .onTapGesture {
                         uiState.showSettings = false
