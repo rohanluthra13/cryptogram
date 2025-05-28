@@ -5,7 +5,7 @@ struct ContentView: View {
     @State private var showError = false
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             HomeView()
         }
         .injectTypography()

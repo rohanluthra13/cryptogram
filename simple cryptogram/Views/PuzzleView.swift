@@ -8,6 +8,7 @@ struct PuzzleView: View {
     @EnvironmentObject private var appSettings: AppSettings
     @StateObject private var uiState = PuzzleViewState()
     @Environment(\.dismiss) private var dismiss
+    @Binding var showPuzzle: Bool
     
     // Create a custom binding for the layout
     private var layoutBinding: Binding<NavigationBarLayout> {
@@ -53,7 +54,7 @@ struct PuzzleView: View {
                 .zIndex(0)
 
                 // --- Persistent Bottom Banner Above All Overlays ---
-                BottomBarView(uiState: uiState)
+                BottomBarView(uiState: uiState, showPuzzle: $showPuzzle)
             }
         }
         .overlayManager(uiState: uiState)
@@ -90,7 +91,6 @@ struct PuzzleView: View {
                 // Don't show completion view - just keep the game over overlay
             }
         }
-        .navigationBarHidden(true)
         .animation(.easeIn(duration: PuzzleViewConstants.Animation.failedAnimationDuration), value: viewModel.isFailed)
         .animation(.easeIn(duration: PuzzleViewConstants.Animation.pausedAnimationDuration), value: viewModel.isPaused)
         .onAppear {
@@ -102,37 +102,15 @@ struct PuzzleView: View {
                 uiState.showBottomBarTemporarily()
             }
         }
-        .onDisappear {
-            // viewModel.pauseTimer()
-        }
-        .gesture(
-            DragGesture()
-                .onEnded { value in
-                    // Check if it's a right swipe (positive translation)
-                    if value.translation.width > 100 && abs(value.translation.height) < 50 {
-                        // Trigger haptic feedback
-                        let impactFeedback = UIImpactFeedbackGenerator(style: .light)
-                        impactFeedback.impactOccurred()
-                        
-                        // Handle calendar return if needed
-                        if viewModel.isDailyPuzzle && uiState.showDailyCompletionView {
-                            appSettings.shouldShowCalendarOnReturn = true
-                        }
-                        
-                        // Dismiss to previous view
-                        dismiss()
-                    }
-                }
-        )
     }
     
 }
 
 #Preview {
-    NavigationView {
-        PuzzleView()
-            .environmentObject(PuzzleViewModel())
-            .environmentObject(ThemeManager())
-            .environmentObject(SettingsViewModel())
-    }
+    @State var showPuzzle = true
+    return PuzzleView(showPuzzle: .constant(true))
+        .environmentObject(PuzzleViewModel())
+        .environmentObject(ThemeManager())
+        .environmentObject(SettingsViewModel())
+        .environmentObject(AppSettings.shared!)
 }

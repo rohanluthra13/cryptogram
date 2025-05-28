@@ -8,6 +8,8 @@ struct HomeView: View {
     @State private var showSettings = false
     @State private var showStats = false
     @State private var navigateToPuzzle = false
+    @State private var showPuzzle = false
+    @State private var puzzleOffset: CGFloat = 0
     @State private var selectedMode: PuzzleMode = .random
     @State private var showLengthSelection = false
     @State private var isBottomBarVisible = true
@@ -283,11 +285,11 @@ struct HomeView: View {
                             .ignoresSafeArea()
                             .onTapGesture { showCalendar = false }
                             .overlay(
-                                CalendarView(
+                                ContinuousCalendarView(
                                     showCalendar: $showCalendar,
                                     onSelectDate: { date in
                                         viewModel.loadDailyPuzzle(for: date)
-                                        navigateToPuzzle = true
+                                        showPuzzle = true
                                     }
                                 )
                                 .environmentObject(viewModel)
@@ -315,10 +317,42 @@ struct HomeView: View {
                     .zIndex(OverlayZIndex.statsSettings)
                 }
             }
-            .navigationDestination(isPresented: $navigateToPuzzle) {
-                PuzzleView()
-                    .navigationBarHidden(true)
-            }
+            // Remove navigation destination - we'll use overlay instead
+            .overlay(
+                Group {
+                    if showPuzzle {
+                        PuzzleView(showPuzzle: $showPuzzle)
+                            .transition(.move(edge: .trailing))
+                            .offset(x: puzzleOffset)
+                            .gesture(
+                                DragGesture()
+                                    .onChanged { value in
+                                        // Only allow dragging from left edge
+                                        if value.startLocation.x < 30 && value.translation.width > 0 {
+                                            puzzleOffset = value.translation.width
+                                        }
+                                    }
+                                    .onEnded { value in
+                                        if value.startLocation.x < 30 && value.translation.width > 100 {
+                                            // Set calendar flag if needed
+                                            if viewModel.isDailyPuzzle {
+                                                appSettings.shouldShowCalendarOnReturn = true
+                                            }
+                                            withAnimation(.easeInOut(duration: 0.3)) {
+                                                showPuzzle = false
+                                                puzzleOffset = 0
+                                            }
+                                        } else {
+                                            withAnimation(.spring()) {
+                                                puzzleOffset = 0
+                                            }
+                                        }
+                                    }
+                            )
+                            .zIndex(100) // Ensure it's above everything
+                    }
+                }
+            )
             .onAppear {
                 showBottomBarTemporarily()
                 // Reset to initial state when returning to HomeView
@@ -422,13 +456,13 @@ struct HomeView: View {
             }
         case .daily:
             viewModel.loadDailyPuzzle()
-            navigateToPuzzle = true
+            showPuzzle = true
             return
         }
         
         // Load new puzzle and navigate
         viewModel.loadNewPuzzle()
-        navigateToPuzzle = true
+        showPuzzle = true
     }
     
     private func showBottomBarTemporarily() {

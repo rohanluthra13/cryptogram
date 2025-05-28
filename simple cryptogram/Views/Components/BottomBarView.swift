@@ -3,6 +3,7 @@ import SwiftUI
 struct BottomBarView: View {
     @ObservedObject var uiState: PuzzleViewState
     @Environment(\.dismiss) private var dismiss
+    var showPuzzle: Binding<Bool>?
     
     private var shouldShowBar: Bool {
         !uiState.showInfoOverlay && 
@@ -37,7 +38,11 @@ struct BottomBarView: View {
                         
                         // Home button (center)
                         Button(action: {
-                            dismiss()
+                            if let showPuzzle = showPuzzle {
+                                showPuzzle.wrappedValue = false
+                            } else {
+                                dismiss()
+                            }
                         }) {
                             Image(systemName: "house")
                                 .font(.title3)
