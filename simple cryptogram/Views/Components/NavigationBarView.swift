@@ -10,6 +10,7 @@ struct NavigationBarView: View {
     var isPaused: Bool
     var isFailed: Bool = false
     var showCenterButtons: Bool = true
+    var isDailyPuzzle: Bool = false
     
     @Binding var layout: NavigationBarLayout
     @Environment(\.typography) private var typography
@@ -58,7 +59,9 @@ struct NavigationBarView: View {
     private var actionGroup: some View {
         HStack(spacing: spacing) {
             actionButton(isFailed ? .tryAgain : .pause(isPaused: isPaused))
-            actionButton(.nextPuzzle)
+            if !isDailyPuzzle {
+                actionButton(.nextPuzzle)
+            }
         }
     }
     

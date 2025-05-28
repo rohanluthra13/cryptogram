@@ -50,6 +50,7 @@ struct MainContentView: View {
                     isPaused: viewModel.isPaused,
                     isFailed: viewModel.isFailed,
                     showCenterButtons: true, // Show all buttons in the nav bar
+                    isDailyPuzzle: viewModel.isDailyPuzzle,
                     layout: layoutBinding
                 )
                 

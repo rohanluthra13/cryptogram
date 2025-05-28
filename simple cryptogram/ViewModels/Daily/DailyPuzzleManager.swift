@@ -9,7 +9,7 @@ class DailyPuzzleManager: ObservableObject {
     
     // MARK: - Dependencies
     private let databaseService: DatabaseService
-    private var currentPuzzleDate: Date?
+    private(set) var currentPuzzleDate: Date?
     
     // Computed property for encodingType
     private var encodingType: String {

@@ -11,6 +11,12 @@ struct TopBarView: View {
         viewModel.currentPuzzle != nil && uiState.isMainUIVisible
     }
     
+    private let dateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM dd yyyy"
+        return formatter
+    }()
+    
     var body: some View {
         HStack(alignment: .top) {
             // Left: mistakes & hints
@@ -52,17 +58,29 @@ struct TopBarView: View {
             
             // Right: info button
             if shouldShowControls {
-                Button(action: {
-                    withAnimation {
-                        uiState.showInfoOverlay.toggle()
+                VStack(alignment: .trailing, spacing: 0) {
+                    Button(action: {
+                        withAnimation {
+                            uiState.showInfoOverlay.toggle()
+                        }
+                    }) {
+                        Image(systemName: "questionmark")
+                            .font(.system(size: PuzzleViewConstants.Sizes.questionMarkSize, design: typography.fontOption.design))
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                            .opacity(uiState.showInfoOverlay ? PuzzleViewConstants.Colors.activeIconOpacity : PuzzleViewConstants.Colors.iconOpacity)
+                            .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
+                            .accessibilityLabel("About / Info")
                     }
-                }) {
-                    Image(systemName: "questionmark")
-                        .font(.system(size: PuzzleViewConstants.Sizes.questionMarkSize, design: typography.fontOption.design))
-                        .foregroundColor(CryptogramTheme.Colors.text)
-                        .opacity(uiState.showInfoOverlay ? PuzzleViewConstants.Colors.activeIconOpacity : PuzzleViewConstants.Colors.iconOpacity)
-                        .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
-                        .accessibilityLabel("About / Info")
+                    
+                    // Daily puzzle date below info button
+                    if viewModel.isDailyPuzzle, let puzzleDate = viewModel.currentDailyPuzzleDate {
+                        Text(puzzleDate, formatter: dateFormatter)
+                            .font(typography.caption)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                            .opacity(0.7)
+                            .padding(.top, 15) // Space between info button and date
+                            .offset(x: -14) // Move text left to better align with icon above
+                    }
                 }
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .trailing)
             }
