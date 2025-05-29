@@ -3,10 +3,26 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject private var viewModel: PuzzleViewModel
     @State private var showError = false
+    @StateObject private var navigationCoordinator = NavigationCoordinator()
     
     var body: some View {
-        NavigationStack {
-            HomeView()
+        Group {
+            if FeatureFlag.newNavigation.isEnabled {
+                // New navigation system using NavigationStack
+                NavigationStack(path: $navigationCoordinator.navigationPath) {
+                    HomeView()
+                        .navigationDestination(for: Puzzle.self) { puzzle in
+                            PuzzleView(showPuzzle: .constant(true))
+                                .environmentObject(viewModel)
+                        }
+                }
+                .environmentObject(navigationCoordinator)
+            } else {
+                // Legacy navigation system
+                NavigationStack {
+                    HomeView()
+                }
+            }
         }
         .injectTypography()
         .onChange(of: viewModel.currentError) { _, newError in
@@ -55,4 +71,5 @@ struct ContentView: View {
     let viewModel = PuzzleViewModel()
     return ContentView()
         .environmentObject(viewModel)
+        .environmentObject(AppSettings())
 }

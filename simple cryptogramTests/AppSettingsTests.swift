@@ -30,16 +30,12 @@ final class AppSettingsTests: XCTestCase {
     
     func testInitialValues() {
         XCTAssertEqual(appSettings.encodingType, "Letters")
-        XCTAssertEqual(appSettings.difficultyMode, .normal)
         XCTAssertEqual(appSettings.selectedDifficulties, ["easy", "medium", "hard"])
         XCTAssertFalse(appSettings.autoSubmitLetter)
         XCTAssertEqual(appSettings.navigationBarLayout, .centerLayout)
         XCTAssertEqual(appSettings.textSize, .medium)
         XCTAssertTrue(appSettings.soundFeedbackEnabled)
         XCTAssertTrue(appSettings.hapticFeedbackEnabled)
-        XCTAssertEqual(appSettings.darkModePreference, "system")
-        XCTAssertFalse(appSettings.highContrastMode)
-        XCTAssertEqual(appSettings.lastCompletedDailyPuzzleID, 0)
     }
     
     // MARK: - Persistence Tests
@@ -47,12 +43,12 @@ final class AppSettingsTests: XCTestCase {
     func testSettingsPersistence() {
         // Change settings
         appSettings.encodingType = "Numbers"
-        appSettings.difficultyMode = .expert
+        appSettings.selectedDifficulties = ["hard"]
         appSettings.textSize = .large
         
         // Verify persistence was called
         XCTAssertEqual(mockPersistence.storedValues["appSettings.encodingType"] as? String, "Numbers")
-        XCTAssertEqual(mockPersistence.storedValues["appSettings.difficultyMode"] as? String, "expert")
+        XCTAssertEqual(mockPersistence.storedValues["appSettings.selectedDifficulties"] as? [String], ["hard"])
         XCTAssertEqual(mockPersistence.storedValues["appSettings.textSize"] as? String, "large")
     }
     
@@ -61,27 +57,26 @@ final class AppSettingsTests: XCTestCase {
     func testResetToUserDefaults() {
         // Change settings
         appSettings.encodingType = "Numbers"
-        appSettings.difficultyMode = .expert
+        appSettings.selectedDifficulties = ["hard"]
         
         // Save as user defaults
         appSettings.saveAsUserDefaults()
         
         // Change settings again
         appSettings.encodingType = "Letters"
-        appSettings.difficultyMode = .normal
+        appSettings.selectedDifficulties = ["easy", "medium", "hard"]
         
         // Reset to user defaults
         appSettings.reset()
         
         // Should go back to saved user defaults
         XCTAssertEqual(appSettings.encodingType, "Numbers")
-        XCTAssertEqual(appSettings.difficultyMode, .expert)
+        XCTAssertEqual(appSettings.selectedDifficulties, ["hard"])
     }
     
     func testResetToFactory() {
         // Change settings
         appSettings.encodingType = "Numbers"
-        appSettings.difficultyMode = .expert
         appSettings.selectedDifficulties = ["hard"]
         appSettings.textSize = .large
         
@@ -93,7 +88,6 @@ final class AppSettingsTests: XCTestCase {
         
         // Should go back to factory defaults
         XCTAssertEqual(appSettings.encodingType, "Letters")
-        XCTAssertEqual(appSettings.difficultyMode, .normal)
         XCTAssertEqual(appSettings.selectedDifficulties, ["easy", "medium", "hard"])
         XCTAssertEqual(appSettings.textSize, .medium)
     }
@@ -104,7 +98,7 @@ final class AppSettingsTests: XCTestCase {
         // Set up @AppStorage values in mock persistence
         mockPersistence.storedValues["encodingType"] = "Numbers"
         mockPersistence.storedValues["autoSubmitLetter"] = true
-        mockPersistence.storedValues["navBarLayout"] = "leftHeavy"
+        mockPersistence.storedValues["navBarLayout"] = "leftLayout"
         mockPersistence.storedValues["textSize"] = "large"
         mockPersistence.storedValues["hapticFeedbackEnabled"] = false
         
@@ -114,7 +108,7 @@ final class AppSettingsTests: XCTestCase {
         // Verify migration worked
         XCTAssertEqual(migratedSettings.encodingType, "Numbers")
         XCTAssertTrue(migratedSettings.autoSubmitLetter)
-        XCTAssertEqual(migratedSettings.navigationBarLayout, .leftHeavy)
+        XCTAssertEqual(migratedSettings.navigationBarLayout, .leftLayout)
         XCTAssertEqual(migratedSettings.textSize, .large)
         XCTAssertFalse(migratedSettings.hapticFeedbackEnabled)
     }

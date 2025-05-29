@@ -67,6 +67,23 @@ Views/
 │   └── ... other components
 ```
 
+### Refactoring Infrastructure
+
+1. **FeatureFlags** (`Utils/FeatureFlags.swift`): Feature flag system for gradual rollout
+   - Enables/disables refactored components safely
+   - Debug mode allows feature flag overrides
+   - Production mode uses hardcoded safe defaults
+
+2. **Performance Monitoring** (`simple cryptogramTests/PerformanceBaselineTests.swift`): 
+   - Automated performance measurement tests
+   - Baseline metrics for app launch, puzzle loading, user interaction
+   - Regression detection during refactoring
+
+3. **Memory Leak Detection** (`simple cryptogramTests/MemoryLeakDetectionTests.swift`):
+   - Automated memory management validation
+   - Retain cycle detection for managers and view models
+   - Extended usage stability testing
+
 ### Key Architectural Components
 
 1. **PuzzleViewModel** (`ViewModels/PuzzleViewModel.swift`): Central orchestrator
@@ -174,6 +191,28 @@ The app uses SQLite with the following main tables:
 
 ## Development Considerations
 
+### Feature Flags
+The app uses feature flags for gradual rollout of refactored components. In debug builds, flags can be enabled/disabled via UserDefaults:
+
+```bash
+# Enable completed Phase 1 features (recommended for development)
+xcrun simctl spawn booted defaults write com.yourcompany.simple-cryptogram ff_new_navigation -bool true
+xcrun simctl spawn booted defaults write com.yourcompany.simple-cryptogram ff_modern_sheets -bool true
+
+# Disable features for testing legacy behavior
+xcrun simctl spawn booted defaults write com.yourcompany.simple-cryptogram ff_new_navigation -bool false
+xcrun simctl spawn booted defaults write com.yourcompany.simple-cryptogram ff_modern_sheets -bool false
+
+# Check current feature flag status in debugger
+po FeatureFlag.allFlags
+```
+
+**Current Status (Phase 1.2 Complete)**:
+- `newNavigation`: ✅ Completed - NavigationStack-based navigation
+- `modernSheets`: ✅ Completed - .sheet() modifier-based presentations  
+- `modernAppSettings`: ⏳ Pending Phase 2
+- `extractedServices`: ⏳ Pending Phase 3
+
 ### Swift Package Dependencies
 - SQLite.swift (0.15.3): Database operations
 
@@ -207,11 +246,17 @@ The app uses SQLite with the following main tables:
   - `PuzzleViewModelIntegrationTests`: End-to-end scenarios
 - **Testing Commands**:
   ```bash
-  # Run all tests
-  xcodebuild test -project "simple cryptogram.xcodeproj" -scheme "simple cryptogram" -destination 'platform=iOS Simulator,name=iPhone 15'
+  # Run all tests (use iPhone 16 simulator)
+  xcodebuild test -project "simple cryptogram.xcodeproj" -scheme "simple cryptogram" -destination 'platform=iOS Simulator,name=iPhone 16'
   
   # Run specific manager tests
   xcodebuild test -project "simple cryptogram.xcodeproj" -scheme "simple cryptogram" -only-testing:"simple cryptogramTests/GameStateManagerTests"
+  
+  # Run performance baseline tests
+  xcodebuild test -project "simple cryptogram.xcodeproj" -scheme "simple cryptogram" -only-testing:"simple cryptogramTests/PerformanceBaselineTests"
+  
+  # Run memory leak detection tests
+  xcodebuild test -project "simple cryptogram.xcodeproj" -scheme "simple cryptogram" -only-testing:"simple cryptogramTests/MemoryLeakDetectionTests"
   ```
 
 ### Common Development Tasks

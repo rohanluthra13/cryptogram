@@ -5,6 +5,7 @@ struct HomeView: View {
     @EnvironmentObject private var appSettings: AppSettings
     @EnvironmentObject private var themeManager: ThemeManager
     @Environment(\.typography) private var typography
+    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     @State private var showSettings = false
     @State private var showStats = false
     @State private var navigateToPuzzle = false
@@ -38,49 +39,11 @@ struct HomeView: View {
                 
                 VStack(spacing: 0) {
                     // Main content
-                    VStack(spacing: 20) {
-                        Spacer()
-                        Spacer()
-                        Spacer() // Additional spacer to push content lower
-                        
-                        // Main buttons positioned in bottom third
-                        if !showLengthSelection {
-                            VStack(spacing: 50) {
-                                playButton
-                                
-                                dailyPuzzleButton
-                            }
-                            .transition(.opacity.combined(with: .scale))
-                        } else {
-                            // Length selection
-                            VStack(spacing: 20) {
-                                randomButton
-                                
-                                Text("or select length")
-                                    .font(typography.footnote)
-                                    .italic()
-                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(0.7))
-                                    .padding(.vertical, 4)
-                                
-                                HStack(spacing: 30) {
-                                    lengthButton("short", difficulty: "easy")
-                                    lengthButton("medium", difficulty: "medium")
-                                    lengthButton("long", difficulty: "hard")
-                                }
-                            }
-                            .transition(.opacity.combined(with: .scale))
-                        }
-                        
-                        Spacer()
-                    }
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        if showLengthSelection {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                showLengthSelection = false
-                            }
-                        }
-                    }
+                    HomeMainContent(
+                        showLengthSelection: $showLengthSelection,
+                        selectedMode: $selectedMode,
+                        isDailyPuzzleCompleted: isDailyPuzzleCompleted
+                    )
                     
                     // Bottom bar
                     ZStack {
@@ -89,7 +52,11 @@ struct HomeView: View {
                             HStack {
                                 // Stats button
                                 Button(action: {
-                                    showStats.toggle()
+                                    if FeatureFlag.modernSheets.isEnabled {
+                                        navigationCoordinator.presentSheet(.statistics)
+                                    } else {
+                                        showStats.toggle()
+                                    }
                                     showBottomBarTemporarily()
                                 }) {
                                     Image(systemName: "chart.bar")
@@ -103,7 +70,11 @@ struct HomeView: View {
                                 
                                 // Settings button
                                 Button(action: {
-                                    showSettings.toggle()
+                                    if FeatureFlag.modernSheets.isEnabled {
+                                        navigationCoordinator.presentSheet(.settings)
+                                    } else {
+                                        showSettings.toggle()
+                                    }
                                     showBottomBarTemporarily()
                                 }) {
                                     Image(systemName: "gearshape")
@@ -132,80 +103,7 @@ struct HomeView: View {
                     .frame(height: PuzzleViewConstants.Spacing.bottomBarHeight)
                 }
                 
-                // Settings overlay
-                if showSettings {
-                    ZStack {
-                        CryptogramTheme.Colors.surface
-                            .opacity(0.98)
-                            .edgesIgnoringSafeArea(.all)
-                            .onTapGesture {
-                                showSettings = false
-                            }
-                            .overlay(
-                                SettingsContentView()
-                                    .padding(.horizontal, PuzzleViewConstants.Overlay.overlayHorizontalPadding)
-                                    .padding(.vertical, 20)
-                                    .background(Color.clear)
-                                    .contentShape(Rectangle())
-                                    .onTapGesture {}  // Empty gesture to prevent tap-through
-                                    .environmentObject(viewModel)
-                                    .environmentObject(themeManager)
-                            )
-                        
-                        // X button positioned at screen level
-                        VStack {
-                            HStack {
-                                Spacer()
-                                Button(action: { showSettings = false }) {
-                                    Image(systemName: "xmark")
-                                        .font(.system(size: 10, weight: .medium))
-                                        .foregroundColor(CryptogramTheme.Colors.text.opacity(0.6))
-                                        .frame(width: 22, height: 22)
-                                }
-                                .padding(.top, 50)
-                                .padding(.trailing, 20)
-                            }
-                            Spacer()
-                        }
-                    }
-                    .zIndex(OverlayZIndex.statsSettings)
-                }
-                
-                // Stats overlay
-                if showStats {
-                    ZStack {
-                        CryptogramTheme.Colors.surface
-                            .opacity(0.98)
-                            .ignoresSafeArea()
-                            .onTapGesture { showStats = false }
-                            .overlay(
-                                VStack(spacing: 0) {
-                                    Spacer(minLength: 0)
-                                    UserStatsView(viewModel: viewModel)
-                                        .padding(.top, 24)
-                                }
-                            )
-                        
-                        // X button positioned at screen level
-                        VStack {
-                            HStack {
-                                Spacer()
-                                Button(action: { showStats = false }) {
-                                    Image(systemName: "xmark")
-                                        .font(.system(size: 10, weight: .medium))
-                                        .foregroundColor(CryptogramTheme.Colors.text.opacity(0.6))
-                                        .frame(width: 22, height: 22)
-                                }
-                                .padding(.top, 50)
-                                .padding(.trailing, 20)
-                            }
-                            Spacer()
-                        }
-                    }
-                    .transition(.opacity)
-                    .animation(.easeInOut(duration: PuzzleViewConstants.Animation.overlayDuration), value: showStats)
-                    .zIndex(OverlayZIndex.statsSettings)
-                }
+                // Legacy overlays are extracted to a separate component
                 
                 // Floating info button (top-right corner) - only show when no overlays are active
                 if !showInfoOverlay && !showSettings && !showStats && !showCalendar {
@@ -213,8 +111,12 @@ struct HomeView: View {
                         HStack {
                             Spacer()
                             Button(action: {
-                                withAnimation {
-                                    showInfoOverlay.toggle()
+                                if FeatureFlag.modernSheets.isEnabled {
+                                    navigationCoordinator.presentSheet(.info)
+                                } else {
+                                    withAnimation {
+                                        showInfoOverlay.toggle()
+                                    }
                                 }
                             }) {
                                 Image(systemName: "questionmark")
@@ -234,95 +136,19 @@ struct HomeView: View {
                     .zIndex(OverlayZIndex.floatingInfo)
                 }
                 
-                // Info overlay
-                if showInfoOverlay {
-                    ZStack(alignment: .top) {
-                        // Background layer that dismisses overlay on tap
-                        CryptogramTheme.Colors.background
-                            .ignoresSafeArea()
-                            .opacity(PuzzleViewConstants.Overlay.backgroundOpacity)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                withAnimation {
-                                    showInfoOverlay = false
-                                }
-                            }
-                        // Foreground overlay content - interactive
-                        VStack {
-                            Spacer(minLength: PuzzleViewConstants.Overlay.infoOverlayTopSpacing)
-                            ScrollView {
-                                InfoOverlayView()
-                            }
-                            .padding(.horizontal, PuzzleViewConstants.Overlay.overlayHorizontalPadding)
-                            Spacer()
-                        }
-                        
-                        // X button positioned at screen level
-                        VStack {
-                            HStack {
-                                Spacer()
-                                Button(action: { showInfoOverlay = false }) {
-                                    Image(systemName: "xmark")
-                                        .font(.system(size: 10, weight: .medium))
-                                        .foregroundColor(CryptogramTheme.Colors.text.opacity(0.6))
-                                        .frame(width: 22, height: 22)
-                                }
-                                .padding(.top, 50)
-                                .padding(.trailing, 20)
-                            }
-                            Spacer()
-                        }
-                    }
-                    .transition(.opacity)
-                    .animation(.easeInOut(duration: PuzzleViewConstants.Animation.overlayDuration), value: showInfoOverlay)
-                    .zIndex(OverlayZIndex.info)
-                }
-                
-                // Calendar overlay
-                if showCalendar {
-                    ZStack {
-                        CryptogramTheme.Colors.surface
-                            .opacity(0.98)
-                            .ignoresSafeArea()
-                            .onTapGesture { showCalendar = false }
-                            .overlay(
-                                ContinuousCalendarView(
-                                    showCalendar: $showCalendar,
-                                    onSelectDate: { date in
-                                        viewModel.loadDailyPuzzle(for: date)
-                                        puzzleOpenedFromCalendar = true
-                                        showPuzzle = true
-                                    }
-                                )
-                                .environmentObject(viewModel)
-                                .environmentObject(appSettings)
-                            )
-                        
-                        // X button positioned at screen level
-                        VStack {
-                            HStack {
-                                Spacer()
-                                Button(action: { showCalendar = false }) {
-                                    Image(systemName: "xmark")
-                                        .font(.system(size: 10, weight: .medium))
-                                        .foregroundColor(CryptogramTheme.Colors.text.opacity(0.6))
-                                        .frame(width: 22, height: 22)
-                                }
-                                .padding(.top, 50)
-                                .padding(.trailing, 20)
-                            }
-                            Spacer()
-                        }
-                    }
-                    .transition(.opacity)
-                    .animation(.easeInOut(duration: PuzzleViewConstants.Animation.overlayDuration), value: showCalendar)
-                    .zIndex(OverlayZIndex.statsSettings)
-                }
+                // Legacy overlays
+                HomeLegacyOverlays(
+                    showSettings: $showSettings,
+                    showStats: $showStats,
+                    showCalendar: $showCalendar,
+                    showInfoOverlay: $showInfoOverlay,
+                    puzzleOpenedFromCalendar: $puzzleOpenedFromCalendar
+                )
             }
             // Remove navigation destination - we'll use overlay instead
             .overlay(
                 Group {
-                    if showPuzzle {
+                    if !FeatureFlag.newNavigation.isEnabled && showPuzzle {
                         PuzzleView(showPuzzle: $showPuzzle)
                             .transition(.move(edge: .trailing))
                             .offset(x: puzzleOffset)
@@ -368,105 +194,18 @@ struct HomeView: View {
                     showCalendar = false
                 }
             }
-        }
-    }
-    
-    private var playButton: some View {
-        Button(action: {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                showLengthSelection = true
-            }
-        }) {
-            Text("play")
-                .font(typography.body)
-                .foregroundColor(CryptogramTheme.Colors.text)
-                .padding(.vertical, 8)
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-    
-    private var dailyPuzzleButton: some View {
-        VStack(spacing: 36) {
-            Button(action: {
-                selectMode(.daily)
-            }) {
-                HStack(spacing: 8) {
-                    Text("daily puzzle")
-                        .font(typography.body)
-                        .foregroundColor(CryptogramTheme.Colors.text)
-                        .padding(.vertical, 8)
-                    
-                    if isDailyPuzzleCompleted {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(Color(hex: "#01780F").opacity(0.5))
-                    }
-                }
-            }
-            .buttonStyle(PlainButtonStyle())
-            
-            Button(action: {
+            .onReceive(NotificationCenter.default.publisher(for: .showCalendarOverlay)) { _ in
                 showCalendar = true
-            }) {
-                Image(systemName: "calendar")
-                    .font(.system(size: 24))
-                    .foregroundColor(CryptogramTheme.Colors.text.opacity(0.8))
             }
-            .buttonStyle(PlainButtonStyle())
-        }
-    }
-    
-    private var randomButton: some View {
-        Button(action: {
-            appSettings.selectedDifficulties = ["easy", "medium", "hard"]
-            selectMode(.random)
-        }) {
-            HStack(spacing: 4) {
-                Text("just play")
-                    .font(typography.body)
-                    .foregroundColor(CryptogramTheme.Colors.text)
-                Image(systemName: "dice")
-                    .font(typography.caption)
-                    .foregroundColor(CryptogramTheme.Colors.text)
-                    .rotationEffect(.degrees(30))
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToPuzzleFromCalendar)) { _ in
+                showPuzzle = true
             }
-            .padding(.vertical, 8)
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-    
-    private func lengthButton(_ title: String, difficulty: String) -> some View {
-        Button(action: {
-            appSettings.selectedDifficulties = [difficulty]
-            selectMode(.random)
-        }) {
-            Text(title)
-                .font(typography.body)
-                .foregroundColor(CryptogramTheme.Colors.text)
-                .padding(.vertical, 8)
-        }
-        .buttonStyle(PlainButtonStyle())
-    }
-    
-    private func selectMode(_ mode: PuzzleMode) {
-        selectedMode = mode
-        
-        // Update difficulty settings based on mode
-        switch mode {
-        case .random:
-            // Keep current selected difficulties
-            if appSettings.selectedDifficulties.isEmpty {
-                appSettings.selectedDifficulties = ["easy", "medium", "hard"]
+            .onReceive(NotificationCenter.default.publisher(for: .navigateToPuzzle)) { _ in
+                showPuzzle = true
             }
-        case .daily:
-            viewModel.loadDailyPuzzle()
-            showPuzzle = true
-            return
+            // Modern sheet presentations
+            .homeSheetPresentation(puzzleOpenedFromCalendar: $puzzleOpenedFromCalendar)
         }
-        
-        // Load new puzzle and navigate
-        viewModel.loadNewPuzzle()
-        showPuzzle = true
     }
     
     private func showBottomBarTemporarily() {
@@ -490,4 +229,5 @@ struct HomeView: View {
         .environmentObject(PuzzleViewModel())
         .environmentObject(AppSettings())
         .environmentObject(ThemeManager())
+        .environmentObject(NavigationCoordinator())
 }

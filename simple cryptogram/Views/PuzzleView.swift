@@ -6,6 +6,7 @@ struct PuzzleView: View {
     @EnvironmentObject private var themeManager: ThemeManager
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
     @EnvironmentObject private var appSettings: AppSettings
+    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     @StateObject private var uiState = PuzzleViewState()
     @Environment(\.dismiss) private var dismiss
     @Binding var showPuzzle: Bool
@@ -102,15 +103,55 @@ struct PuzzleView: View {
                 uiState.showBottomBarTemporarily()
             }
         }
+        // Modern sheet presentations (when feature flag is enabled)
+        .sheet(item: Binding(
+            get: { FeatureFlag.modernSheets.isEnabled ? navigationCoordinator.activeSheet : nil },
+            set: { _ in navigationCoordinator.dismissSheet() }
+        )) { sheetType in
+            switch sheetType {
+            case .settings:
+                StandardSheet(title: "Settings", dismissAction: {
+                    navigationCoordinator.dismissSheet()
+                }) {
+                    SettingsContentView()
+                        .environmentObject(viewModel)
+                        .environmentObject(themeManager)
+                }
+            case .statistics:
+                StandardSheet(title: "Statistics", dismissAction: {
+                    navigationCoordinator.dismissSheet()
+                }) {
+                    UserStatsView(viewModel: viewModel)
+                }
+            case .info:
+                CompactSheet(title: "About", dismissAction: {
+                    navigationCoordinator.dismissSheet()
+                }, detents: [.medium, .large]) {
+                    ScrollView {
+                        InfoOverlayView()
+                            .padding()
+                    }
+                }
+            case .authorInfo(let author):
+                CompactSheet(title: "Author Info", dismissAction: {
+                    navigationCoordinator.dismissSheet()
+                }, detents: [.medium]) {
+                    AuthorInfoView(author: author)
+                        .padding()
+                }
+            default:
+                EmptyView()
+            }
+        }
     }
     
 }
 
 #Preview {
-    @State var showPuzzle = true
-    return PuzzleView(showPuzzle: .constant(true))
+    PuzzleView(showPuzzle: .constant(true))
         .environmentObject(PuzzleViewModel())
         .environmentObject(ThemeManager())
         .environmentObject(SettingsViewModel())
-        .environmentObject(AppSettings.shared!)
+        .environmentObject(AppSettings())
+        .environmentObject(NavigationCoordinator())
 }

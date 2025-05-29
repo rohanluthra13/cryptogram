@@ -3,6 +3,7 @@ import SwiftUI
 struct BottomBarView: View {
     @ObservedObject var uiState: PuzzleViewState
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     var showPuzzle: Binding<Bool>?
     
     private var shouldShowBar: Bool {
@@ -24,7 +25,11 @@ struct BottomBarView: View {
                     HStack {
                         // Stats button
                         Button(action: {
-                            uiState.toggleStats()
+                            if FeatureFlag.modernSheets.isEnabled {
+                                navigationCoordinator.presentSheet(.statistics)
+                            } else {
+                                uiState.toggleStats()
+                            }
                         }) {
                             Image(systemName: "chart.bar")
                                 .font(.system(size: PuzzleViewConstants.Sizes.statsIconSize))
@@ -38,10 +43,14 @@ struct BottomBarView: View {
                         
                         // Home button (center)
                         Button(action: {
-                            if let showPuzzle = showPuzzle {
-                                showPuzzle.wrappedValue = false
+                            if FeatureFlag.newNavigation.isEnabled {
+                                navigationCoordinator.navigateToHome()
                             } else {
-                                dismiss()
+                                if let showPuzzle = showPuzzle {
+                                    showPuzzle.wrappedValue = false
+                                } else {
+                                    dismiss()
+                                }
                             }
                         }) {
                             Image(systemName: "house")
@@ -56,7 +65,11 @@ struct BottomBarView: View {
                         
                         // Settings button
                         Button(action: {
-                            uiState.toggleSettings()
+                            if FeatureFlag.modernSheets.isEnabled {
+                                navigationCoordinator.presentSheet(.settings)
+                            } else {
+                                uiState.toggleSettings()
+                            }
                         }) {
                             Image(systemName: "gearshape")
                                 .font(.system(size: PuzzleViewConstants.Sizes.settingsIconSize))
@@ -100,4 +113,5 @@ struct BottomBarView: View {
 
 #Preview {
     BottomBarView(uiState: PuzzleViewState())
+        .environmentObject(NavigationCoordinator())
 }

@@ -5,6 +5,7 @@ struct PuzzleCompletionView: View {
     @EnvironmentObject private var themeManager: ThemeManager
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
     @EnvironmentObject private var appSettings: AppSettings
+    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     @Environment(\.typography) private var typography
     @Binding var showCompletionView: Bool
     @State private var showSettings = false
@@ -478,11 +479,15 @@ struct PuzzleCompletionView: View {
     }
     
     func goHome() {
-        // Dismiss immediately without waiting for animation
-        dismiss()
-        // Hide completion view after dismissal starts
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            showCompletionView = false
+        if FeatureFlag.newNavigation.isEnabled {
+            navigationCoordinator.navigateToHome()
+        } else {
+            // Dismiss immediately without waiting for animation
+            dismiss()
+            // Hide completion view after dismissal starts
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                showCompletionView = false
+            }
         }
     }
     
@@ -490,11 +495,15 @@ struct PuzzleCompletionView: View {
         // Set flag to show calendar when we return to home
         appSettings.shouldShowCalendarOnReturn = true
         
-        // Dismiss immediately
-        dismiss()
-        // Hide completion view after dismissal starts
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-            showCompletionView = false
+        if FeatureFlag.newNavigation.isEnabled {
+            navigationCoordinator.navigateToHome()
+        } else {
+            // Dismiss immediately
+            dismiss()
+            // Hide completion view after dismissal starts
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                showCompletionView = false
+            }
         }
     }
 }
@@ -507,6 +516,8 @@ struct PuzzleCompletionView_Previews: PreviewProvider {
             .environmentObject(PuzzleViewModel())
             .environmentObject(ThemeManager())
             .environmentObject(SettingsViewModel())
+            .environmentObject(AppSettings())
+            .environmentObject(NavigationCoordinator())
     }
 }
 #endif

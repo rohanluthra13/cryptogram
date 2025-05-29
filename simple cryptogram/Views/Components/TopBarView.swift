@@ -3,6 +3,7 @@ import SwiftUI
 struct TopBarView: View {
     @EnvironmentObject private var viewModel: PuzzleViewModel
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
+    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     @ObservedObject var uiState: PuzzleViewState
     @Environment(\.dismiss) private var dismiss
     @Environment(\.typography) private var typography
@@ -60,8 +61,12 @@ struct TopBarView: View {
             if shouldShowControls {
                 VStack(alignment: .trailing, spacing: 0) {
                     Button(action: {
-                        withAnimation {
-                            uiState.showInfoOverlay.toggle()
+                        if FeatureFlag.modernSheets.isEnabled {
+                            navigationCoordinator.presentSheet(.info)
+                        } else {
+                            withAnimation {
+                                uiState.showInfoOverlay.toggle()
+                            }
                         }
                     }) {
                         Image(systemName: "questionmark")
@@ -95,4 +100,5 @@ struct TopBarView: View {
     TopBarView(uiState: PuzzleViewState())
         .environmentObject(PuzzleViewModel())
         .environmentObject(SettingsViewModel())
+        .environmentObject(NavigationCoordinator())
 }

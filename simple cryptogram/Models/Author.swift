@@ -1,6 +1,6 @@
 import Foundation
 
-struct Author: Identifiable, Codable {
+struct Author: Identifiable, Codable, Equatable {
     let id: Int
     let name: String
     let fullName: String?
