@@ -191,4 +191,5 @@ extension Notification.Name {
     static let showCalendarOverlay = Notification.Name("showCalendarOverlay")
     static let navigateToPuzzleFromCalendar = Notification.Name("navigateToPuzzleFromCalendar")
     static let navigateToPuzzle = Notification.Name("navigateToPuzzle")
+    static let resetHomeViewState = Notification.Name("resetHomeViewState")
 }

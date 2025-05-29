@@ -193,6 +193,10 @@ struct HomeView: View {
                 if !oldValue && newValue && !puzzleOpenedFromCalendar {
                     showCalendar = false
                 }
+                // When returning from puzzle, reset length selection
+                if oldValue && !newValue {
+                    showLengthSelection = false
+                }
             }
             .onReceive(NotificationCenter.default.publisher(for: .showCalendarOverlay)) { _ in
                 showCalendar = true
@@ -202,6 +206,10 @@ struct HomeView: View {
             }
             .onReceive(NotificationCenter.default.publisher(for: .navigateToPuzzle)) { _ in
                 showPuzzle = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .resetHomeViewState)) { _ in
+                // Reset to initial state when returning from PuzzleView
+                showLengthSelection = false
             }
             // Modern sheet presentations
             .homeSheetPresentation(puzzleOpenedFromCalendar: $puzzleOpenedFromCalendar)
