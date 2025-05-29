@@ -98,14 +98,22 @@ class InputHandler: ObservableObject {
     }
     
     // MARK: - Navigation
+    private func shouldSkipCell(_ cell: CryptogramCell) -> Bool {
+        // Skip if it's a symbol, revealed, pre-filled, or has correct input
+        return cell.isSymbol || 
+               cell.isRevealed || 
+               cell.isPreFilled || 
+               (!cell.userInput.isEmpty && cell.isCorrect)
+    }
+    
     func moveToNextCell() {
         guard let gameState = gameState,
               let currentIndex = gameState.selectedCellIndex else { return }
         
-        // Find the next non-symbol, empty cell
+        // Find the next editable cell
         var nextIndex = currentIndex + 1
         while nextIndex < gameState.cells.count {
-            if !gameState.cells[nextIndex].isSymbol && gameState.cells[nextIndex].userInput.isEmpty {
+            if !shouldSkipCell(gameState.cells[nextIndex]) {
                 gameState.selectCell(at: nextIndex)
                 return
             }
@@ -116,10 +124,10 @@ class InputHandler: ObservableObject {
     func moveToAdjacentCell(direction: Int) {
         guard let gameState = gameState else { return }
         
-        // If no cell is selected, select the first non-symbol cell
+        // If no cell is selected, select the first editable cell
         if gameState.selectedCellIndex == nil {
-            if let firstNonSymbolIndex = gameState.cells.indices.first(where: { !gameState.cells[$0].isSymbol }) {
-                gameState.selectCell(at: firstNonSymbolIndex)
+            if let firstEditableIndex = gameState.cells.indices.first(where: { !shouldSkipCell(gameState.cells[$0]) }) {
+                gameState.selectCell(at: firstEditableIndex)
                 return
             } else {
                 return
@@ -128,18 +136,15 @@ class InputHandler: ObservableObject {
         
         guard let currentIndex = gameState.selectedCellIndex else { return }
         
-        // Calculate the target index
-        let targetIndex = currentIndex + direction
+        // Find the next editable cell in the given direction
+        var targetIndex = currentIndex + direction
         
-        // Check if the target index is valid
-        if targetIndex >= 0 && targetIndex < gameState.cells.count {
-            // Skip symbol cells
-            if !gameState.cells[targetIndex].isSymbol {
+        while targetIndex >= 0 && targetIndex < gameState.cells.count {
+            if !shouldSkipCell(gameState.cells[targetIndex]) {
                 gameState.selectCell(at: targetIndex)
-            } else {
-                // If we hit a symbol cell, continue in the same direction
-                moveToAdjacentCell(direction: direction > 0 ? direction + 1 : direction - 1)
+                return
             }
+            targetIndex += direction
         }
     }
     

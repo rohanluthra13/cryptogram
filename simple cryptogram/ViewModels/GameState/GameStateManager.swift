@@ -121,6 +121,14 @@ class GameStateManager: ObservableObject {
         if !skipAnimationInit {
             applyDifficultyPrefills()
         }
+        
+        // Select the first editable cell by default
+        if let firstEditableIndex = cells.indices.first(where: { index in
+            let cell = cells[index]
+            return !cell.isSymbol && !cell.isRevealed && !cell.isPreFilled
+        }) {
+            selectCell(at: firstEditableIndex)
+        }
     }
     
     func resetPuzzle() {
@@ -137,6 +145,14 @@ class GameStateManager: ObservableObject {
         
         applyDifficultyPrefills()
         updateCompletedLetters()
+        
+        // Select the first editable cell by default
+        if let firstEditableIndex = cells.indices.first(where: { index in
+            let cell = cells[index]
+            return !cell.isSymbol && !cell.isRevealed && !cell.isPreFilled
+        }) {
+            selectCell(at: firstEditableIndex)
+        }
     }
     
     func updateCell(at index: Int, with input: String, isRevealed: Bool = false, isError: Bool = false) {
