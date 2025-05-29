@@ -136,7 +136,40 @@ struct HomeView: View {
                     .zIndex(OverlayZIndex.floatingInfo)
                 }
                 
-                // Legacy overlays
+                // Puzzle view (below overlays)
+                if !FeatureFlag.newNavigation.isEnabled && showPuzzle {
+                    PuzzleView(showPuzzle: $showPuzzle)
+                        .transition(.move(edge: .trailing))
+                        .offset(x: puzzleOffset)
+                        .gesture(
+                            DragGesture()
+                                .onChanged { value in
+                                    // Only allow dragging from left edge
+                                    if value.startLocation.x < 30 && value.translation.width > 0 {
+                                        puzzleOffset = value.translation.width
+                                    }
+                                }
+                                .onEnded { value in
+                                    if value.startLocation.x < 30 && value.translation.width > 100 {
+                                        withAnimation(.easeInOut(duration: 0.3)) {
+                                            showPuzzle = false
+                                            puzzleOffset = 0
+                                        }
+                                        // Reset flag after animation completes
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                            puzzleOpenedFromCalendar = false
+                                        }
+                                    } else {
+                                        withAnimation(.spring()) {
+                                            puzzleOffset = 0
+                                        }
+                                    }
+                                }
+                        )
+                        .zIndex(100) // Below overlays but above main content
+                }
+                
+                // Legacy overlays (on top of puzzle)
                 HomeLegacyOverlays(
                     showSettings: $showSettings,
                     showStats: $showStats,
@@ -145,48 +178,10 @@ struct HomeView: View {
                     puzzleOpenedFromCalendar: $puzzleOpenedFromCalendar
                 )
             }
-            // Remove navigation destination - we'll use overlay instead
-            .overlay(
-                Group {
-                    if !FeatureFlag.newNavigation.isEnabled && showPuzzle {
-                        PuzzleView(showPuzzle: $showPuzzle)
-                            .transition(.move(edge: .trailing))
-                            .offset(x: puzzleOffset)
-                            .gesture(
-                                DragGesture()
-                                    .onChanged { value in
-                                        // Only allow dragging from left edge
-                                        if value.startLocation.x < 30 && value.translation.width > 0 {
-                                            puzzleOffset = value.translation.width
-                                        }
-                                    }
-                                    .onEnded { value in
-                                        if value.startLocation.x < 30 && value.translation.width > 100 {
-                                            withAnimation(.easeInOut(duration: 0.3)) {
-                                                showPuzzle = false
-                                                puzzleOffset = 0
-                                            }
-                                            // Reset flag after animation completes
-                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                                puzzleOpenedFromCalendar = false
-                                            }
-                                        } else {
-                                            withAnimation(.spring()) {
-                                                puzzleOffset = 0
-                                            }
-                                        }
-                                    }
-                            )
-                            .zIndex(100) // Ensure it's above everything
-                    }
-                }
-            )
             .onAppear {
                 showBottomBarTemporarily()
                 // Reset to initial state when returning to HomeView
                 showLengthSelection = false
-                
-                // Calendar return is now handled by keeping calendar visible
             }
             .onChange(of: showPuzzle) { oldValue, newValue in
                 // When showing puzzle not from calendar, hide calendar

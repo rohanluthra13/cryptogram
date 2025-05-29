@@ -171,7 +171,7 @@ struct HomeLegacyOverlays: View {
                                     }
                                 } else {
                                     NotificationCenter.default.post(name: .navigateToPuzzleFromCalendar, object: nil)
-                                    showCalendar = false
+                                    // Don't hide calendar - keep it open in background
                                 }
                             }
                         )
