@@ -58,4 +58,10 @@ class StatisticsManager: ObservableObject {
     func resetAllStatistics() {
         progressManager.clearAllProgress()
     }
+    
+    func getCompletedPuzzleIds(for encodingType: String) -> Set<UUID> {
+        return Set(progressManager.allAttempts()
+            .filter { $0.encodingType == encodingType && $0.completedAt != nil }
+            .map { $0.puzzleID })
+    }
 }

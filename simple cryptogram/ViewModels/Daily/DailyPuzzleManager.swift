@@ -13,7 +13,7 @@ class DailyPuzzleManager: ObservableObject {
     
     // Computed property for encodingType
     private var encodingType: String {
-        return AppSettings.shared?.encodingType ?? "Letters"
+        return AppSettings.shared.encodingType
     }
     
     // MARK: - Initialization

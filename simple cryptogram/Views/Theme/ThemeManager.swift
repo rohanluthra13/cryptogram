@@ -6,9 +6,9 @@ class ThemeManager: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     
     var isDarkMode: Bool {
-        get { AppSettings.shared?.isDarkMode ?? false }
+        get { AppSettings.shared.isDarkMode }
         set { 
-            AppSettings.shared?.isDarkMode = newValue
+            AppSettings.shared.isDarkMode = newValue
             applyTheme()
         }
     }
@@ -18,7 +18,7 @@ class ThemeManager: ObservableObject {
         applyTheme()
         
         // Listen for AppSettings changes
-        AppSettings.shared?.objectWillChange
+        AppSettings.shared.objectWillChange
             .sink { [weak self] _ in
                 self?.objectWillChange.send()
                 self?.applyTheme()
@@ -32,7 +32,7 @@ class ThemeManager: ObservableObject {
     }
     
     func applyTheme() {
-        setSystemAppearance(isDark: AppSettings.shared?.isDarkMode ?? false)
+        setSystemAppearance(isDark: AppSettings.shared.isDarkMode)
     }
     
     private func setSystemAppearance(isDark: Bool) {

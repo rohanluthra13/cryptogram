@@ -11,22 +11,22 @@ class SettingsViewModel: ObservableObject {
     
     // Computed properties that forward to AppSettings
     var selectedNavBarLayout: NavigationBarLayout {
-        get { AppSettings.shared?.navigationBarLayout ?? .centerLayout }
-        set { AppSettings.shared?.navigationBarLayout = newValue }
+        get { AppSettings.shared.navigationBarLayout }
+        set { AppSettings.shared.navigationBarLayout = newValue }
     }
     
     var selectedLengths: [String] {
-        get { AppSettings.shared?.selectedDifficulties ?? ["easy", "medium", "hard"] }
+        get { AppSettings.shared.selectedDifficulties }
         set { 
-            AppSettings.shared?.selectedDifficulties = newValue
+            AppSettings.shared.selectedDifficulties = newValue
             // Post notification when difficulty selection changes
             NotificationCenter.default.post(name: Self.difficultySelectionChangedNotification, object: nil)
         }
     }
     
     var textSize: TextSizeOption {
-        get { AppSettings.shared?.textSize ?? .medium }
-        set { AppSettings.shared?.textSize = newValue }
+        get { AppSettings.shared.textSize }
+        set { AppSettings.shared.textSize = newValue }
     }
 
     // Computed property for the quote length dropdown display text
@@ -112,7 +112,7 @@ class SettingsViewModel: ObservableObject {
 
     init() {
         // Forward AppSettings changes to trigger view updates
-        AppSettings.shared?.objectWillChange
+        AppSettings.shared.objectWillChange
             .sink { [weak self] _ in
                 self?.objectWillChange.send()
             }

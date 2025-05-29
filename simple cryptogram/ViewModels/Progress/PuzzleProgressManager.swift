@@ -1,10 +1,18 @@
 import Foundation
+import Combine
 
 @MainActor
 class PuzzleProgressManager: ObservableObject {
     // MARK: - Properties
     private let progressStore: PuzzleProgressStore
     @Published var currentError: DatabaseError?
+    
+    // Session monitoring
+    private var cancellables = Set<AnyCancellable>()
+    private var gameStateManager: GameStateManager?
+    private var encodingType: String {
+        return AppSettings.shared.encodingType
+    }
     
     // MARK: - Initialization
     init(progressStore: PuzzleProgressStore? = nil) {
@@ -105,5 +113,49 @@ class PuzzleProgressManager: ObservableObject {
         } catch {
             currentError = error as? DatabaseError ?? DatabaseError.connectionFailed
         }
+    }
+    
+    // MARK: - Session Monitoring
+    func startMonitoring(gameState: GameStateManager) {
+        self.gameStateManager = gameState
+        
+        gameState.$session
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] session in
+                self?.handleSessionChange(session)
+            }
+            .store(in: &cancellables)
+    }
+    
+    private func handleSessionChange(_ session: PuzzleSession) {
+        guard let gameState = gameStateManager,
+              let currentPuzzle = gameState.currentPuzzle else { return }
+        
+        if session.isComplete && session.endTime != nil && !session.wasLogged {
+            logPuzzleCompletion(puzzle: currentPuzzle, session: session)
+        } else if session.isFailed && !session.wasLogged {
+            logPuzzleFailure(puzzle: currentPuzzle, session: session)
+        }
+    }
+    
+    private func logPuzzleCompletion(puzzle: Puzzle, session: PuzzleSession) {
+        logCompletion(puzzle: puzzle, session: session, encodingType: encodingType)
+        gameStateManager?.markSessionAsLogged()
+    }
+    
+    private func logPuzzleFailure(puzzle: Puzzle, session: PuzzleSession) {
+        logFailure(puzzle: puzzle, session: session, encodingType: encodingType)
+        gameStateManager?.markSessionAsLogged()
+    }
+}
+
+// MARK: - PuzzleSession Extension
+extension PuzzleSession {
+    var wasLogged: Bool {
+        get { self.userInfo["wasLogged"] as? Bool ?? false }
+    }
+    
+    mutating func setWasLogged(_ value: Bool) {
+        self.userInfo["wasLogged"] = value
     }
 }

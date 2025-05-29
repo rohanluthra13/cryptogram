@@ -25,7 +25,7 @@ struct MemoryLeakDetectionTests {
             weakViewModel = viewModel
             
             // Use the view model
-            viewModel.loadNextPuzzle()
+            viewModel.loadNewPuzzle()
             try await Task.sleep(nanoseconds: 100_000_000) // 0.1s
             
             // Input some letters

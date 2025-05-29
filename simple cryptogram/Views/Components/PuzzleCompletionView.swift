@@ -84,7 +84,7 @@ struct PuzzleCompletionView: View {
         showSummaryLine = true
         showBornLine = true
         showDiedLine = true
-        if let author = viewModel.currentAuthor {
+        if let author = viewModel.authorService.currentAuthor {
             summaryTyped = (author.summary ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             if let birthDate = formattedDate(author.birthDate) {
                 bornTyped = (author.placeOfBirth?.isEmpty == false) ? " \(birthDate) (\(author.placeOfBirth!))" : " \(birthDate)"
@@ -162,7 +162,7 @@ struct PuzzleCompletionView: View {
                                 .opacity(showAttribution ? 1 : 0)
                                 .onTapGesture {
                                     guard let name = viewModel.currentPuzzle?.authorName else { return }
-                                    viewModel.loadAuthorIfNeeded(name: name)
+                                    viewModel.authorService.loadAuthorIfNeeded(name: name)
                                     withAnimation { isAuthorVisible.toggle() }
                                 }
                             
@@ -171,7 +171,7 @@ struct PuzzleCompletionView: View {
                                 Spacer()
                                 Button(action: {
                                     guard let name = viewModel.currentPuzzle?.authorName else { return }
-                                    viewModel.loadAuthorIfNeeded(name: name)
+                                    viewModel.authorService.loadAuthorIfNeeded(name: name)
                                     withAnimation { isAuthorVisible.toggle() }
                                 }) {
                                     Text("i")
@@ -190,7 +190,7 @@ struct PuzzleCompletionView: View {
                         if isAuthorVisible {
                             ScrollView(.vertical, showsIndicators: false) {
                                 VStack(spacing: 0) {
-                                    if let author = viewModel.currentAuthor {
+                                    if let author = viewModel.authorService.currentAuthor {
                                         let summaryText = (author.summary ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
                                         let bornDate = formattedDate(author.birthDate)
                                         let diedDate = formattedDate(author.deathDate)
@@ -379,7 +379,7 @@ struct PuzzleCompletionView: View {
         }
         .onAppear {
             // Reset author summary state on appear
-            viewModel.currentAuthor = nil
+            viewModel.authorService.clearAuthor()
             isAuthorVisible = false
             summaryTyped = ""
             bornTyped = ""

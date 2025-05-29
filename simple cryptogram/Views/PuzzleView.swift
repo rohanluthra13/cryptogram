@@ -14,8 +14,8 @@ struct PuzzleView: View {
     // Create a custom binding for the layout
     private var layoutBinding: Binding<NavigationBarLayout> {
         Binding(
-            get: { UserSettings.navigationBarLayout },
-            set: { UserSettings.navigationBarLayout = $0 }
+            get: { appSettings.navigationBarLayout },
+            set: { appSettings.navigationBarLayout = $0 }
         )
     }
     

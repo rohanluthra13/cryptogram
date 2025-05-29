@@ -16,23 +16,28 @@ class PuzzleViewModel: ObservableObject {
     @Published private(set) var gameState: GameStateManager
     @Published private(set) var progressManager: PuzzleProgressManager
     @Published private(set) var dailyManager: DailyPuzzleManager
+    @Published private(set) var authorService: AuthorService
     
     private let inputHandler: InputHandler
     private let hintManager: HintManager
     private let statisticsManager: StatisticsManager
     private let databaseService: DatabaseService
+    private let puzzleSelectionManager: PuzzleSelectionManager
     
     // Computed property for encodingType
     private var encodingType: String {
-        return AppSettings.shared?.encodingType ?? "Letters"
+        return AppSettings.shared.encodingType
+    }
+    
+    // Computed property for selectedDifficulties
+    private var selectedDifficulties: [String] {
+        return AppSettings.shared.selectedDifficulties
     }
     
     private var cancellables = Set<AnyCancellable>()
     
-    // MARK: - Author Info (keeping in ViewModel for now)
-    @Published var currentAuthor: Author?
+    // MARK: - Loading State
     @Published var isLoadingPuzzle: Bool = false
-    private var lastAuthorName: String?
     
     // MARK: - Error Handling
     @Published var currentError: DatabaseError? {
@@ -74,6 +79,9 @@ class PuzzleViewModel: ObservableObject {
     var isDailyPuzzleCompleted: Bool { dailyManager.checkDailyPuzzleCompleted(puzzle: currentPuzzle) }
     var isTodaysDailyPuzzleCompleted: Bool { dailyManager.isTodaysDailyPuzzleCompleted() }
     var currentDailyPuzzleDate: Date? { dailyManager.currentPuzzleDate }
+    
+    // Author properties (delegated to AuthorService)
+    var currentAuthor: Author? { authorService.currentAuthor }
     
     // Statistics properties
     var completionCountForCurrentPuzzle: Int {
@@ -118,9 +126,18 @@ class PuzzleViewModel: ObservableObject {
         self.hintManager = hintManager
         self.statisticsManager = StatisticsManager(progressManager: progressManager)
         self.dailyManager = DailyPuzzleManager(databaseService: databaseService)
+        self.authorService = AuthorService(databaseService: databaseService)
+        self.puzzleSelectionManager = PuzzleSelectionManager(
+            databaseService: databaseService,
+            progressManager: progressManager,
+            statisticsManager: statisticsManager
+        )
         
         // Setup observers
         setupObservers()
+        
+        // Start progress monitoring
+        progressManager.startMonitoring(gameState: gameState)
         
         // Load initial puzzle
         if let puzzle = initialPuzzle {
@@ -152,12 +169,6 @@ class PuzzleViewModel: ObservableObject {
             }
             .store(in: &cancellables)
         
-        // Observe game state changes
-        gameState.$session
-            .sink { [weak self] session in
-                self?.handleSessionChange(session)
-            }
-            .store(in: &cancellables)
         
         // Observe progress manager errors
         progressManager.$currentError
@@ -186,7 +197,7 @@ class PuzzleViewModel: ObservableObject {
     // MARK: - Public Methods
     func startNewPuzzle(puzzle: Puzzle, skipAnimationInit: Bool = false) {
         gameState.startNewPuzzle(puzzle, skipAnimationInit: skipAnimationInit)
-        loadAuthorIfNeeded(name: puzzle.hint ?? "")
+        authorService.loadAuthorIfNeeded(name: puzzle.hint ?? "")
     }
     
     func selectCell(at index: Int) {
@@ -224,12 +235,16 @@ class PuzzleViewModel: ObservableObject {
     
     func refreshPuzzleWithCurrentSettings() {
         dailyManager.resetDailyPuzzleState()
-        loadNewPuzzleWithExclusions()
+        Task {
+            await loadPuzzleWithExclusions()
+        }
     }
     
     func loadNewPuzzle() {
         dailyManager.resetDailyPuzzleState()
-        loadNewPuzzleWithDifficulty()
+        Task {
+            await loadPuzzleWithDifficulty()
+        }
         handleUserAction()
     }
     
@@ -282,7 +297,7 @@ class PuzzleViewModel: ObservableObject {
                 gameState.startNewPuzzle(puzzle, skipAnimationInit: false)
             }
             
-            loadAuthorIfNeeded(name: puzzle.hint ?? "")
+            authorService.loadAuthorIfNeeded(name: puzzle.hint ?? "")
             isLoadingPuzzle = false
         } catch {
             isLoadingPuzzle = false
@@ -292,30 +307,8 @@ class PuzzleViewModel: ObservableObject {
         }
     }
     
-    func loadAuthorIfNeeded(name: String) {
-        guard name != lastAuthorName else { return }
-        lastAuthorName = name
-        
-        Task { [weak self] in
-            guard let self = self else { return }
-            do {
-                let author = try await self.databaseService.fetchAuthor(byName: name)
-                self.currentAuthor = author
-            } catch {
-                self.currentAuthor = nil
-            }
-        }
-    }
     
     // MARK: - Private Methods
-    private func handleSessionChange(_ session: PuzzleSession) {
-        if session.isComplete && !session.wasLogged {
-            logPuzzleCompletion()
-        } else if session.isFailed && !session.wasLogged {
-            logPuzzleFailure()
-        }
-    }
-    
     private func handleUserAction() {
         if dailyManager.isDailyPuzzle {
             saveDailyPuzzleProgress()
@@ -331,148 +324,43 @@ class PuzzleViewModel: ObservableObject {
         )
     }
     
-    private func logPuzzleCompletion() {
-        guard let puzzle = currentPuzzle else { return }
-        progressManager.logCompletion(
-            puzzle: puzzle,
-            session: gameState.session,
-            encodingType: encodingType
-        )
-        gameState.session.wasLogged = true
-    }
-    
-    private func logPuzzleFailure() {
-        guard let puzzle = currentPuzzle else { return }
-        progressManager.logFailure(
-            puzzle: puzzle,
-            session: gameState.session,
-            encodingType: encodingType
-        )
-        gameState.session.wasLogged = true
-    }
-    
     private func loadInitialPuzzle() {
-        do {
-            if let puzzle = try databaseService.fetchRandomPuzzle(encodingType: encodingType, selectedDifficulties: UserSettings.selectedDifficulties) {
-                gameState.startNewPuzzle(puzzle)
-                loadAuthorIfNeeded(name: puzzle.hint ?? "")
-            } else {
-                useFallbackPuzzle()
-            }
-        } catch {
-            currentError = error as? DatabaseError ?? DatabaseError.connectionFailed
-            useFallbackPuzzle()
+        Task {
+            await loadPuzzleWithDifficulty()
         }
     }
     
-    private func loadNewPuzzleWithExclusions() {
+    private func loadPuzzleWithExclusions() async {
         do {
-            let completedIDs = Set(progressManager.allAttempts()
-                .filter { $0.completedAt != nil }
-                .map { $0.puzzleID })
-            
-            var nextPuzzle: Puzzle?
-            let maxTries = 10
-            var tries = 0
-            
-            repeat {
-                if let candidate = try databaseService.fetchRandomPuzzle(
-                    current: currentPuzzle,
-                    encodingType: encodingType,
-                    selectedDifficulties: UserSettings.selectedDifficulties
-                ) {
-                    if !completedIDs.contains(candidate.id) {
-                        nextPuzzle = candidate
-                        break
-                    }
-                } else {
-                    break
-                }
-                tries += 1
-            } while tries < maxTries
-            
-            if nextPuzzle == nil {
-                nextPuzzle = try databaseService.fetchRandomPuzzle(
-                    encodingType: encodingType,
-                    selectedDifficulties: UserSettings.selectedDifficulties
-                )
-            }
-            
-            if let puzzle = nextPuzzle {
-                gameState.startNewPuzzle(puzzle)
-                loadAuthorIfNeeded(name: puzzle.hint ?? "")
-            }
+            isLoadingPuzzle = true
+            let puzzle = try await puzzleSelectionManager.loadRandomPuzzle(
+                encodingType: encodingType,
+                difficulties: selectedDifficulties,
+                excludeCompleted: true
+            )
+            gameState.startNewPuzzle(puzzle)
+            authorService.loadAuthorIfNeeded(name: puzzle.hint ?? "")
         } catch {
             currentError = error as? DatabaseError ?? DatabaseError.connectionFailed
         }
+        isLoadingPuzzle = false
     }
     
-    private func loadNewPuzzleWithDifficulty() {
-        gameState.completedLetters = []
-        let selectedDifficulties = UserSettings.selectedDifficulties
-        
+    private func loadPuzzleWithDifficulty() async {
         do {
-            let completedIDs = Set(progressManager.allAttempts()
-                .filter { $0.completedAt != nil }
-                .map { $0.puzzleID })
-            
-            var nextPuzzle: Puzzle?
-            let maxTries = 10
-            var tries = 0
-            
-            repeat {
-                if let candidate = try databaseService.fetchRandomPuzzle(
-                    current: currentPuzzle,
-                    encodingType: encodingType,
-                    selectedDifficulties: selectedDifficulties
-                ) {
-                    if !completedIDs.contains(candidate.id) {
-                        nextPuzzle = candidate
-                        break
-                    }
-                } else {
-                    break
-                }
-                tries += 1
-            } while tries < maxTries
-            
-            if nextPuzzle == nil {
-                nextPuzzle = try databaseService.fetchRandomPuzzle(
-                    encodingType: encodingType,
-                    selectedDifficulties: selectedDifficulties
-                )
-            }
-            
-            if let puzzle = nextPuzzle {
-                gameState.startNewPuzzle(puzzle)
-                loadAuthorIfNeeded(name: puzzle.hint ?? "")
-            } else {
-                currentError = DatabaseError.noDataFound
-                useFallbackPuzzle()
-            }
+            isLoadingPuzzle = true
+            let puzzle = try await puzzleSelectionManager.loadRandomPuzzle(
+                encodingType: encodingType,
+                difficulties: selectedDifficulties,
+                excludeCompleted: false
+            )
+            gameState.startNewPuzzle(puzzle)
+            authorService.loadAuthorIfNeeded(name: puzzle.hint ?? "")
         } catch {
             currentError = error as? DatabaseError ?? DatabaseError.connectionFailed
-            useFallbackPuzzle()
         }
-        
-        gameState.updateCompletedLetters()
+        isLoadingPuzzle = false
     }
     
-    private func useFallbackPuzzle() {
-        let fallbackPuzzle = Puzzle(
-            quoteId: 0,
-            encodedText: "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
-            solution: "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
-            hint: "A pangram containing every letter of the alphabet"
-        )
-        gameState.startNewPuzzle(fallbackPuzzle)
-    }
 }
 
-// MARK: - PuzzleSession Extension
-extension PuzzleSession {
-    var wasLogged: Bool {
-        get { self.userInfo["wasLogged"] as? Bool ?? false }
-        set { self.userInfo["wasLogged"] = newValue }
-    }
-}

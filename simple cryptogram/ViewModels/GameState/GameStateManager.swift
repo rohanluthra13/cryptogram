@@ -19,7 +19,7 @@ class GameStateManager: ObservableObject {
     
     // Computed property for encodingType
     private var encodingType: String {
-        return AppSettings.shared?.encodingType ?? "Letters"
+        return AppSettings.shared.encodingType
     }
     
     // MARK: - Computed Properties
@@ -305,6 +305,11 @@ class GameStateManager: ObservableObject {
     
     func clearFailureState() {
         session.clearFailureState()
+        objectWillChange.send()
+    }
+    
+    func markSessionAsLogged() {
+        session.setWasLogged(true)
         objectWillChange.send()
     }
 }
