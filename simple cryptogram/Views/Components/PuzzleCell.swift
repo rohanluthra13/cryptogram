@@ -12,7 +12,7 @@ struct PuzzleCell: View {
     @State private var animateCompletionBorder: Bool = false  // flash border on group completion
     @EnvironmentObject private var viewModel: PuzzleViewModel
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
-    @EnvironmentObject private var appSettings: AppSettings
+    @Environment(AppSettings.self) private var appSettings
     @Environment(\.typography) private var typography
     
     // Combine completion state with toggle

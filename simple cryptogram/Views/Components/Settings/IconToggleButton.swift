@@ -5,11 +5,11 @@ struct IconToggleButton: View {
     let isSelected: Bool
     let action: () -> Void
     let accessibilityLabel: String
+    @State private var hapticTrigger = 0
     
     var body: some View {
         Button(action: {
-            let generator = UIImpactFeedbackGenerator(style: .light)
-            generator.impactOccurred()
+            hapticTrigger += 1
             action()
         }) {
             Image(systemName: iconName)
@@ -20,6 +20,7 @@ struct IconToggleButton: View {
         }
         .buttonStyle(PlainButtonStyle())
         .accessibilityLabel(accessibilityLabel)
+        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.5), trigger: hapticTrigger)
     }
 }
 

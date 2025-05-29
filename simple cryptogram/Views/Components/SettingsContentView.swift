@@ -4,7 +4,7 @@ struct SettingsContentView: View {
     @EnvironmentObject private var puzzleViewModel: PuzzleViewModel
     @EnvironmentObject private var themeManager: ThemeManager
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
-    @EnvironmentObject private var appSettings: AppSettings
+    @Environment(AppSettings.self) private var appSettings
     @Environment(\.typography) private var typography
     
     // State properties for info panels

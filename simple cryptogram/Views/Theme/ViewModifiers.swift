@@ -111,7 +111,7 @@ struct InfoOverlayTextStyle: ViewModifier {
 
 // MARK: - Typography Injection Modifier
 struct TypographyInjection: ViewModifier {
-    @EnvironmentObject private var appSettings: AppSettings
+    @Environment(AppSettings.self) private var appSettings
     
     func body(content: Content) -> some View {
         content

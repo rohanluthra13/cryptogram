@@ -12,7 +12,7 @@ struct HomeSheetPresentation: ViewModifier {
     @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     @EnvironmentObject private var viewModel: PuzzleViewModel
     @EnvironmentObject private var themeManager: ThemeManager
-    @EnvironmentObject private var appSettings: AppSettings
+    @Environment(AppSettings.self) private var appSettings
     @Binding var puzzleOpenedFromCalendar: Bool
     
     func body(content: Content) -> some View {
@@ -61,7 +61,7 @@ struct HomeSheetPresentation: ViewModifier {
                     }
                 )
                 .environmentObject(viewModel)
-                .environmentObject(appSettings)
+                .environment(appSettings)
             }
         case .info:
             CompactSheet(title: "About", dismissAction: {

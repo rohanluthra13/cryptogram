@@ -7,7 +7,7 @@ struct KeyboardView: View {
     var completedLetters: Set<String> // Remove default value to force explicit passing
 
     @EnvironmentObject private var viewModel: PuzzleViewModel
-    @EnvironmentObject private var appSettings: AppSettings
+    @Environment(AppSettings.self) private var appSettings
 
     // New state for showing/hiding remaining letters (session only, defaults to hide)
     @State private var showRemainingLetters = false

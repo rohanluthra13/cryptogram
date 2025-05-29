@@ -2,7 +2,7 @@ import SwiftUI
 
 @main
 struct simple_cryptogramApp: App {
-    @StateObject private var appSettings: AppSettings
+    @State private var appSettings: AppSettings
     @StateObject private var viewModel: PuzzleViewModel
     @StateObject private var themeManager = ThemeManager()
     @StateObject private var settingsViewModel = SettingsViewModel()
@@ -11,7 +11,7 @@ struct simple_cryptogramApp: App {
         // Create AppSettings instance on main thread first
         let settings = AppSettings()
         AppSettings.shared = settings
-        _appSettings = StateObject(wrappedValue: settings)
+        _appSettings = State(wrappedValue: settings)
         
         // Now create ViewModels that depend on AppSettings
         _viewModel = StateObject(wrappedValue: PuzzleViewModel())
@@ -20,7 +20,7 @@ struct simple_cryptogramApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .environmentObject(appSettings)
+                .environment(appSettings)
                 .environmentObject(viewModel)
                 .environmentObject(themeManager)
                 .environmentObject(settingsViewModel)

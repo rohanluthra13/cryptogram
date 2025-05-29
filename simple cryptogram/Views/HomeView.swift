@@ -2,7 +2,7 @@ import SwiftUI
 
 struct HomeView: View {
     @EnvironmentObject private var viewModel: PuzzleViewModel
-    @EnvironmentObject private var appSettings: AppSettings
+    @Environment(AppSettings.self) private var appSettings
     @EnvironmentObject private var themeManager: ThemeManager
     @Environment(\.typography) private var typography
     @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
@@ -227,7 +227,7 @@ struct HomeView: View {
 #Preview {
     HomeView()
         .environmentObject(PuzzleViewModel())
-        .environmentObject(AppSettings())
+        .environment(AppSettings())
         .environmentObject(ThemeManager())
         .environmentObject(NavigationCoordinator())
 }

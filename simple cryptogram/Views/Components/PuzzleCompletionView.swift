@@ -4,7 +4,7 @@ struct PuzzleCompletionView: View {
     @EnvironmentObject private var viewModel: PuzzleViewModel
     @EnvironmentObject private var themeManager: ThemeManager
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
-    @EnvironmentObject private var appSettings: AppSettings
+    @Environment(AppSettings.self) private var appSettings
     @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     @Environment(\.typography) private var typography
     @Binding var showCompletionView: Bool
@@ -516,7 +516,7 @@ struct PuzzleCompletionView_Previews: PreviewProvider {
             .environmentObject(PuzzleViewModel())
             .environmentObject(ThemeManager())
             .environmentObject(SettingsViewModel())
-            .environmentObject(AppSettings())
+            .environment(AppSettings())
             .environmentObject(NavigationCoordinator())
     }
 }

@@ -20,7 +20,7 @@ struct InfoPanel: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, 20)
                     .padding(.vertical, 10)
-                    .transition(.opacity)
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
                     .onAppear {
                         startTypewriterAnimation()
                     }

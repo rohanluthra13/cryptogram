@@ -4,7 +4,6 @@ import Combine
 @MainActor
 class SettingsViewModel: ObservableObject {
     // Direct references to AppSettings properties
-    private var cancellables = Set<AnyCancellable>()
     
     // Notification name for difficulty selection changes
     static let difficultySelectionChangedNotification = Notification.Name("DifficultySelectionChanged")
@@ -111,12 +110,8 @@ class SettingsViewModel: ObservableObject {
     }
 
     init() {
-        // Forward AppSettings changes to trigger view updates
-        AppSettings.shared.objectWillChange
-            .sink { [weak self] _ in
-                self?.objectWillChange.send()
-            }
-            .store(in: &cancellables)
+        // @Observable AppSettings automatically triggers view updates
+        // No manual subscription needed
     }
     
     // Methods for length selection

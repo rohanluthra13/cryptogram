@@ -2,7 +2,7 @@ import SwiftUI
 
 struct CalendarView: View {
     @EnvironmentObject private var viewModel: PuzzleViewModel
-    @EnvironmentObject private var appSettings: AppSettings
+    @Environment(AppSettings.self) private var appSettings
     @StateObject private var dailyPuzzleManager = DailyPuzzleManager()
     @Environment(\.typography) private var typography
     @State private var currentDate: Date
@@ -225,7 +225,7 @@ struct CalendarView: View {
 
 struct DayCell: View {
     @Environment(\.typography) private var typography
-    @EnvironmentObject private var appSettings: AppSettings
+    @Environment(AppSettings.self) private var appSettings
     let date: Date
     let isAvailable: Bool
     let isCompleted: Bool

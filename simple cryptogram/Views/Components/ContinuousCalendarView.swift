@@ -2,7 +2,7 @@ import SwiftUI
 
 struct ContinuousCalendarView: View {
     @EnvironmentObject private var viewModel: PuzzleViewModel
-    @EnvironmentObject private var appSettings: AppSettings
+    @Environment(AppSettings.self) private var appSettings
     @StateObject private var dailyPuzzleManager = DailyPuzzleManager()
     @Environment(\.typography) private var typography
     @State private var currentMonthIndex: Int
@@ -221,7 +221,7 @@ struct ContinuousCalendarView: View {
 
 struct CalendarMonthView: View {
     @Environment(\.typography) private var typography
-    @EnvironmentObject private var appSettings: AppSettings
+    @Environment(AppSettings.self) private var appSettings
     let monthDate: Date
     let monthDays: [Date?]
     let isDateAvailable: (Date) -> Bool

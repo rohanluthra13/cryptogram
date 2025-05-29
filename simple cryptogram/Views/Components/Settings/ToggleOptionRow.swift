@@ -8,6 +8,7 @@ struct ToggleOptionRow<T: Equatable>: View {
     var onInfoButtonTap: (() -> Void)? = nil
     var onSelectionChanged: (() -> Void)? = nil
     @Environment(\.typography) private var typography
+    @State private var hapticTrigger = 0
     
     var body: some View {
         HStack {
@@ -15,8 +16,7 @@ struct ToggleOptionRow<T: Equatable>: View {
             
             // Left option button
             Button(action: {
-                let generator = UIImpactFeedbackGenerator(style: .light)
-                generator.impactOccurred()
+                hapticTrigger += 1
                 selection = leftOption.value
                 onSelectionChanged?()
             }) {
@@ -29,8 +29,7 @@ struct ToggleOptionRow<T: Equatable>: View {
             
             // Toggle arrow
             Button(action: {
-                let generator = UIImpactFeedbackGenerator(style: .light)
-                generator.impactOccurred()
+                hapticTrigger += 1
                 selection = selection == leftOption.value ? rightOption.value : leftOption.value
                 onSelectionChanged?()
             }) {
@@ -43,8 +42,7 @@ struct ToggleOptionRow<T: Equatable>: View {
             
             // Right option button
             Button(action: {
-                let generator = UIImpactFeedbackGenerator(style: .light)
-                generator.impactOccurred()
+                hapticTrigger += 1
                 selection = rightOption.value
                 onSelectionChanged?()
             }) {
@@ -71,6 +69,7 @@ struct ToggleOptionRow<T: Equatable>: View {
             }
         }
         .frame(height: 44) // Fixed height for consistency
+        .sensoryFeedback(.impact(flexibility: .soft, intensity: 0.5), trigger: hapticTrigger)
     }
 }
 

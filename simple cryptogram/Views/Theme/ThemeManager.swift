@@ -3,7 +3,6 @@ import Combine
 
 @MainActor
 class ThemeManager: ObservableObject {
-    private var cancellables = Set<AnyCancellable>()
     
     var isDarkMode: Bool {
         get { AppSettings.shared.isDarkMode }
@@ -16,14 +15,6 @@ class ThemeManager: ObservableObject {
     init() {
         // Set initial appearance on app launch
         applyTheme()
-        
-        // Listen for AppSettings changes
-        AppSettings.shared.objectWillChange
-            .sink { [weak self] _ in
-                self?.objectWillChange.send()
-                self?.applyTheme()
-            }
-            .store(in: &cancellables)
     }
     
     func toggleTheme() {

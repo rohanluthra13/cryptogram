@@ -71,5 +71,5 @@ struct ContentView: View {
     let viewModel = PuzzleViewModel()
     return ContentView()
         .environmentObject(viewModel)
-        .environmentObject(AppSettings())
+        .environment(AppSettings())
 }

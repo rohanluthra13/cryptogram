@@ -12,7 +12,7 @@ struct HomeLegacyOverlays: View {
     @EnvironmentObject private var viewModel: PuzzleViewModel
     @EnvironmentObject private var themeManager: ThemeManager
     @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
-    @EnvironmentObject private var appSettings: AppSettings
+    @Environment(AppSettings.self) private var appSettings
     @Environment(\.typography) private var typography
     
     @Binding var showSettings: Bool
@@ -176,7 +176,7 @@ struct HomeLegacyOverlays: View {
                             }
                         )
                         .environmentObject(viewModel)
-                        .environmentObject(appSettings)
+                        .environment(appSettings)
                     )
                 
                 VStack {

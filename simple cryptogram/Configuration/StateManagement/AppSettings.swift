@@ -7,65 +7,65 @@
 
 import Foundation
 import SwiftUI
-import Combine
+import Observation
 
 /// Central settings manager for the application
 @MainActor
-final class AppSettings: ObservableObject {
+@Observable final class AppSettings {
     // MARK: - Game Settings
-    @Published var encodingType: String = "Letters" {
+    var encodingType: String = "Letters" {
         didSet { persistence.setValue(encodingType, for: "appSettings.encodingType") }
     }
     
-    @Published var selectedDifficulties: [String] = ["easy", "medium", "hard"] {
+    var selectedDifficulties: [String] = ["easy", "medium", "hard"] {
         didSet { persistence.setValue(selectedDifficulties, for: "appSettings.selectedDifficulties") }
     }
     
-    @Published var autoSubmitLetter: Bool = false {
+    var autoSubmitLetter: Bool = false {
         didSet { persistence.setValue(autoSubmitLetter, for: "appSettings.autoSubmitLetter") }
     }
     
     // MARK: - UI Settings
-    @Published var navigationBarLayout: NavigationBarLayout = .centerLayout {
+    var navigationBarLayout: NavigationBarLayout = .centerLayout {
         didSet { persistence.setValue(navigationBarLayout.rawValue, for: "appSettings.navigationBarLayout") }
     }
     
-    @Published var textSize: TextSizeOption = .medium {
+    var textSize: TextSizeOption = .medium {
         didSet { persistence.setValue(textSize.rawValue, for: "appSettings.textSize") }
     }
     
-    @Published var fontFamily: FontOption = .system {
+    var fontFamily: FontOption = .system {
         didSet { persistence.setValue(fontFamily.rawValue, for: "appSettings.fontFamily") }
     }
     
-    @Published var soundFeedbackEnabled: Bool = true {
+    var soundFeedbackEnabled: Bool = true {
         didSet { persistence.setValue(soundFeedbackEnabled, for: "appSettings.soundFeedbackEnabled") }
     }
     
-    @Published var hapticFeedbackEnabled: Bool = true {
+    var hapticFeedbackEnabled: Bool = true {
         didSet { persistence.setValue(hapticFeedbackEnabled, for: "appSettings.hapticFeedbackEnabled") }
     }
     
     // MARK: - Navigation State
-    @Published var shouldShowCalendarOnReturn: Bool = false
+    var shouldShowCalendarOnReturn: Bool = false
     
     // MARK: - Theme Settings
-    @Published var isDarkMode: Bool = false {
+    var isDarkMode: Bool = false {
         didSet { persistence.setValue(isDarkMode, for: "appSettings.isDarkMode") }
     }
     
-    @Published var highContrastMode: Bool = false {
+    var highContrastMode: Bool = false {
         didSet { persistence.setValue(highContrastMode, for: "appSettings.highContrastMode") }
     }
     
     // MARK: - Daily Puzzle State
-    @Published var lastCompletedDailyPuzzleID: Int = 0 {
+    var lastCompletedDailyPuzzleID: Int = 0 {
         didSet { persistence.setValue(lastCompletedDailyPuzzleID, for: "appSettings.lastCompletedDailyPuzzleID") }
     }
     
     // MARK: - Migration Support
     private static let settingsVersion = 1
-    @Published private var migratedVersion: Int = 0 {
+    private var migratedVersion: Int = 0 {
         didSet { persistence.setValue(migratedVersion, for: "appSettings.migratedVersion") }
     }
     

@@ -26,9 +26,9 @@ enum FeatureFlag: String, CaseIterable {
         case .performanceMonitoring:
             return true // Always enable performance monitoring
         case .newNavigation:
-            return false // Navigation refactoring - disabled until tested
+            return true // Navigation refactoring - TESTED AND WORKING
         case .modernSheets:
-            return false // Sheet presentations - disabled until tested
+            return true // Sheet presentations - TESTED AND WORKING
         case .modernAppSettings:
             return false // Settings refactoring - disabled until tested
         case .extractedServices:

@@ -10,7 +10,7 @@ import SwiftUI
 /// The main content area of HomeView containing game selection buttons
 struct HomeMainContent: View {
     @EnvironmentObject private var viewModel: PuzzleViewModel
-    @EnvironmentObject private var appSettings: AppSettings
+    @Environment(AppSettings.self) private var appSettings
     @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     @Environment(\.typography) private var typography
     

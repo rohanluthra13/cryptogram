@@ -5,7 +5,7 @@ struct PuzzleView: View {
     @EnvironmentObject private var viewModel: PuzzleViewModel
     @EnvironmentObject private var themeManager: ThemeManager
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
-    @EnvironmentObject private var appSettings: AppSettings
+    @Environment(AppSettings.self) private var appSettings
     @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     @StateObject private var uiState = PuzzleViewState()
     @Environment(\.dismiss) private var dismiss
@@ -152,6 +152,6 @@ struct PuzzleView: View {
         .environmentObject(PuzzleViewModel())
         .environmentObject(ThemeManager())
         .environmentObject(SettingsViewModel())
-        .environmentObject(AppSettings())
+        .environment(AppSettings())
         .environmentObject(NavigationCoordinator())
 }
