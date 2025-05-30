@@ -61,12 +61,8 @@ struct TopBarView: View {
             if shouldShowControls {
                 VStack(alignment: .trailing, spacing: 0) {
                     Button(action: {
-                        if FeatureFlag.modernSheets.isEnabled {
-                            navigationCoordinator.presentSheet(.info)
-                        } else {
-                            withAnimation {
-                                uiState.showInfoOverlay.toggle()
-                            }
+                        withAnimation {
+                            uiState.showInfoOverlay.toggle()
                         }
                     }) {
                         Image(systemName: "questionmark")

@@ -103,46 +103,6 @@ struct PuzzleView: View {
                 uiState.showBottomBarTemporarily()
             }
         }
-        // Modern sheet presentations (when feature flag is enabled)
-        .sheet(item: Binding(
-            get: { FeatureFlag.modernSheets.isEnabled ? navigationCoordinator.activeSheet : nil },
-            set: { _ in navigationCoordinator.dismissSheet() }
-        )) { sheetType in
-            switch sheetType {
-            case .settings:
-                StandardSheet(title: "Settings", dismissAction: {
-                    navigationCoordinator.dismissSheet()
-                }) {
-                    SettingsContentView()
-                        .environmentObject(viewModel)
-                        .environmentObject(themeManager)
-                }
-            case .statistics:
-                StandardSheet(title: "Statistics", dismissAction: {
-                    navigationCoordinator.dismissSheet()
-                }) {
-                    UserStatsView(viewModel: viewModel)
-                }
-            case .info:
-                CompactSheet(title: "About", dismissAction: {
-                    navigationCoordinator.dismissSheet()
-                }, detents: [.medium, .large]) {
-                    ScrollView {
-                        InfoOverlayView()
-                            .padding()
-                    }
-                }
-            case .authorInfo(let author):
-                CompactSheet(title: "Author Info", dismissAction: {
-                    navigationCoordinator.dismissSheet()
-                }, detents: [.medium]) {
-                    AuthorInfoView(author: author)
-                        .padding()
-                }
-            default:
-                EmptyView()
-            }
-        }
     }
     
 }

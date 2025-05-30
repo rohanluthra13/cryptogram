@@ -22,6 +22,7 @@ struct ContentView: View {
                 NavigationStack {
                     HomeView()
                 }
+                .environmentObject(navigationCoordinator)
             }
         }
         .injectTypography()

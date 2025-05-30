@@ -364,7 +364,7 @@ struct PuzzleCompletionView: View {
                 SettingsContentView()
                     .environmentObject(settingsViewModel)
                     .environmentObject(themeManager)
-                    .transition(.move(edge: .bottom))
+                    .transition(.opacity)
                     .zIndex(200)
             }
             
@@ -372,7 +372,7 @@ struct PuzzleCompletionView: View {
             if uiState.showStatsOverlay {
                 UserStatsView(viewModel: viewModel)
                     .environmentObject(themeManager)
-                    .transition(.move(edge: .bottom))
+                    .transition(.opacity)
                     .zIndex(200)
             }
             

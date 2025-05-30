@@ -32,9 +32,9 @@ struct HomeLegacyOverlays: View {
     
     @ViewBuilder
     private var settingsOverlay: some View {
-        if showSettings && !FeatureFlag.modernSheets.isEnabled {
+        if showSettings {
             ZStack {
-                CryptogramTheme.Colors.surface
+                CryptogramTheme.Colors.background
                     .opacity(0.98)
                     .edgesIgnoringSafeArea(.all)
                     .onTapGesture {
@@ -72,9 +72,9 @@ struct HomeLegacyOverlays: View {
     
     @ViewBuilder
     private var statsOverlay: some View {
-        if showStats && !FeatureFlag.modernSheets.isEnabled {
+        if showStats {
             ZStack {
-                CryptogramTheme.Colors.surface
+                CryptogramTheme.Colors.background
                     .opacity(0.98)
                     .ignoresSafeArea()
                     .onTapGesture { showStats = false }
@@ -109,7 +109,7 @@ struct HomeLegacyOverlays: View {
     
     @ViewBuilder
     private var infoOverlay: some View {
-        if showInfoOverlay && !FeatureFlag.modernSheets.isEnabled {
+        if showInfoOverlay {
             ZStack(alignment: .top) {
                 CryptogramTheme.Colors.background
                     .ignoresSafeArea()
@@ -153,9 +153,9 @@ struct HomeLegacyOverlays: View {
     
     @ViewBuilder
     private var calendarOverlay: some View {
-        if showCalendar && !FeatureFlag.modernSheets.isEnabled {
+        if showCalendar {
             ZStack {
-                CryptogramTheme.Colors.surface
+                CryptogramTheme.Colors.background
                     .opacity(0.98)
                     .ignoresSafeArea()
                     .onTapGesture { showCalendar = false }

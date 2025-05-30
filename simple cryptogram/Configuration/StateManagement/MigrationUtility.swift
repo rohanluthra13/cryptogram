@@ -60,7 +60,8 @@ class MigrationUtility {
         }
         
         // Migrate UserSettings values only if @AppStorage values don't exist
-        migrateUserSettingsIfNeeded(to: settings, defaults: defaults)
+        // Commented out to avoid circular dependency during initialization
+        // migrateUserSettingsIfNeeded(to: settings, defaults: defaults)
     }
     
     /// Migrate values from UserSettings static properties if not already migrated from @AppStorage

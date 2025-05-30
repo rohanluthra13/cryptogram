@@ -99,12 +99,8 @@ struct HomeMainContent: View {
             .buttonStyle(PlainButtonStyle())
             
             Button(action: {
-                if FeatureFlag.modernSheets.isEnabled {
-                    navigationCoordinator.presentSheet(.calendar)
-                } else {
-                    // This will be handled by parent view state
-                    NotificationCenter.default.post(name: .showCalendarOverlay, object: nil)
-                }
+                // This will be handled by parent view state
+                NotificationCenter.default.post(name: .showCalendarOverlay, object: nil)
             }) {
                 Image(systemName: "calendar")
                     .font(.system(size: 24))

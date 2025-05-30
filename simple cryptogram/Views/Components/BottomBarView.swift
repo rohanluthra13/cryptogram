@@ -25,11 +25,7 @@ struct BottomBarView: View {
                     HStack {
                         // Stats button
                         Button(action: {
-                            if FeatureFlag.modernSheets.isEnabled {
-                                navigationCoordinator.presentSheet(.statistics)
-                            } else {
-                                uiState.toggleStats()
-                            }
+                            uiState.toggleStats()
                         }) {
                             Image(systemName: "chart.bar")
                                 .font(.system(size: PuzzleViewConstants.Sizes.statsIconSize))
@@ -65,11 +61,7 @@ struct BottomBarView: View {
                         
                         // Settings button
                         Button(action: {
-                            if FeatureFlag.modernSheets.isEnabled {
-                                navigationCoordinator.presentSheet(.settings)
-                            } else {
-                                uiState.toggleSettings()
-                            }
+                            uiState.toggleSettings()
                         }) {
                             Image(systemName: "gearshape")
                                 .font(.system(size: PuzzleViewConstants.Sizes.settingsIconSize))

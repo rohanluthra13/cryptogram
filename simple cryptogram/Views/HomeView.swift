@@ -52,11 +52,7 @@ struct HomeView: View {
                             HStack {
                                 // Stats button
                                 Button(action: {
-                                    if FeatureFlag.modernSheets.isEnabled {
-                                        navigationCoordinator.presentSheet(.statistics)
-                                    } else {
-                                        showStats.toggle()
-                                    }
+                                    showStats.toggle()
                                     showBottomBarTemporarily()
                                 }) {
                                     Image(systemName: "chart.bar")
@@ -70,11 +66,7 @@ struct HomeView: View {
                                 
                                 // Settings button
                                 Button(action: {
-                                    if FeatureFlag.modernSheets.isEnabled {
-                                        navigationCoordinator.presentSheet(.settings)
-                                    } else {
-                                        showSettings.toggle()
-                                    }
+                                    showSettings.toggle()
                                     showBottomBarTemporarily()
                                 }) {
                                     Image(systemName: "gearshape")
@@ -111,12 +103,8 @@ struct HomeView: View {
                         HStack {
                             Spacer()
                             Button(action: {
-                                if FeatureFlag.modernSheets.isEnabled {
-                                    navigationCoordinator.presentSheet(.info)
-                                } else {
-                                    withAnimation {
-                                        showInfoOverlay.toggle()
-                                    }
+                                withAnimation {
+                                    showInfoOverlay.toggle()
                                 }
                             }) {
                                 Image(systemName: "questionmark")
@@ -206,8 +194,6 @@ struct HomeView: View {
                 // Reset to initial state when returning from PuzzleView
                 showLengthSelection = false
             }
-            // Modern sheet presentations
-            .homeSheetPresentation(puzzleOpenedFromCalendar: $puzzleOpenedFromCalendar)
         }
     }
     

@@ -10,7 +10,6 @@ import Foundation
 /// Feature flag system for gradual rollout of refactored components
 enum FeatureFlag: String, CaseIterable {
     case newNavigation = "new_navigation"
-    case modernSheets = "modern_sheets"
     case modernAppSettings = "modern_app_settings"
     case extractedServices = "extracted_services"
     case performanceMonitoring = "performance_monitoring"
@@ -27,8 +26,6 @@ enum FeatureFlag: String, CaseIterable {
             return true // Always enable performance monitoring
         case .newNavigation:
             return true // Navigation refactoring - TESTED AND WORKING
-        case .modernSheets:
-            return true // Sheet presentations - TESTED AND WORKING
         case .modernAppSettings:
             return false // Settings refactoring - disabled until tested
         case .extractedServices:
