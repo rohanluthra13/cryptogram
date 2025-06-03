@@ -38,7 +38,9 @@ final class NavigationCoordinator: ObservableObject {
         self.showPuzzle = false
         self.currentPuzzle = nil
         self.selectedDifficulty = nil
-        navigationPath.removeLast(navigationPath.count)
+        
+        // Clear the entire navigation path to return to root
+        navigationPath = NavigationPath()
         
         // Post notification to reset HomeView state
         NotificationCenter.default.post(name: .resetHomeViewState, object: nil)

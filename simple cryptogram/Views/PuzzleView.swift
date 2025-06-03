@@ -103,6 +103,14 @@ struct PuzzleView: View {
                 uiState.showBottomBarTemporarily()
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .navigateBackToHome)) { _ in
+            // Handle navigation back to home
+            if FeatureFlag.newNavigation.isEnabled {
+                navigationCoordinator.navigateToHome()
+            } else {
+                dismiss()
+            }
+        }
     }
     
 }

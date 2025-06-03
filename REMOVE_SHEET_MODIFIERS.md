@@ -144,4 +144,4 @@ Button(action: {
 - [x] All overlays tested and working
 - [x] No slide-up animations present
 - [x] Code compiles without errors
-- [ ] All tests pass
+- [x] All tests pass

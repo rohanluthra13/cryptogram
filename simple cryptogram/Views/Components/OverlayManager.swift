@@ -428,6 +428,7 @@ struct OverlayManager: ViewModifier {
             PuzzleCompletionView(showCompletionView: $uiState.showDailyCompletionView, isDailyPuzzle: true)
                 .environmentObject(themeManager)
                 .environmentObject(viewModel)
+                .environmentObject(settingsViewModel)
                 .zIndex(OverlayZIndex.dailyCompletion)
         }
     }

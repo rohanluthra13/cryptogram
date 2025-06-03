@@ -479,15 +479,14 @@ struct PuzzleCompletionView: View {
     }
     
     func goHome() {
-        if FeatureFlag.newNavigation.isEnabled {
-            navigationCoordinator.navigateToHome()
-        } else {
-            // Dismiss immediately without waiting for animation
-            dismiss()
-            // Hide completion view after dismissal starts
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                showCompletionView = false
-            }
+        // Hide the completion view
+        withAnimation(.easeOut(duration: 0.3)) {
+            showCompletionView = false
+        }
+        
+        // Post notification to trigger navigation back to home
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            NotificationCenter.default.post(name: .navigateBackToHome, object: nil)
         }
     }
     
@@ -495,15 +494,14 @@ struct PuzzleCompletionView: View {
         // Set flag to show calendar when we return to home
         appSettings.shouldShowCalendarOnReturn = true
         
-        if FeatureFlag.newNavigation.isEnabled {
-            navigationCoordinator.navigateToHome()
-        } else {
-            // Dismiss immediately
-            dismiss()
-            // Hide completion view after dismissal starts
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                showCompletionView = false
-            }
+        // Hide the completion view
+        withAnimation(.easeOut(duration: 0.3)) {
+            showCompletionView = false
+        }
+        
+        // Post notification to trigger navigation back to home
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            NotificationCenter.default.post(name: .navigateBackToHome, object: nil)
         }
     }
 }

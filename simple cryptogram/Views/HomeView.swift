@@ -170,6 +170,12 @@ struct HomeView: View {
                 showBottomBarTemporarily()
                 // Reset to initial state when returning to HomeView
                 showLengthSelection = false
+                
+                // Check if we should show calendar on return
+                if appSettings.shouldShowCalendarOnReturn {
+                    showCalendar = true
+                    appSettings.shouldShowCalendarOnReturn = false
+                }
             }
             .onChange(of: showPuzzle) { oldValue, newValue in
                 // When showing puzzle not from calendar, hide calendar

@@ -188,4 +188,5 @@ extension Notification.Name {
     static let navigateToPuzzleFromCalendar = Notification.Name("navigateToPuzzleFromCalendar")
     static let navigateToPuzzle = Notification.Name("navigateToPuzzle")
     static let resetHomeViewState = Notification.Name("resetHomeViewState")
+    static let navigateBackToHome = Notification.Name("navigateBackToHome")
 }
