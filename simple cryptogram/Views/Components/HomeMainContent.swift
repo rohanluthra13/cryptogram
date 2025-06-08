@@ -154,39 +154,21 @@ struct HomeMainContent: View {
             }
         case .daily:
             viewModel.loadDailyPuzzle()
-            if FeatureFlag.newNavigation.isEnabled {
-                if let puzzle = viewModel.currentPuzzle {
-                    navigationCoordinator.navigateToPuzzle(puzzle, difficulty: nil)
-                }
-            } else {
-                // Small delay to ensure puzzle is loaded
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    NotificationCenter.default.post(name: .navigateToPuzzle, object: nil)
-                }
+            if let puzzle = viewModel.currentPuzzle {
+                navigationCoordinator.navigateToPuzzle(puzzle)
             }
             return
         }
         
         // Load new puzzle and navigate
         viewModel.loadNewPuzzle()
-        if FeatureFlag.newNavigation.isEnabled {
-            if let puzzle = viewModel.currentPuzzle {
-                navigationCoordinator.navigateToPuzzle(puzzle, difficulty: appSettings.selectedDifficulties.first)
-            }
-        } else {
-            // Small delay to ensure puzzle is loaded
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                NotificationCenter.default.post(name: .navigateToPuzzle, object: nil)
-            }
+        if let puzzle = viewModel.currentPuzzle {
+            navigationCoordinator.navigateToPuzzle(puzzle)
         }
     }
 }
 
-// Notifications for navigation
+// Notifications for overlays (still needed for calendar)
 extension Notification.Name {
     static let showCalendarOverlay = Notification.Name("showCalendarOverlay")
-    static let navigateToPuzzleFromCalendar = Notification.Name("navigateToPuzzleFromCalendar")
-    static let navigateToPuzzle = Notification.Name("navigateToPuzzle")
-    static let resetHomeViewState = Notification.Name("resetHomeViewState")
-    static let navigateBackToHome = Notification.Name("navigateBackToHome")
 }

@@ -6,28 +6,17 @@ struct ContentView: View {
     @StateObject private var navigationCoordinator = NavigationCoordinator()
     
     var body: some View {
-        Group {
-            if FeatureFlag.newNavigation.isEnabled {
-                // New navigation system using NavigationStack
-                NavigationStack(path: $navigationCoordinator.navigationPath) {
-                    HomeView()
-                        .navigationDestination(for: Puzzle.self) { puzzle in
-                            PuzzleView(showPuzzle: .constant(true))
-                                .environmentObject(viewModel)
-                        }
+        NavigationStack(path: $navigationCoordinator.navigationPath) {
+            HomeView()
+                .navigationDestination(for: Puzzle.self) { puzzle in
+                    PuzzleView(showPuzzle: .constant(true))
+                        .environmentObject(viewModel)
                 }
-                .environmentObject(navigationCoordinator)
-            } else {
-                // Legacy navigation system
-                NavigationStack {
-                    HomeView()
-                }
-                .environmentObject(navigationCoordinator)
-            }
         }
+        .environmentObject(navigationCoordinator)
         .injectTypography()
         .onChange(of: viewModel.currentError) { _, newError in
-            if let error = newError {
+            if newError != nil {
                 showError = true
             }
         }

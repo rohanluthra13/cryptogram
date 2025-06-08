@@ -197,7 +197,7 @@ class PuzzleViewModel: ObservableObject {
     // MARK: - Public Methods
     func startNewPuzzle(puzzle: Puzzle, skipAnimationInit: Bool = false) {
         gameState.startNewPuzzle(puzzle, skipAnimationInit: skipAnimationInit)
-        authorService.loadAuthorIfNeeded(name: puzzle.hint ?? "")
+        authorService.loadAuthorIfNeeded(name: puzzle.hint)
     }
     
     func selectCell(at index: Int) {
@@ -297,7 +297,7 @@ class PuzzleViewModel: ObservableObject {
                 gameState.startNewPuzzle(puzzle, skipAnimationInit: false)
             }
             
-            authorService.loadAuthorIfNeeded(name: puzzle.hint ?? "")
+            authorService.loadAuthorIfNeeded(name: puzzle.hint)
             isLoadingPuzzle = false
         } catch {
             isLoadingPuzzle = false
@@ -339,7 +339,7 @@ class PuzzleViewModel: ObservableObject {
                 excludeCompleted: true
             )
             gameState.startNewPuzzle(puzzle)
-            authorService.loadAuthorIfNeeded(name: puzzle.hint ?? "")
+            authorService.loadAuthorIfNeeded(name: puzzle.hint)
         } catch {
             currentError = error as? DatabaseError ?? DatabaseError.connectionFailed
         }
@@ -355,7 +355,7 @@ class PuzzleViewModel: ObservableObject {
                 excludeCompleted: false
             )
             gameState.startNewPuzzle(puzzle)
-            authorService.loadAuthorIfNeeded(name: puzzle.hint ?? "")
+            authorService.loadAuthorIfNeeded(name: puzzle.hint)
         } catch {
             currentError = error as? DatabaseError ?? DatabaseError.connectionFailed
         }

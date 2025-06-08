@@ -19,7 +19,6 @@ struct HomeLegacyOverlays: View {
     @Binding var showStats: Bool
     @Binding var showCalendar: Bool
     @Binding var showInfoOverlay: Bool
-    @Binding var puzzleOpenedFromCalendar: Bool
     
     var body: some View {
         ZStack {
@@ -164,14 +163,8 @@ struct HomeLegacyOverlays: View {
                             showCalendar: $showCalendar,
                             onSelectDate: { date in
                                 viewModel.loadDailyPuzzle(for: date)
-                                puzzleOpenedFromCalendar = true
-                                if FeatureFlag.newNavigation.isEnabled {
-                                    if let puzzle = viewModel.currentPuzzle {
-                                        navigationCoordinator.navigateToPuzzle(puzzle, difficulty: nil)
-                                    }
-                                } else {
-                                    NotificationCenter.default.post(name: .navigateToPuzzleFromCalendar, object: nil)
-                                    // Don't hide calendar - keep it open in background
+                                if let puzzle = viewModel.currentPuzzle {
+                                    navigationCoordinator.navigateToPuzzle(puzzle)
                                 }
                             }
                         )

@@ -55,7 +55,7 @@ struct PuzzleView: View {
                 .zIndex(0)
 
                 // --- Persistent Bottom Banner Above All Overlays ---
-                BottomBarView(uiState: uiState, showPuzzle: $showPuzzle)
+                BottomBarView(uiState: uiState)
             }
         }
         .overlayManager(uiState: uiState)

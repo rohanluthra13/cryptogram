@@ -71,7 +71,7 @@ struct DropdownOptionRow<T: Hashable & Identifiable>: View {
                 }
             }
             .pickerStyle(SegmentedPickerStyle())
-            .onChange(of: selection) { _ in
+            .onChange(of: selection) {
                 onSelectionChanged?()
             }
             .frame(maxWidth: 240)

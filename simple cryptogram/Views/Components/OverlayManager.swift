@@ -475,7 +475,9 @@ struct OverlayManager: ViewModifier {
                     showGameOverButtons = true
                 }
                 // Show bottom bar temporarily (auto-hides after 3s)
-                uiState.showGameOverBottomBarTemporarily()
+                Task { @MainActor in
+                    uiState.showGameOverBottomBarTemporarily()
+                }
             }
         }
     }

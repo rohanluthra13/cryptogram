@@ -31,5 +31,4 @@ struct MultiCheckboxRow: View {
         MultiCheckboxRow(title: "100 +", isSelected: true, action: {})
     }
     .padding()
-    .previewLayout(.sizeThatFits)
 } 

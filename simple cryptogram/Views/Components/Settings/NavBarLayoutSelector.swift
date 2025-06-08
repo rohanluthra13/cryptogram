@@ -64,7 +64,7 @@ struct NavBarLayoutSelector: View {
 }
 
 #Preview {
-    @State var selection = NavigationBarLayout.centerLayout
+    @Previewable @State var selection = NavigationBarLayout.centerLayout
     
     return NavBarLayoutSelector(selection: $selection)
         .padding()

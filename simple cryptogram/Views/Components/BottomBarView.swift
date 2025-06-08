@@ -2,9 +2,7 @@ import SwiftUI
 
 struct BottomBarView: View {
     @ObservedObject var uiState: PuzzleViewState
-    @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
-    var showPuzzle: Binding<Bool>?
     
     private var shouldShowBar: Bool {
         !uiState.showInfoOverlay && 
@@ -39,15 +37,7 @@ struct BottomBarView: View {
                         
                         // Home button (center)
                         Button(action: {
-                            if FeatureFlag.newNavigation.isEnabled {
-                                navigationCoordinator.navigateToHome()
-                            } else {
-                                if let showPuzzle = showPuzzle {
-                                    showPuzzle.wrappedValue = false
-                                } else {
-                                    dismiss()
-                                }
-                            }
+                            navigationCoordinator.navigateToHome()
                         }) {
                             Image(systemName: "house")
                                 .font(.title3)

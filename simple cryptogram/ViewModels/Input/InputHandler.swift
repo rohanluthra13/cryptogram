@@ -77,7 +77,7 @@ class InputHandler: ObservableObject {
             }
             
             // Clear incorrect input after brief delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self, weak gameState] in
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak gameState] in
                 guard let gameState = gameState else { return }
                 gameState.clearCell(at: index)
             }

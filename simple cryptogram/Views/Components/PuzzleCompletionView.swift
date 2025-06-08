@@ -9,7 +9,6 @@ struct PuzzleCompletionView: View {
     @Environment(\.typography) private var typography
     @Binding var showCompletionView: Bool
     @State private var showSettings = false
-    @Environment(\.dismiss) private var dismiss
     
     // Bottom bar state
     @StateObject private var uiState = PuzzleViewState()
@@ -131,7 +130,7 @@ struct PuzzleCompletionView: View {
                 // Main content (quote, author, summary)
                 VStack(spacing: 24) {
                     // Quote
-                    if let quote = viewModel.currentPuzzle?.solution {
+                    if viewModel.currentPuzzle?.solution != nil {
                         Text(displayedQuote.uppercased())
                             .font(typography.body)
                             .multilineTextAlignment(.center)
@@ -204,7 +203,7 @@ struct PuzzleCompletionView: View {
                                                     .frame(maxWidth: .infinity, alignment: .leading)
                                                     .transition(.opacity)
                                             }
-                                            if let bornLine = bornLine, showBornLine {
+                                            if bornLine != nil, showBornLine {
                                                 HStack(alignment: .top, spacing: 0) {
                                                     Text("Born:")
                                                         .bold()
@@ -292,7 +291,7 @@ struct PuzzleCompletionView: View {
                                 .foregroundColor(CryptogramTheme.Colors.text)
                                 .padding(.horizontal, 6)
                                 .frame(maxWidth: .infinity, alignment: .top)
-                                .animation(.easeOut(duration: 0.13))
+                                .animation(.easeOut(duration: 0.13), value: showSummaryLine)
                             Spacer()
                         }
                     }
@@ -463,12 +462,7 @@ struct PuzzleCompletionView: View {
     
     func goHome() {
         // Navigate directly without hiding the view first
-        if FeatureFlag.newNavigation.isEnabled {
-            navigationCoordinator.navigateToHome()
-        } else {
-            // Legacy: dismiss the view
-            dismiss()
-        }
+        navigationCoordinator.navigateToHome()
     }
     
     func goToCalendar() {
@@ -476,12 +470,7 @@ struct PuzzleCompletionView: View {
         appSettings.shouldShowCalendarOnReturn = true
         
         // Navigate directly without hiding the view first
-        if FeatureFlag.newNavigation.isEnabled {
-            navigationCoordinator.navigateToHome()
-        } else {
-            // Legacy: dismiss the view
-            dismiss()
-        }
+        navigationCoordinator.navigateToHome()
     }
 }
 

@@ -8,10 +8,6 @@ struct HomeView: View {
     @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     @State private var showSettings = false
     @State private var showStats = false
-    @State private var navigateToPuzzle = false
-    @State private var showPuzzle = false
-    @State private var puzzleOffset: CGFloat = 0
-    @State private var puzzleOpenedFromCalendar = false
     @State private var selectedMode: PuzzleMode = .random
     @State private var showLengthSelection = false
     @State private var isBottomBarVisible = true
@@ -124,38 +120,6 @@ struct HomeView: View {
                     .zIndex(OverlayZIndex.floatingInfo)
                 }
                 
-                // Puzzle view (below overlays)
-                if !FeatureFlag.newNavigation.isEnabled && showPuzzle {
-                    PuzzleView(showPuzzle: $showPuzzle)
-                        .transition(.move(edge: .trailing))
-                        .offset(x: puzzleOffset)
-                        .gesture(
-                            DragGesture()
-                                .onChanged { value in
-                                    // Only allow dragging from left edge
-                                    if value.startLocation.x < 30 && value.translation.width > 0 {
-                                        puzzleOffset = value.translation.width
-                                    }
-                                }
-                                .onEnded { value in
-                                    if value.startLocation.x < 30 && value.translation.width > 100 {
-                                        withAnimation(.easeInOut(duration: 0.3)) {
-                                            showPuzzle = false
-                                            puzzleOffset = 0
-                                        }
-                                        // Reset flag after animation completes
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                            puzzleOpenedFromCalendar = false
-                                        }
-                                    } else {
-                                        withAnimation(.spring()) {
-                                            puzzleOffset = 0
-                                        }
-                                    }
-                                }
-                        )
-                        .zIndex(100) // Below overlays but above main content
-                }
                 
                 // Legacy overlays (on top of puzzle)
                 HomeLegacyOverlays(
@@ -163,7 +127,6 @@ struct HomeView: View {
                     showStats: $showStats,
                     showCalendar: $showCalendar,
                     showInfoOverlay: $showInfoOverlay,
-                    puzzleOpenedFromCalendar: $puzzleOpenedFromCalendar
                 )
             }
             .onAppear {
@@ -177,28 +140,8 @@ struct HomeView: View {
                     appSettings.shouldShowCalendarOnReturn = false
                 }
             }
-            .onChange(of: showPuzzle) { oldValue, newValue in
-                // When showing puzzle not from calendar, hide calendar
-                if !oldValue && newValue && !puzzleOpenedFromCalendar {
-                    showCalendar = false
-                }
-                // When returning from puzzle, reset length selection
-                if oldValue && !newValue {
-                    showLengthSelection = false
-                }
-            }
             .onReceive(NotificationCenter.default.publisher(for: .showCalendarOverlay)) { _ in
                 showCalendar = true
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .navigateToPuzzleFromCalendar)) { _ in
-                showPuzzle = true
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .navigateToPuzzle)) { _ in
-                showPuzzle = true
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .resetHomeViewState)) { _ in
-                // Reset to initial state when returning from PuzzleView
-                showLengthSelection = false
             }
         }
     }
