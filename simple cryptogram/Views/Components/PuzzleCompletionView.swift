@@ -311,18 +311,9 @@ struct PuzzleCompletionView: View {
                             .opacity(showStats ? 1 : 0)
                             .offset(y: showStats ? 0 : 20)
                     }
-                    // Buttons: For daily puzzles show Home and Calendar, for regular puzzles show Next/Retry
-                    if isDailyPuzzle {
-                        HStack(spacing: 40) {
-                            Button(action: { 
-                                goHome()
-                            }) {
-                                Image(systemName: "house")
-                                    .font(.system(size: 22))
-                                    .foregroundColor(CryptogramTheme.Colors.text)
-                                    .frame(width: 44, height: 44)
-                            }
-                            
+                    // Action buttons: Calendar for daily, Next for regular
+                    HStack(spacing: 40) {
+                        if isDailyPuzzle {
                             Button(action: {
                                 goToCalendar()
                             }) {
@@ -332,9 +323,7 @@ struct PuzzleCompletionView: View {
                                     .frame(width: 44, height: 44)
                             }
                         }
-                        .opacity(showNextButton ? 1 : 0)
-                        .offset(y: showNextButton ? 0 : 15)
-                    } else {
+                        
                         Button(action: { 
                             loadNextPuzzle()
                         }) {
@@ -343,21 +332,20 @@ struct PuzzleCompletionView: View {
                                 .foregroundColor(CryptogramTheme.Colors.text)
                                 .frame(width: 44, height: 44)
                         }
-                        .opacity(showNextButton ? 1 : 0)
-                        .offset(y: showNextButton ? 0 : 15)
                     }
+                    .opacity(showNextButton ? 1 : 0)
+                    .offset(y: showNextButton ? 0 : 15)
                 }
                 .padding(.bottom, 120)
             }
             .frame(maxHeight: .infinity)
             .padding(CryptogramTheme.Layout.gridPadding)
             
-            // Bottom bar with three icons (only for non-daily puzzles)
-            if !isDailyPuzzle {
-                BottomBarView(uiState: uiState)
-                    .opacity(showNextButton ? 1 : 0)
-                    .animation(.easeInOut(duration: 0.5), value: showNextButton)
-            }
+            // Bottom bar with three icons (for all completion views)
+            BottomBarView(uiState: uiState)
+                .environmentObject(navigationCoordinator)
+                .opacity(showNextButton ? 1 : 0)
+                .animation(.easeInOut(duration: 0.5), value: showNextButton)
             
             // Settings overlay
             if uiState.showSettings {
@@ -463,30 +451,23 @@ struct PuzzleCompletionView: View {
     }
     
     func loadNextPuzzle() {
-        // Hide the completion view first
+        // Hide the completion view and immediately load next puzzle
         withAnimation(.easeOut(duration: 0.3)) {
             showCompletionView = false
         }
         
-        // Delay loading the next puzzle until after the completion view is hidden
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            // Reset current session and load next puzzle
-            viewModel.reset()
-            
-            // For "Next Puzzle": get a new puzzle with current settings
-            viewModel.refreshPuzzleWithCurrentSettings()
-        }
+        // Reset and load next puzzle without delay
+        viewModel.reset()
+        viewModel.refreshPuzzleWithCurrentSettings()
     }
     
     func goHome() {
-        // Hide the completion view
-        withAnimation(.easeOut(duration: 0.3)) {
-            showCompletionView = false
-        }
-        
-        // Post notification to trigger navigation back to home
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            NotificationCenter.default.post(name: .navigateBackToHome, object: nil)
+        // Navigate directly without hiding the view first
+        if FeatureFlag.newNavigation.isEnabled {
+            navigationCoordinator.navigateToHome()
+        } else {
+            // Legacy: dismiss the view
+            dismiss()
         }
     }
     
@@ -494,14 +475,12 @@ struct PuzzleCompletionView: View {
         // Set flag to show calendar when we return to home
         appSettings.shouldShowCalendarOnReturn = true
         
-        // Hide the completion view
-        withAnimation(.easeOut(duration: 0.3)) {
-            showCompletionView = false
-        }
-        
-        // Post notification to trigger navigation back to home
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            NotificationCenter.default.post(name: .navigateBackToHome, object: nil)
+        // Navigate directly without hiding the view first
+        if FeatureFlag.newNavigation.isEnabled {
+            navigationCoordinator.navigateToHome()
+        } else {
+            // Legacy: dismiss the view
+            dismiss()
         }
     }
 }

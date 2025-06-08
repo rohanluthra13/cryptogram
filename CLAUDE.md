@@ -127,17 +127,23 @@ Views/
    - Tracks current puzzle date for proper progress saving
    - Supports viewing historical daily puzzles
 
-8. **DatabaseService** (`Services/DatabaseService.swift`): Data layer
+8. **NavigationCoordinator** (`ViewModels/Navigation/NavigationCoordinator.swift`): Modern navigation
+   - Centralized NavigationStack management
+   - Feature flag controlled navigation modes
+   - Puzzle navigation state management
+   - Direct navigation without timing dependencies
+
+9. **DatabaseService** (`Services/DatabaseService.swift`): Data layer
    - SQLite operations with error handling
    - Database migrations via SQL files
    - Throws DatabaseError for failures
 
-9. **LocalPuzzleProgressStore** (`Services/LocalPuzzleProgressStore.swift`): Progress persistence
+10. **LocalPuzzleProgressStore** (`Services/LocalPuzzleProgressStore.swift`): Progress persistence
    - Implements PuzzleProgressStore protocol
    - Safe data handling with no force unwraps
    - Error propagation for corrupted data
 
-10. **ThemeManager** (`Views/Theme/ThemeManager.swift`): Centralized theming
+11. **ThemeManager** (`Views/Theme/ThemeManager.swift`): Centralized theming
     - Dynamic color management for light/dark modes
     - Custom color assets in `Assets.xcassets/Colors/`
     - Typography system with dynamic font selection
@@ -153,8 +159,12 @@ Views/
 - **UserSettings** (`Configuration/UserSettings.swift`): Legacy compatibility layer
   - Now forwards all calls to AppSettings
   - Maintained for backward compatibility during transition
+- **PuzzleViewState** (`ViewModels/PuzzleViewState.swift`): UI state management
+  - Uses `CompletionState` enum for completion view management
+  - Centralized overlay state handling
+  - No more separate boolean flags for different completion types
 - Environment objects for app-wide state sharing
-- NotificationCenter for settings change propagation
+- Direct method calls instead of NotificationCenter for navigation
 
 ### Error Handling
 - **DatabaseError** (`Services/DatabaseError.swift`): User-friendly error messages
@@ -207,11 +217,16 @@ xcrun simctl spawn booted defaults write com.yourcompany.simple-cryptogram ff_mo
 po FeatureFlag.allFlags
 ```
 
-**Current Status (Phase 1.2 Complete)**:
+**Current Status (Post-Phase 1 Refactoring)**:
 - `newNavigation`: ✅ Completed - NavigationStack-based navigation
-- `modernSheets`: ✅ Completed - .sheet() modifier-based presentations  
+- `modernSheets`: ❌ Removed - Committed to overlay-based presentation
 - `modernAppSettings`: ⏳ Pending Phase 2
 - `extractedServices`: ⏳ Pending Phase 3
+
+**Navigation Updates**:
+- ✅ Phase 1.1: NavigationStack implementation complete
+- ✅ Sheet removal: All .sheet() modifiers removed
+- ✅ Phase 1: Completion view navigation fixed with unified UI
 
 ### Swift Package Dependencies
 - SQLite.swift (0.15.3): Database operations
@@ -223,7 +238,7 @@ po FeatureFlag.allFlags
 - Daily puzzle system with calendar-based access
   - Users can access any past daily puzzle
   - Progress is saved separately for each day
-  - Completed daily puzzles show completion view immediately when revisited
+  - Completed daily puzzles show completion view only once per session
 - Comprehensive statistics tracking
 - Author information cards
 - Haptic feedback for user interactions
@@ -287,7 +302,14 @@ The app follows this navigation structure:
 3. **PuzzleView** → **PuzzleCompletionView** (on puzzle completion)
 4. Navigation back to HomeView via:
    - Home button in TopBarView (during gameplay)
-   - Home button in PuzzleCompletionView (after completion)
+   - Home button in BottomBarView within PuzzleCompletionView (after completion)
+   - Direct navigation using NavigationCoordinator (no delays or notifications)
+
+### Completion View Design
+- **Regular Puzzle Completion**: Shows next puzzle button + bottom bar (stats/home/settings)
+- **Daily Puzzle Completion**: Shows calendar and next puzzle buttons + bottom bar
+- Both use consistent bottom bar placement for home navigation
+- No timing dependencies or notification-based navigation
 
 ### Puzzle Length Selection
 - **Short**: Puzzles under 50 characters (maps to "easy" difficulty)

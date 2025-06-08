@@ -25,8 +25,8 @@ struct PuzzleView: View {
             CryptogramTheme.Colors.background
                 .ignoresSafeArea()
             
-            // Only show puzzle content if it's not a completed daily puzzle
-            if !viewModel.isCompletedDailyPuzzle {
+            // Show puzzle content if completion view is not showing or it's not a completed daily puzzle
+            if uiState.completionState == .none && !viewModel.isCompletedDailyPuzzle {
                 // --- Persistent Top Bar (always visible) ---
                 VStack {
                     TopBarView(uiState: uiState)
@@ -74,11 +74,7 @@ struct PuzzleView: View {
                 // Then transition to completion view with a slight delay
                 withAnimation(.easeOut(duration: PuzzleViewConstants.Animation.puzzleSwitchDuration).delay(PuzzleViewConstants.Animation.completionDelay)) {
                     // Show different completion view for daily puzzles
-                    if viewModel.isDailyPuzzle {
-                        uiState.showDailyCompletionView = true
-                    } else {
-                        uiState.showCompletionView = true
-                    }
+                    uiState.completionState = viewModel.isDailyPuzzle ? .daily : .regular
                 }
                 // Daily puzzle completion state is now handled internally by DailyPuzzleManager
             }
@@ -97,19 +93,18 @@ struct PuzzleView: View {
         .onAppear {
             if viewModel.isCompletedDailyPuzzle {
                 // Show completion view immediately for completed daily puzzles
-                uiState.showDailyCompletionView = true
+                // But only if we're not already showing it
+                if uiState.completionState == .none {
+                    uiState.completionState = .daily
+                }
             } else {
                 // Normal puzzle flow
                 uiState.showBottomBarTemporarily()
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: .navigateBackToHome)) { _ in
-            // Handle navigation back to home
-            if FeatureFlag.newNavigation.isEnabled {
-                navigationCoordinator.navigateToHome()
-            } else {
-                dismiss()
-            }
+        .onDisappear {
+            // Clean up completion state when leaving the view
+            uiState.completionState = .none
         }
     }
     

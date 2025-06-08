@@ -15,6 +15,7 @@ struct OverlayManager: ViewModifier {
     @EnvironmentObject private var viewModel: PuzzleViewModel
     @EnvironmentObject private var themeManager: ThemeManager
     @EnvironmentObject private var settingsViewModel: SettingsViewModel
+    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     @Environment(\.typography) private var typography
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var uiState: PuzzleViewState
@@ -90,7 +91,7 @@ struct OverlayManager: ViewModifier {
     // MARK: - Pause Overlay
     @ViewBuilder
     private var pauseOverlay: some View {
-        if viewModel.isPaused && !uiState.showCompletionView && !uiState.showSettings && !uiState.showStatsOverlay {
+        if viewModel.isPaused && uiState.completionState == .none && !uiState.showSettings && !uiState.showStatsOverlay {
             ZStack {
                 Color.black.opacity(0.5)
                     .ignoresSafeArea()
@@ -130,7 +131,7 @@ struct OverlayManager: ViewModifier {
     
     @ViewBuilder
     private var gameOverOverlay: some View {
-        if viewModel.isFailed && !uiState.showCompletionView && !uiState.showSettings && !uiState.showStatsOverlay {
+        if viewModel.isFailed && uiState.completionState == .none && !uiState.showSettings && !uiState.showStatsOverlay {
             ZStack {
                 CryptogramTheme.Colors.background
                     .ignoresSafeArea()
@@ -411,26 +412,35 @@ struct OverlayManager: ViewModifier {
     // MARK: - Completion Overlay
     @ViewBuilder
     private var completionOverlay: some View {
-        if uiState.showCompletionView {
+        switch uiState.completionState {
+        case .regular:
             PuzzleCompletionView(showCompletionView: $uiState.showCompletionView)
                 .environmentObject(themeManager)
                 .environmentObject(viewModel)
+                .environmentObject(navigationCoordinator)
+                .environmentObject(settingsViewModel)
                 .transition(.opacity)
-                .animation(.easeInOut(duration: 0.2), value: uiState.showCompletionView)
+                .animation(.easeInOut(duration: 0.2), value: uiState.completionState)
                 .zIndex(OverlayZIndex.completion)
+        case .daily:
+            PuzzleCompletionView(showCompletionView: $uiState.showDailyCompletionView, isDailyPuzzle: true)
+                .environmentObject(themeManager)
+                .environmentObject(viewModel)
+                .environmentObject(navigationCoordinator)
+                .environmentObject(settingsViewModel)
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.2), value: uiState.completionState)
+                .zIndex(OverlayZIndex.dailyCompletion)
+        case .none:
+            EmptyView()
         }
     }
     
     // MARK: - Daily Completion Overlay
     @ViewBuilder
     private var dailyCompletionOverlay: some View {
-        if uiState.showDailyCompletionView {
-            PuzzleCompletionView(showCompletionView: $uiState.showDailyCompletionView, isDailyPuzzle: true)
-                .environmentObject(themeManager)
-                .environmentObject(viewModel)
-                .environmentObject(settingsViewModel)
-                .zIndex(OverlayZIndex.dailyCompletion)
-        }
+        // This is now handled in completionOverlay
+        EmptyView()
     }
     
     // MARK: - Game Over Animation Methods

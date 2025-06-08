@@ -1,15 +1,32 @@
 import SwiftUI
 import Combine
 
+/// Represents the different completion view states
+enum CompletionState: Equatable {
+    case none
+    case regular
+    case daily
+}
+
 /// Manages UI state for PuzzleView, separating presentation logic from game logic
 @MainActor
 class PuzzleViewState: ObservableObject {
     // MARK: - Overlay States
     @Published var showSettings = false
-    @Published var showCompletionView = false
-    @Published var showDailyCompletionView = false
+    @Published var completionState: CompletionState = .none
     @Published var showStatsOverlay = false
     @Published var showInfoOverlay = false
+    
+    // Legacy completion view properties (for backward compatibility during transition)
+    var showCompletionView: Bool {
+        get { completionState == .regular }
+        set { completionState = newValue ? .regular : .none }
+    }
+    
+    var showDailyCompletionView: Bool {
+        get { completionState == .daily }
+        set { completionState = newValue ? .daily : .none }
+    }
     
     // MARK: - Animation States
     @Published var isSwitchingPuzzle = false
@@ -28,12 +45,12 @@ class PuzzleViewState: ObservableObject {
     
     /// Whether the main UI controls should be visible (no overlays active)
     var isMainUIVisible: Bool {
-        !showSettings && !showStatsOverlay && !showCompletionView
+        !showSettings && !showStatsOverlay && completionState == .none
     }
     
     /// Whether any modal overlay is showing
     var isAnyOverlayVisible: Bool {
-        showSettings || showStatsOverlay || showCompletionView || showDailyCompletionView || showInfoOverlay
+        showSettings || showStatsOverlay || completionState != .none || showInfoOverlay
     }
     
     // MARK: - Methods
@@ -108,8 +125,7 @@ class PuzzleViewState: ObservableObject {
             showSettings = false
             showStatsOverlay = false
             showInfoOverlay = false
-            showCompletionView = false
-            showDailyCompletionView = false
+            completionState = .none
         }
     }
     
