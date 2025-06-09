@@ -348,6 +348,15 @@ struct PuzzleCompletionView: View {
             // Unified overlays handled by commonOverlays modifier below
             
         }
+        .gesture(
+            DragGesture()
+                .onEnded { value in
+                    // Swipe right to go back (natural back navigation)
+                    if value.translation.width > 100 && abs(value.translation.height) < 100 {
+                        navigationCoordinator.navigateBack()
+                    }
+                }
+        )
         .commonOverlays(
             showSettings: $uiState.showSettings,
             showStats: $uiState.showStatsOverlay,

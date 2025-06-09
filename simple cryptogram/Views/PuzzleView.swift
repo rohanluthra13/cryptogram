@@ -58,6 +58,16 @@ struct PuzzleView: View {
                 BottomBarView(uiState: uiState)
             }
         }
+        .gesture(
+            DragGesture()
+                .onEnded { value in
+                    // Swipe right to go back (natural back navigation)
+                    if value.translation.width > 100 && abs(value.translation.height) < 100 {
+                        navigationCoordinator.navigateBack()
+                    }
+                }
+        )
+        .navigationBarBackButtonHidden(true)
         .overlayManager(uiState: uiState)
         .environmentObject(viewModel)
         .environmentObject(themeManager)

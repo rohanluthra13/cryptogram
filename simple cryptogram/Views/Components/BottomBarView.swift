@@ -37,7 +37,8 @@ struct BottomBarView: View {
                         
                         // Home button (center)
                         Button(action: {
-                            navigationCoordinator.navigateToHome()
+                            // Ensure we always return to home regardless of how we entered the puzzle
+                            navigationCoordinator.navigationPath = NavigationPath()
                         }) {
                             Image(systemName: "house")
                                 .font(.title3)
