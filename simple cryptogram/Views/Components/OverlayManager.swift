@@ -12,7 +12,7 @@ enum OverlayZIndex {
 }
 
 // Unified overlay type enum
-enum OverlayType: Equatable {
+enum OverlayType: Hashable, Equatable {
     case settings
     case stats
     case calendar

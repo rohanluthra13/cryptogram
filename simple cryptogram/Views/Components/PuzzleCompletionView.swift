@@ -215,7 +215,7 @@ struct PuzzleCompletionView: View {
                                                 .frame(maxWidth: .infinity, alignment: .leading)
                                                 .transition(.opacity)
                                             }
-                                            if let diedLine = diedLine, showDiedLine {
+                                            if let _ = diedLine, showDiedLine {
                                                 HStack(alignment: .top, spacing: 0) {
                                                     Text("Died:")
                                                         .bold()

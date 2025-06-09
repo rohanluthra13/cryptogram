@@ -6,6 +6,7 @@ struct simple_cryptogramApp: App {
     @StateObject private var viewModel: PuzzleViewModel
     @StateObject private var themeManager = ThemeManager()
     @StateObject private var settingsViewModel = SettingsViewModel()
+    @StateObject private var deepLinkManager = DeepLinkManager()
     
     init() {
         // Create AppSettings instance on main thread first
@@ -24,7 +25,11 @@ struct simple_cryptogramApp: App {
                 .environmentObject(viewModel)
                 .environmentObject(themeManager)
                 .environmentObject(settingsViewModel)
+                .environmentObject(deepLinkManager)
                 .preferredColorScheme(appSettings.isDarkMode ? .dark : .light)
+                .onOpenURL { url in
+                    deepLinkManager.handle(url: url)
+                }
         }
     }
 }
