@@ -11,6 +11,75 @@ enum OverlayZIndex {
     static let dailyCompletion: Double = 201
 }
 
+// Unified overlay type enum
+enum OverlayType: Equatable {
+    case settings
+    case stats
+    case calendar
+    case info
+    case completion(CompletionState)
+    case pause
+    case gameOver
+    
+    var zIndex: Double {
+        switch self {
+        case .pause, .gameOver:
+            return OverlayZIndex.pauseGameOver
+        case .info:
+            return OverlayZIndex.info
+        case .stats, .settings, .calendar:
+            return OverlayZIndex.statsSettings
+        case .completion(.regular):
+            return OverlayZIndex.completion
+        case .completion(.daily):
+            return OverlayZIndex.dailyCompletion
+        case .completion(.none):
+            return 0
+        }
+    }
+}
+
+// Unified overlay state manager
+class UnifiedOverlayManager: ObservableObject {
+    @Published var activeOverlay: OverlayType?
+    @Published var overlayQueue: [OverlayType] = []
+    
+    func present(_ overlay: OverlayType) {
+        withAnimation(.easeIn(duration: PuzzleViewConstants.Animation.overlayDuration)) {
+            activeOverlay = overlay
+        }
+    }
+    
+    func dismiss(completion: (() -> Void)? = nil) {
+        withAnimation(.easeOut(duration: PuzzleViewConstants.Animation.overlayDuration)) {
+            activeOverlay = nil
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + PuzzleViewConstants.Animation.overlayDuration) {
+            completion?()
+        }
+    }
+    
+    func isPresenting(_ overlay: OverlayType) -> Bool {
+        return activeOverlay == overlay
+    }
+    
+    func isPresentingSettings() -> Bool {
+        return activeOverlay == .settings
+    }
+    
+    func isPresentingStats() -> Bool {
+        return activeOverlay == .stats
+    }
+    
+    func isPresentingCalendar() -> Bool {
+        return activeOverlay == .calendar
+    }
+    
+    func isPresentingInfo() -> Bool {
+        return activeOverlay == .info
+    }
+}
+
 struct OverlayManager: ViewModifier {
     @EnvironmentObject private var viewModel: PuzzleViewModel
     @EnvironmentObject private var themeManager: ThemeManager
@@ -18,6 +87,7 @@ struct OverlayManager: ViewModifier {
     @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     @Environment(\.typography) private var typography
     @Environment(\.dismiss) private var dismiss
+    @Environment(AppSettings.self) private var appSettings
     @ObservedObject var uiState: PuzzleViewState
     @Namespace private var statsOverlayNamespace
     
@@ -32,13 +102,20 @@ struct OverlayManager: ViewModifier {
     
     func body(content: Content) -> some View {
         content
-            .overlay(infoOverlay)
-            .overlay(pauseOverlay)
-            .overlay(gameOverOverlay)
-            .overlay(statsOverlay)
-            .overlay(settingsOverlay)
-            .overlay(completionOverlay)
-            .overlay(dailyCompletionOverlay)
+            .overlay(unifiedOverlayContent)
+    }
+    
+    @ViewBuilder
+    private var unifiedOverlayContent: some View {
+        ZStack {
+            infoOverlay
+            pauseOverlay
+            gameOverOverlay
+            statsOverlay
+            settingsOverlay
+            calendarOverlay
+            completionOverlay
+        }
     }
     
     // MARK: - Info Overlay
@@ -436,11 +513,49 @@ struct OverlayManager: ViewModifier {
         }
     }
     
-    // MARK: - Daily Completion Overlay
+    // MARK: - Calendar Overlay
     @ViewBuilder
-    private var dailyCompletionOverlay: some View {
-        // This is now handled in completionOverlay
-        EmptyView()
+    private var calendarOverlay: some View {
+        if uiState.showCalendar {
+            ZStack {
+                CryptogramTheme.Colors.background
+                    .opacity(0.98)
+                    .ignoresSafeArea()
+                    .onTapGesture { uiState.showCalendar = false }
+                    .overlay(
+                        ContinuousCalendarView(
+                            showCalendar: $uiState.showCalendar,
+                            onSelectDate: { date in
+                                viewModel.loadDailyPuzzle(for: date)
+                                if let puzzle = viewModel.currentPuzzle {
+                                    navigationCoordinator.navigateToPuzzle(puzzle)
+                                }
+                            }
+                        )
+                        .environmentObject(viewModel)
+                        .environment(appSettings)
+                    )
+                
+                // X button positioned at screen level
+                VStack {
+                    HStack {
+                        Spacer()
+                        Button(action: { uiState.showCalendar = false }) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(CryptogramTheme.Colors.text.opacity(0.6))
+                                .frame(width: 22, height: 22)
+                        }
+                        .padding(.top, 50)
+                        .padding(.trailing, 20)
+                    }
+                    Spacer()
+                }
+            }
+            .transition(.opacity)
+            .animation(.easeInOut(duration: PuzzleViewConstants.Animation.overlayDuration), value: uiState.showCalendar)
+            .zIndex(OverlayZIndex.statsSettings)
+        }
     }
     
     // MARK: - Game Over Animation Methods
@@ -530,9 +645,277 @@ struct OverlayManager: ViewModifier {
     }
 }
 
+// Unified overlay modifier that can be used by any view
+struct UnifiedOverlayModifier: ViewModifier {
+    @EnvironmentObject private var viewModel: PuzzleViewModel
+    @EnvironmentObject private var themeManager: ThemeManager
+    @EnvironmentObject private var settingsViewModel: SettingsViewModel
+    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
+    @Environment(\.typography) private var typography
+    @Environment(AppSettings.self) private var appSettings
+    
+    @Binding var showSettings: Bool
+    @Binding var showStats: Bool
+    @Binding var showCalendar: Bool
+    @Binding var showInfoOverlay: Bool
+    
+    // State cleanup configuration
+    var cleanupOnDismiss: Bool = true
+    var customCleanupAction: (() -> Void)? = nil
+    
+    func body(content: Content) -> some View {
+        content
+            .overlay(overlayContent)
+    }
+    
+    // MARK: - Cleanup Methods
+    
+    private func dismissSettings() {
+        withAnimation {
+            showSettings = false
+        }
+        if cleanupOnDismiss {
+            performCleanup()
+        }
+    }
+    
+    private func dismissStats() {
+        withAnimation {
+            showStats = false
+        }
+        if cleanupOnDismiss {
+            performCleanup()
+        }
+    }
+    
+    private func dismissCalendar() {
+        withAnimation {
+            showCalendar = false
+        }
+        if cleanupOnDismiss {
+            performCleanup()
+        }
+    }
+    
+    private func dismissInfoOverlay() {
+        withAnimation {
+            showInfoOverlay = false
+        }
+        if cleanupOnDismiss {
+            performCleanup()
+        }
+    }
+    
+    private func performCleanup() {
+        // General cleanup tasks
+        // Reset any temporary state
+        // Clear any timers or observers if needed
+        
+        // Execute custom cleanup if provided
+        customCleanupAction?()
+    }
+    
+    @ViewBuilder
+    private var overlayContent: some View {
+        ZStack {
+            if showSettings {
+                settingsOverlay
+            }
+            if showStats {
+                statsOverlay
+            }
+            if showCalendar {
+                calendarOverlay
+            }
+            if showInfoOverlay {
+                infoOverlay
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var settingsOverlay: some View {
+        ZStack {
+            CryptogramTheme.Colors.background
+                .opacity(0.98)
+                .edgesIgnoringSafeArea(.all)
+                .onTapGesture {
+                    dismissSettings()
+                }
+                .overlay(
+                    SettingsContentView()
+                        .padding(.horizontal, PuzzleViewConstants.Overlay.overlayHorizontalPadding)
+                        .padding(.vertical, 20)
+                        .background(Color.clear)
+                        .contentShape(Rectangle())
+                        .onTapGesture {}
+                        .environmentObject(viewModel)
+                        .environmentObject(themeManager)
+                        .environmentObject(settingsViewModel)
+                )
+            
+            VStack {
+                HStack {
+                    Spacer()
+                    Button(action: { dismissSettings() }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(CryptogramTheme.Colors.text.opacity(0.6))
+                            .frame(width: 22, height: 22)
+                    }
+                    .padding(.top, 50)
+                    .padding(.trailing, 20)
+                }
+                Spacer()
+            }
+        }
+        .zIndex(OverlayZIndex.statsSettings)
+        .transition(.opacity)
+        .animation(.easeInOut(duration: PuzzleViewConstants.Animation.overlayDuration), value: showSettings)
+    }
+    
+    @ViewBuilder
+    private var statsOverlay: some View {
+        ZStack {
+            CryptogramTheme.Colors.background
+                .opacity(0.98)
+                .ignoresSafeArea()
+                .onTapGesture { dismissStats() }
+                .overlay(
+                    VStack(spacing: 0) {
+                        Spacer(minLength: 0)
+                        UserStatsView(viewModel: viewModel)
+                            .padding(.top, 24)
+                    }
+                )
+            
+            VStack {
+                HStack {
+                    Spacer()
+                    Button(action: { dismissStats() }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(CryptogramTheme.Colors.text.opacity(0.6))
+                            .frame(width: 22, height: 22)
+                    }
+                    .padding(.top, 50)
+                    .padding(.trailing, 20)
+                }
+                Spacer()
+            }
+        }
+        .transition(.opacity)
+        .animation(.easeInOut(duration: PuzzleViewConstants.Animation.overlayDuration), value: showStats)
+        .zIndex(OverlayZIndex.statsSettings)
+    }
+    
+    @ViewBuilder
+    private var calendarOverlay: some View {
+        ZStack {
+            CryptogramTheme.Colors.background
+                .opacity(0.98)
+                .ignoresSafeArea()
+                .onTapGesture { dismissCalendar() }
+                .overlay(
+                    ContinuousCalendarView(
+                        showCalendar: $showCalendar,
+                        onSelectDate: { date in
+                            viewModel.loadDailyPuzzle(for: date)
+                            if let puzzle = viewModel.currentPuzzle {
+                                navigationCoordinator.navigateToPuzzle(puzzle)
+                            }
+                        }
+                    )
+                    .environmentObject(viewModel)
+                    .environment(appSettings)
+                )
+            
+            VStack {
+                HStack {
+                    Spacer()
+                    Button(action: { dismissCalendar() }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(CryptogramTheme.Colors.text.opacity(0.6))
+                            .frame(width: 22, height: 22)
+                    }
+                    .padding(.top, 50)
+                    .padding(.trailing, 20)
+                }
+                Spacer()
+            }
+        }
+        .transition(.opacity)
+        .animation(.easeInOut(duration: PuzzleViewConstants.Animation.overlayDuration), value: showCalendar)
+        .zIndex(OverlayZIndex.statsSettings)
+    }
+    
+    @ViewBuilder
+    private var infoOverlay: some View {
+        ZStack(alignment: .top) {
+            CryptogramTheme.Colors.background
+                .ignoresSafeArea()
+                .opacity(PuzzleViewConstants.Overlay.backgroundOpacity)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    dismissInfoOverlay()
+                }
+            
+            VStack {
+                Spacer(minLength: PuzzleViewConstants.Overlay.infoOverlayTopSpacing)
+                ScrollView {
+                    InfoOverlayView()
+                }
+                .padding(.horizontal, PuzzleViewConstants.Overlay.overlayHorizontalPadding)
+                Spacer()
+            }
+            
+            VStack {
+                HStack {
+                    Spacer()
+                    Button(action: { dismissInfoOverlay() }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(CryptogramTheme.Colors.text.opacity(0.6))
+                            .frame(width: 22, height: 22)
+                    }
+                    .padding(.top, 50)
+                    .padding(.trailing, 20)
+                }
+                Spacer()
+            }
+        }
+        .transition(.opacity)
+        .animation(.easeInOut(duration: PuzzleViewConstants.Animation.overlayDuration), value: showInfoOverlay)
+        .zIndex(OverlayZIndex.info)
+    }
+}
+
 // Extension to make it easy to apply the overlay manager
 extension View {
     func overlayManager(uiState: PuzzleViewState) -> some View {
         self.modifier(OverlayManager(uiState: uiState))
+    }
+    
+    func unifiedOverlayManager(_ overlayManager: UnifiedOverlayManager) -> some View {
+        self.environmentObject(overlayManager)
+    }
+    
+    func commonOverlays(
+        showSettings: Binding<Bool>,
+        showStats: Binding<Bool>,
+        showCalendar: Binding<Bool>,
+        showInfoOverlay: Binding<Bool>,
+        cleanupOnDismiss: Bool = true,
+        customCleanupAction: (() -> Void)? = nil
+    ) -> some View {
+        self.modifier(UnifiedOverlayModifier(
+            showSettings: showSettings,
+            showStats: showStats,
+            showCalendar: showCalendar,
+            showInfoOverlay: showInfoOverlay,
+            cleanupOnDismiss: cleanupOnDismiss,
+            customCleanupAction: customCleanupAction
+        ))
     }
 }

@@ -16,6 +16,7 @@ class PuzzleViewState: ObservableObject {
     @Published var completionState: CompletionState = .none
     @Published var showStatsOverlay = false
     @Published var showInfoOverlay = false
+    @Published var showCalendar = false
     
     // Legacy completion view properties (for backward compatibility during transition)
     var showCompletionView: Bool {
@@ -45,12 +46,12 @@ class PuzzleViewState: ObservableObject {
     
     /// Whether the main UI controls should be visible (no overlays active)
     var isMainUIVisible: Bool {
-        !showSettings && !showStatsOverlay && completionState == .none
+        !showSettings && !showStatsOverlay && !showCalendar && completionState == .none
     }
     
     /// Whether any modal overlay is showing
     var isAnyOverlayVisible: Bool {
-        showSettings || showStatsOverlay || completionState != .none || showInfoOverlay
+        showSettings || showStatsOverlay || showCalendar || completionState != .none || showInfoOverlay
     }
     
     // MARK: - Methods
@@ -125,6 +126,7 @@ class PuzzleViewState: ObservableObject {
             showSettings = false
             showStatsOverlay = false
             showInfoOverlay = false
+            showCalendar = false
             completionState = .none
         }
     }

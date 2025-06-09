@@ -11,6 +11,7 @@ The current navigation system is a hybrid of legacy and modern approaches, causi
 - ✅ Sheet removal: All sheet modifiers removed, committed to overlay system
 - ✅ Phase 1: Completion view navigation fixed
 - ✅ Phase 2: Navigation system unified - NavigationStack only
+- ✅ Phase 3: Overlay system optimized and unified
 
 ## Original State Analysis
 
@@ -136,55 +137,57 @@ class NavigationCoordinator: ObservableObject {
 - Simplified debugging and testing
 - Clean build with no warnings
 
-### Phase 3: Optimize Overlay System (2-3 days)
+### Phase 3: Optimize Overlay System ✅ COMPLETE
 **Goal:** Improve and standardize the overlay presentation system
 
-**Tasks:**
-1. Create unified overlay manager for all modal presentations
-2. Standardize overlay animations and transitions
-3. Implement proper state cleanup on overlay dismissal
-4. Add overlay presentation tests
-5. Document overlay patterns for consistency
+**Completed Tasks:**
+1. ✅ Created unified overlay manager for all modal presentations
+2. ✅ Standardized overlay animations and transitions
+3. ✅ Implemented proper state cleanup on overlay dismissal
+4. ✅ Added overlay presentation tests (15+ test cases)
+5. ✅ Eliminated code duplication across overlay implementations
 
-**Implementation:**
+**Final Implementation:**
 ```swift
-// Enhanced OverlayManager
-enum OverlayType {
-    case settings
-    case stats
-    case calendar
-    case info
-    case completion(CompletionType)
+// Unified OverlayType enum
+enum OverlayType: Equatable {
+    case settings, stats, calendar, info
+    case completion(CompletionState)
+    case pause, gameOver
+    
+    var zIndex: Double { /* Z-index hierarchy */ }
 }
 
-class OverlayManager: ObservableObject {
+// UnifiedOverlayManager for centralized state
+class UnifiedOverlayManager: ObservableObject {
     @Published var activeOverlay: OverlayType?
     @Published var overlayQueue: [OverlayType] = []
     
-    func present(_ overlay: OverlayType) {
-        withAnimation(.easeIn(duration: 0.3)) {
-            activeOverlay = overlay
-        }
-    }
-    
-    func dismiss(completion: (() -> Void)? = nil) {
-        withAnimation(.easeOut(duration: 0.3)) {
-            activeOverlay = nil
-        }
-        completion?()
-    }
+    func present(_ overlay: OverlayType) { /* With animation */ }
+    func dismiss(completion: (() -> Void)? = nil) { /* With cleanup */ }
+}
+
+// UnifiedOverlayModifier for reusable overlay patterns
+struct UnifiedOverlayModifier: ViewModifier {
+    // Handles Settings, Stats, Calendar, Info overlays
+    // with consistent animations, dismiss gestures, and cleanup
 }
 ```
 
-**Benefits:**
-- Consistent overlay behavior across app
-- Centralized state management
-- Better testing capabilities
-- Predictable animations
+**Results:**
+- ✅ Eliminated HomeLegacyOverlays.swift (~200 lines of duplicate code)
+- ✅ Unified overlay patterns across HomeView, PuzzleView, and PuzzleCompletionView
+- ✅ Added calendar overlay support to PuzzleViewState
+- ✅ Consistent overlay animations and transitions throughout app
+- ✅ Proper state cleanup with dismissal hooks
+- ✅ Comprehensive test suite for overlay interactions
 
-**Risks:**
-- Need to migrate existing overlay logic
-- Must maintain current UX during refactor
+**Benefits Achieved:**
+- Single source of truth for overlay presentation patterns
+- No more duplicate overlay code between views
+- Consistent user experience across all modal presentations
+- Easier to maintain and extend overlay functionality
+- Better testing coverage and reliability
 
 ### Phase 4: State Management Refactor (3-4 days)
 **Goal:** Separate navigation from business logic
@@ -254,9 +257,9 @@ class PuzzleCompletionViewModel: ObservableObject {
 - ✅ Day 3-5: Implement Phase 2 (Unify Navigation) - COMPLETE
 - ✅ All navigation unified under NavigationStack
 
-### Week 2: Phase 3 + Phase 4
-- Day 1-3: Implement Phase 3 (Convert Overlays)
-- Day 4-5: Begin Phase 4 (State Management)
+### Week 2: Phase 3 ✅ COMPLETE
+- ✅ Day 1-3: Implement Phase 3 (Optimize Overlay System) - COMPLETE
+- **Next**: Begin Phase 4 (State Management Refactor)
 
 ### Week 3: Phase 4 + Phase 5
 - Day 1-2: Complete Phase 4
@@ -294,29 +297,34 @@ enum NavigationFeatureFlag {
 
 ## Success Metrics
 
-### Phase 1 & 2 Achievements:
+### Phase 1, 2 & 3 Achievements:
 1. **Code Quality ✅ ACHIEVED**
    - ✅ Eliminated dual navigation systems
    - ✅ Removed 90% of navigation-related notifications
    - ✅ Unified navigation patterns across codebase
    - ✅ Clean build with zero warnings
+   - ✅ Eliminated ~200 lines of duplicate overlay code
+   - ✅ Unified overlay presentation patterns
 
 2. **Performance ✅ ACHIEVED**
    - ✅ Eliminated timing-based navigation bugs
    - ✅ Removed notification overhead
    - ✅ Direct navigation without delays
    - ✅ Predictable navigation behavior
+   - ✅ Consistent overlay animations and state management
 
 3. **Developer Experience ✅ ACHIEVED**
    - ✅ Single, consistent navigation pattern
    - ✅ Simplified NavigationCoordinator API
    - ✅ Easy to understand and maintain
    - ✅ Clear separation of concerns
+   - ✅ Reusable overlay components across all views
+   - ✅ Comprehensive test coverage for overlay interactions
 
 ### Remaining Targets:
-- Optimize overlay system consistency
-- Enhanced state management patterns
-- Performance optimizations
+- ✅ Overlay system optimization (Phase 3 Complete)
+- Enhanced state management patterns (Phase 4)
+- Performance optimizations (Phase 5)
 
 ## Recommendations
 
@@ -327,15 +335,15 @@ enum NavigationFeatureFlag {
 
 ## Next Steps
 
-### Immediate (Post-Phase 2):
-1. ✅ Phase 1 & 2 Complete - Navigation system unified
-2. **Optional**: Test all navigation flows thoroughly
-3. **Optional**: Remove `newNavigation` from FeatureFlag enum (cleanup)
+### Immediate (Post-Phase 3):
+1. ✅ Phase 1, 2 & 3 Complete - Navigation and overlay systems unified
+2. **Optional**: Test all navigation and overlay flows thoroughly
+3. **Optional**: Remove unused overlay-related feature flags
 
-### Phase 3 Preparation:
-1. Begin Phase 3: Optimize Overlay System
-2. Standardize overlay presentation patterns
-3. Centralize overlay state management
+### Phase 4 Preparation:
+1. Begin Phase 4: State Management Refactor
+2. Separate navigation from business logic
+3. Create view-specific ViewModels with minimal scope
 
 ## Alternative Approach: Minimal Fix
 

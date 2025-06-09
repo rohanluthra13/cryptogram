@@ -8,7 +8,6 @@ struct PuzzleCompletionView: View {
     @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     @Environment(\.typography) private var typography
     @Binding var showCompletionView: Bool
-    @State private var showSettings = false
     
     // Bottom bar state
     @StateObject private var uiState = PuzzleViewState()
@@ -346,24 +345,15 @@ struct PuzzleCompletionView: View {
                 .opacity(showNextButton ? 1 : 0)
                 .animation(.easeInOut(duration: 0.5), value: showNextButton)
             
-            // Settings overlay
-            if uiState.showSettings {
-                SettingsContentView()
-                    .environmentObject(settingsViewModel)
-                    .environmentObject(themeManager)
-                    .transition(.opacity)
-                    .zIndex(200)
-            }
-            
-            // Stats overlay
-            if uiState.showStatsOverlay {
-                UserStatsView(viewModel: viewModel)
-                    .environmentObject(themeManager)
-                    .transition(.opacity)
-                    .zIndex(200)
-            }
+            // Unified overlays handled by commonOverlays modifier below
             
         }
+        .commonOverlays(
+            showSettings: $uiState.showSettings,
+            showStats: $uiState.showStatsOverlay,
+            showCalendar: $uiState.showCalendar,
+            showInfoOverlay: $uiState.showInfoOverlay
+        )
         .onAppear {
             // Reset author summary state on appear
             viewModel.authorService.clearAuthor()

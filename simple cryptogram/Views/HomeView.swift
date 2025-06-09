@@ -4,6 +4,7 @@ struct HomeView: View {
     @EnvironmentObject private var viewModel: PuzzleViewModel
     @Environment(AppSettings.self) private var appSettings
     @EnvironmentObject private var themeManager: ThemeManager
+    @EnvironmentObject private var settingsViewModel: SettingsViewModel
     @Environment(\.typography) private var typography
     @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
     @State private var showSettings = false
@@ -121,14 +122,15 @@ struct HomeView: View {
                 }
                 
                 
-                // Legacy overlays (on top of puzzle)
-                HomeLegacyOverlays(
-                    showSettings: $showSettings,
-                    showStats: $showStats,
-                    showCalendar: $showCalendar,
-                    showInfoOverlay: $showInfoOverlay,
-                )
+                // Unified overlays (on top of puzzle)
+                EmptyView()
             }
+            .commonOverlays(
+                showSettings: $showSettings,
+                showStats: $showStats,
+                showCalendar: $showCalendar,
+                showInfoOverlay: $showInfoOverlay
+            )
             .onAppear {
                 showBottomBarTemporarily()
                 // Reset to initial state when returning to HomeView
