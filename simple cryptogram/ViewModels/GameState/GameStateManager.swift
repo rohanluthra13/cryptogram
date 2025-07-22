@@ -217,6 +217,16 @@ class GameStateManager: ObservableObject {
         session.togglePause()
         objectWillChange.send()
     }
+
+    func pause() {
+        guard hasStarted && !isPaused else { return }
+        togglePause()
+    }
+
+    func resume() {
+        guard hasStarted && isPaused else { return }
+        togglePause()
+    }
     
     func startTimer() {
         if session.startTime == nil {

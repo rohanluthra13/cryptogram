@@ -232,6 +232,14 @@ class PuzzleViewModel: ObservableObject {
     func togglePause() {
         gameState.togglePause()
     }
+
+    func pause() {
+        gameState.pause()
+    }
+
+    func resume() {
+        gameState.resume()
+    }
     
     func refreshPuzzleWithCurrentSettings() {
         dailyManager.resetDailyPuzzleState()

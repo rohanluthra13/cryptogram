@@ -14,11 +14,13 @@ struct PuzzleSession {
     
     var completionTime: TimeInterval? {
         guard let start = startTime, let end = endTime else { return nil }
-        return end.timeIntervalSince(start)
+        let rawTime = end.timeIntervalSince(start)
+        return rawTime - totalPausedTime
     }
     
     var isPaused: Bool = false
     private var pauseStartTime: Date?
+    var totalPausedTime: TimeInterval = 0
     
     // Store additional data
     var userInfo: [String: Any] = [:]
@@ -76,11 +78,12 @@ struct PuzzleSession {
         isPaused.toggle()
         
         if isPaused {
+            // Record the time when the game is paused
             pauseStartTime = Date()
-        } else if let pauseStart = pauseStartTime, let start = startTime {
-            // Adjust the start time by the pause duration
+        } else if let pauseStart = pauseStartTime {
+            // Calculate the duration of the pause and add it to the total
             let pauseDuration = Date().timeIntervalSince(pauseStart)
-            startTime = start.addingTimeInterval(pauseDuration)
+            totalPausedTime += pauseDuration
             pauseStartTime = nil
         }
     }

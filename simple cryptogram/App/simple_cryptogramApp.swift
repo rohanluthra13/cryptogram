@@ -3,6 +3,7 @@ import SwiftUI
 @main
 struct simple_cryptogramApp: App {
     @State private var appSettings: AppSettings
+    @Environment(\.scenePhase) private var scenePhase
     @StateObject private var viewModel: PuzzleViewModel
     @StateObject private var themeManager = ThemeManager()
     @StateObject private var settingsViewModel = SettingsViewModel()
@@ -30,6 +31,16 @@ struct simple_cryptogramApp: App {
                 .onOpenURL { url in
                     deepLinkManager.handle(url: url)
                 }
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            switch newPhase {
+            case .active:
+                viewModel.resume()
+            case .inactive, .background:
+                viewModel.pause()
+            @unknown default:
+                break
+            }
         }
     }
 }

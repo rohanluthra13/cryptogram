@@ -47,6 +47,7 @@ struct TopBarView: View {
                         TimerView(
                             startTime: viewModel.startTime ?? Date.distantFuture,
                             endTime: viewModel.endTime,
+                            totalPausedTime: viewModel.session.totalPausedTime,
                             isPaused: viewModel.isPaused || viewModel.isFailed,
                             settingsViewModel: settingsViewModel
                         )

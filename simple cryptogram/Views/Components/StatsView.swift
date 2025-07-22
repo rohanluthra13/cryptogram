@@ -4,6 +4,7 @@ import SwiftUI
 struct TimerView: View {
     let startTime: Date
     let endTime: Date?
+    let totalPausedTime: TimeInterval
     @State private var displayTime: TimeInterval = 0
     var isPaused: Bool = false
     @ObservedObject var settingsViewModel: SettingsViewModel
@@ -30,8 +31,9 @@ struct TimerView: View {
         if !isPaused {
             let referenceTime = endTime ?? Date()
             let timeInterval = referenceTime.timeIntervalSince(startTime)
+            let adjustedTime = timeInterval - totalPausedTime
             // If startTime is in the future (game hasn't started), show 00:00
-            displayTime = timeInterval < 0 ? 0 : timeInterval
+            displayTime = adjustedTime < 0 ? 0 : adjustedTime
         }
     }
     
@@ -147,7 +149,7 @@ struct StatsView: View {
             HStack(alignment: .center) {
                 MistakesView(mistakeCount: mistakeCount)
                 Spacer()
-                TimerView(startTime: startTime, endTime: nil, isPaused: isPaused, settingsViewModel: settingsViewModel)
+                TimerView(startTime: startTime, endTime: nil, totalPausedTime: viewModel.session.totalPausedTime, isPaused: isPaused, settingsViewModel: settingsViewModel)
                 Spacer()
                 Button(action: { /* settings action here */ }) {
                     Image(systemName: "gearshape")
@@ -190,7 +192,7 @@ struct StatsView: View {
         
         Text("Preview of individual components:").padding(.top, 20)
         
-        TimerView(startTime: Date(), endTime: nil, isPaused: false, settingsViewModel: SettingsViewModel())
+        TimerView(startTime: Date(), endTime: nil, totalPausedTime: 0, isPaused: false, settingsViewModel: SettingsViewModel())
             .padding()
         
         MistakesView(mistakeCount: 2)
