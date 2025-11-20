@@ -86,8 +86,8 @@ import Observation
     private var userDefaults = UserDefaults()
     
     // MARK: - Singleton
-    // Note: shared instance is created in App struct to ensure main thread initialization
-    static var shared: AppSettings!
+    // Note: static let ensures thread-safe initialization before first access
+    static let shared = AppSettings()
     
     // MARK: - Dependencies
     private let persistence: PersistenceStrategy
@@ -98,6 +98,11 @@ import Observation
         loadSettings()
         performMigrationIfNeeded()
         saveCurrentAsUserDefaults()
+
+        print("✅ AppSettings initialized")
+        print("   Encoding type: \(encodingType)")
+        print("   Selected difficulties: \(selectedDifficulties)")
+        print("   Font family: \(fontFamily.rawValue)")
     }
     
     // MARK: - Loading

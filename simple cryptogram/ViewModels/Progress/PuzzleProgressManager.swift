@@ -4,8 +4,13 @@ import Combine
 @MainActor
 class PuzzleProgressManager: ObservableObject {
     // MARK: - Properties
-    private let progressStore: PuzzleProgressStore
+    private let progressStore: PuzzleProgressStore?
     @Published var currentError: DatabaseError?
+
+    /// Indicates whether progress tracking is available
+    var isAvailable: Bool {
+        return progressStore != nil
+    }
     
     // Session monitoring
     private var cancellables = Set<AnyCancellable>()
@@ -18,15 +23,24 @@ class PuzzleProgressManager: ObservableObject {
     init(progressStore: PuzzleProgressStore? = nil) {
         if let store = progressStore {
             self.progressStore = store
+            print("✅ Progress tracking enabled (custom store)")
         } else if let db = DatabaseService.shared.db {
             self.progressStore = LocalPuzzleProgressStore(database: db)
+            print("✅ Progress tracking enabled (local store)")
         } else {
-            fatalError("Database connection not initialized for progress tracking!")
+            // Graceful degradation - progress tracking disabled but app continues
+            self.progressStore = nil
+            print("⚠️ Database unavailable - progress tracking disabled")
         }
     }
     
     // MARK: - Logging Methods
     func logCompletion(puzzle: Puzzle, session: PuzzleSession, encodingType: String) {
+        guard let progressStore = progressStore else {
+            print("⚠️ Progress tracking unavailable - completion not logged")
+            return
+        }
+
         let timeTaken = session.completionTime ?? 0
         let attempt = PuzzleAttempt(
             attemptID: UUID(),
@@ -39,7 +53,7 @@ class PuzzleProgressManager: ObservableObject {
             hintCount: session.hintCount,
             mistakeCount: session.mistakeCount
         )
-        
+
         do {
             try progressStore.logAttempt(attempt)
         } catch {
@@ -48,6 +62,11 @@ class PuzzleProgressManager: ObservableObject {
     }
     
     func logFailure(puzzle: Puzzle, session: PuzzleSession, encodingType: String) {
+        guard let progressStore = progressStore else {
+            print("⚠️ Progress tracking unavailable - failure not logged")
+            return
+        }
+
         let attempt = PuzzleAttempt(
             attemptID: UUID(),
             puzzleID: puzzle.id,
@@ -59,7 +78,7 @@ class PuzzleProgressManager: ObservableObject {
             hintCount: session.hintCount,
             mistakeCount: session.mistakeCount
         )
-        
+
         do {
             try progressStore.logAttempt(attempt)
         } catch {
@@ -69,6 +88,11 @@ class PuzzleProgressManager: ObservableObject {
     
     // MARK: - Progress Queries
     func attempts(for puzzleId: UUID, encodingType: String) -> [PuzzleAttempt] {
+        guard let progressStore = progressStore else {
+            print("⚠️ Progress tracking unavailable - no attempts available")
+            return []
+        }
+
         do {
             return try progressStore.attempts(for: puzzleId, encodingType: encodingType)
         } catch {
@@ -90,6 +114,11 @@ class PuzzleProgressManager: ObservableObject {
     }
     
     func bestTime(for puzzleId: UUID, encodingType: String) -> TimeInterval? {
+        guard let progressStore = progressStore else {
+            print("⚠️ Progress tracking unavailable - no best time available")
+            return nil
+        }
+
         do {
             return try progressStore.bestCompletionTime(for: puzzleId, encodingType: encodingType)
         } catch {
@@ -99,6 +128,11 @@ class PuzzleProgressManager: ObservableObject {
     }
     
     func allAttempts() -> [PuzzleAttempt] {
+        guard let progressStore = progressStore else {
+            print("⚠️ Progress tracking unavailable - no attempts available")
+            return []
+        }
+
         do {
             return try progressStore.allAttempts()
         } catch {
@@ -108,6 +142,11 @@ class PuzzleProgressManager: ObservableObject {
     }
     
     func clearAllProgress() {
+        guard let progressStore = progressStore else {
+            print("⚠️ Progress tracking unavailable - no progress to clear")
+            return
+        }
+
         do {
             try progressStore.clearAllProgress()
         } catch {

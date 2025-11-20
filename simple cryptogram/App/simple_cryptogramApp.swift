@@ -10,11 +10,9 @@ struct simple_cryptogramApp: App {
     @StateObject private var deepLinkManager = DeepLinkManager()
     
     init() {
-        // Create AppSettings instance on main thread first
-        let settings = AppSettings()
-        AppSettings.shared = settings
-        _appSettings = State(wrappedValue: settings)
-        
+        // Use the automatically initialized singleton (static let)
+        _appSettings = State(wrappedValue: AppSettings.shared)
+
         // Now create ViewModels that depend on AppSettings
         _viewModel = StateObject(wrappedValue: PuzzleViewModel())
     }

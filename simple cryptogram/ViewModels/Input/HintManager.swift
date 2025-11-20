@@ -4,9 +4,9 @@ import UIKit
 @MainActor
 class HintManager: ObservableObject {
     // MARK: - Dependencies
-    private weak var gameState: GameStateManager?
-    private weak var inputHandler: InputHandler?
-    
+    private let gameState: GameStateManager
+    private let inputHandler: InputHandler
+
     // MARK: - Initialization
     init(gameState: GameStateManager, inputHandler: InputHandler) {
         self.gameState = gameState
@@ -15,8 +15,6 @@ class HintManager: ObservableObject {
     
     // MARK: - Reveal Operations
     func revealCell(at index: Int? = nil) {
-        guard let gameState = gameState else { return }
-        
         // Determine target index
         let targetIndex: Int
         
@@ -65,8 +63,8 @@ class HintManager: ObservableObject {
         }
         
         // Select next unrevealed cell
-        inputHandler?.selectNextUnrevealedCell(after: targetIndex)
-        
+        inputHandler.selectNextUnrevealedCell(after: targetIndex)
+
         gameState.userEngaged()
     }
 }

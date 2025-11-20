@@ -142,6 +142,9 @@ class LocalPuzzleProgressStore: PuzzleProgressStore {
                 guard let attemptUUID = UUID(uuidString: row[attemptID]) ?? generateFallbackUUID(for: row[attemptID]),
                       let puzzleUUID = UUID(uuidString: row[self.puzzleID]) ?? generateFallbackUUID(for: row[self.puzzleID]) else {
                     // Log corrupted data but continue processing other records
+                    print("⚠️ Data Corruption: Failed to parse UUIDs from progress store")
+                    print("   Attempt ID: \(row[attemptID])")
+                    print("   Puzzle ID: \(row[self.puzzleID])")
                     return nil
                 }
                 
@@ -196,6 +199,9 @@ class LocalPuzzleProgressStore: PuzzleProgressStore {
                 guard let attemptUUID = UUID(uuidString: row[attemptID]) ?? generateFallbackUUID(for: row[attemptID]),
                       let puzzleUUID = UUID(uuidString: row[self.puzzleID]) ?? generateFallbackUUID(for: row[self.puzzleID]) else {
                     // Log corrupted data but continue processing other records
+                    print("⚠️ Data Corruption: Failed to parse UUIDs from progress store")
+                    print("   Attempt ID: \(row[attemptID])")
+                    print("   Puzzle ID: \(row[self.puzzleID])")
                     return nil
                 }
                 

@@ -11,11 +11,14 @@ class DatabaseService {
     private init() {
         do {
             try setupDatabase()
+            print("✅ Database initialized successfully")
         } catch {
             if let dbError = error as? DatabaseError {
                 initializationError = dbError
+                print("❌ Database initialization failed: \(dbError.userFriendlyMessage)")
             } else {
                 initializationError = .initializationFailed(error.localizedDescription)
+                print("❌ Database initialization failed: \(error.localizedDescription)")
             }
         }
     }
@@ -28,12 +31,15 @@ class DatabaseService {
         do {
             documentsURL = try fileManager.url(for: .documentDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
         } catch {
+            print("❌ Database Setup Failed: Cannot access documents directory")
+            print("   Error: \(error.localizedDescription)")
             throw DatabaseError.fileSystemError("Cannot access documents directory: \(error.localizedDescription)")
         }
         let destinationURL = documentsURL.appendingPathComponent(databaseFileName)
 
         // Path to the bundled database in the app bundle
         guard let bundleDBPath = Bundle.main.path(forResource: "quotes", ofType: "db") else {
+            print("❌ Database Setup Failed: Could not find quotes.db in bundle")
             throw DatabaseError.initializationFailed("Could not find quotes.db in bundle")
         }
 
@@ -42,6 +48,10 @@ class DatabaseService {
             do {
                 try fileManager.copyItem(atPath: bundleDBPath, toPath: destinationURL.path)
             } catch {
+                print("❌ Database Setup Failed: Failed to copy database to documents")
+                print("   Source: \(bundleDBPath)")
+                print("   Destination: \(destinationURL.path)")
+                print("   Error: \(error.localizedDescription)")
                 throw DatabaseError.fileSystemError("Failed to copy database to documents: \(error.localizedDescription)")
             }
         }
@@ -51,6 +61,9 @@ class DatabaseService {
             _db = try Connection(destinationURL.path)
             isInitialized = true
         } catch {
+            print("❌ Database Connection Failed")
+            print("   Path: \(destinationURL.path)")
+            print("   Error: \(error.localizedDescription)")
             throw DatabaseError.connectionFailed
         }
     }
@@ -104,6 +117,10 @@ class DatabaseService {
                 )
             }
         } catch {
+            print("❌ Database Query Failed: fetchRandomPuzzle")
+            print("   Error: \(error.localizedDescription)")
+            print("   Encoding Type: \(encodingType)")
+            print("   Selected Difficulties: \(selectedDifficulties)")
             throw DatabaseError.queryFailed("Failed to fetch random puzzle: \(error.localizedDescription)")
         }
         throw DatabaseError.noDataFound
@@ -143,6 +160,10 @@ class DatabaseService {
                 )
             }
         } catch {
+            print("❌ Database Query Failed: fetchPuzzleById")
+            print("   Error: \(error.localizedDescription)")
+            print("   Puzzle ID: \(id)")
+            print("   Encoding Type: \(encodingType)")
             throw DatabaseError.queryFailed("Failed to fetch puzzle by ID: \(error.localizedDescription)")
         }
         throw DatabaseError.noDataFound
@@ -180,6 +201,9 @@ class DatabaseService {
                 )
             }
         } catch {
+            print("❌ Database Query Failed: fetchAuthor")
+            print("   Error: \(error.localizedDescription)")
+            print("   Author Name: \(name)")
             throw DatabaseError.queryFailed("Failed to fetch author: \(error.localizedDescription)")
         }
         return nil
@@ -234,6 +258,10 @@ class DatabaseService {
                 }
             }
         } catch {
+            print("❌ Database Query Failed: fetchDailyPuzzle")
+            print("   Error: \(error.localizedDescription)")
+            print("   Date: \(dateString)")
+            print("   Encoding Type: \(encodingType)")
             throw DatabaseError.queryFailed("Failed to fetch daily puzzle: \(error.localizedDescription)")
         }
         return nil
