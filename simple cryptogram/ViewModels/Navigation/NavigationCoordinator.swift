@@ -7,8 +7,7 @@
 
 import SwiftUI
 
-/// Legacy NavigationCoordinator maintained for backward compatibility
-/// New code should use NavigationState directly
+/// NavigationCoordinator handles NavigationStack-based navigation
 final class NavigationCoordinator: ObservableObject {
     // MARK: - Navigation State
     

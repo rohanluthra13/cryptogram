@@ -266,34 +266,41 @@ Small reusable components for building the settings screen:
 
 ---
 
-## Cleanup Required
+## ✅ Cleanup Completed (Phase 1)
 
-### 🔴 Critical Fixes
+### 🔴 Critical Fixes - DONE ✅
 
-| File:Line | Issue | Risk |
-|-----------|-------|------|
-| `PuzzleProgressManager.swift:24` | `fatalError()` crashes app instead of handling error gracefully | 💥 App crash |
-| `AppSettings.swift:90` | `static var shared: AppSettings!` force unwrap | 💥 App crash if init fails |
+| Fix | Status |
+|-----|--------|
+| `PuzzleProgressManager.swift` - Replaced `fatalError()` with graceful `NoOpProgressStore` fallback | ✅ Fixed |
+| `AppSettings.swift` - Replaced force unwrap `shared!` with computed property + lazy initialization | ✅ Fixed |
 
-### 🗑️ Dead Code to Delete (~2,000 lines)
+### 🗑️ Dead Code Deleted (~2,500 lines) - DONE ✅
 
-| File | Lines | Reason |
+| File | Lines | Status |
 |------|-------|--------|
-| 📄 `ModernContentView.swift` | 130 | Abandoned refactor, never instantiated |
-| 📄 `ModernHomeView.swift` | 224 | Abandoned refactor, never instantiated |
-| 📄 `ModernPuzzleView.swift` | 517 | Abandoned refactor, never instantiated |
-| 📄 `BusinessLogicCoordinator.swift` | 349 | Duplicate of PuzzleViewModel, never instantiated |
-| 📄 `NavigationState.swift` | 296 | Unused, NavigationCoordinator is used instead |
-| 📄 `WeeklySnapshot.swift` | 196 | Explicitly marked "currently unused, available for future use" |
+| 📄 `ModernContentView.swift` | 130 | ✅ Deleted |
+| 📄 `ModernHomeView.swift` | 224 | ✅ Deleted |
+| 📄 `ModernPuzzleView.swift` | 517 | ✅ Deleted |
+| 📄 `BusinessLogicCoordinator.swift` | 349 | ✅ Deleted |
+| 📄 `NavigationState.swift` | 296 | ✅ Deleted |
+| 📄 `WeeklySnapshot.swift` | 196 | ✅ Deleted |
+| 📄 `NavigationPerformance.swift` | ~250 | ✅ Deleted (depended on deleted types) |
+| 📄 `NavigationPersistence.swift` | ~215 | ✅ Deleted (depended on deleted types) |
+| 📄 `DeepLinkManager.swift` | ~200 | ✅ Deleted (never configured, orphaned) |
+| 📄 `Phase5NavigationTests.swift` | ~350 | ✅ Deleted (tested deleted code) |
+| 📄 `NavigationStateTests.swift` | ~220 | ✅ Deleted (tested deleted code) |
 
-### 🟠 Code Quality Cleanup
+---
+
+## 🟠 Remaining Cleanup (Phase 2 - Optional)
 
 | Issue | Files Affected |
 |-------|----------------|
-| Remove debug `print()` statements | `NavigationPersistence.swift`, `NavigationPerformance.swift`, `DeepLinkManager.swift`, `FeatureFlags.swift` |
+| Remove debug `print()` statements | `FeatureFlags.swift` |
 | Remove `NotificationCenter` usage (11 occurrences) | `PuzzleViewModel.swift`, `SettingsViewModel.swift`, `HomeView.swift`, etc. |
 
-### 🟡 Optional (Nice to Have)
+### 🟡 Nice to Have (Low Priority)
 
 | Issue | Notes |
 |-------|-------|
@@ -305,7 +312,7 @@ Small reusable components for building the settings screen:
 
 ## 🧪 Test Coverage
 
-The app has **75 tests** across **18 test files** covering:
+The app has **~70 tests** across **~16 test files** covering:
 
 | Test File | Coverage |
 |-----------|----------|
@@ -319,7 +326,6 @@ The app has **75 tests** across **18 test files** covering:
 | `LocalPuzzleProgressStoreTests` | ✅ Progress storage |
 | `AppSettingsTests` | ✅ Settings management |
 | `NavigationCoordinatorTests` | ✅ Navigation |
-| `NavigationStateTests` | ✅ Navigation |
 | `PerformanceBaselineTests` | ✅ Performance regression detection |
 | `MemoryLeakDetectionTests` | ✅ Retain cycle detection |
 

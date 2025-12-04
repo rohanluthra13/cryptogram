@@ -86,8 +86,25 @@ import Observation
     private var userDefaults = UserDefaults()
     
     // MARK: - Singleton
-    // Note: shared instance is created in App struct to ensure main thread initialization
-    static var shared: AppSettings!
+    // Note: shared instance is preferably created in App struct to ensure main thread initialization
+    // Falls back to lazy initialization if accessed before App struct initialization
+    private static var _shared: AppSettings?
+
+    @MainActor
+    static var shared: AppSettings {
+        get {
+            if let existing = _shared {
+                return existing
+            }
+            // Lazy fallback initialization - creates instance if not already set by App
+            let instance = AppSettings()
+            _shared = instance
+            return instance
+        }
+        set {
+            _shared = newValue
+        }
+    }
     
     // MARK: - Dependencies
     private let persistence: PersistenceStrategy

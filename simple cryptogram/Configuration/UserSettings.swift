@@ -14,15 +14,10 @@ struct UserSettings {
     @MainActor
     static var navigationBarLayout: NavigationBarLayout {
         get {
-            // Return default if AppSettings isn't initialized yet
-            guard let settings = AppSettings.shared else {
-                return .centerLayout
-            }
-            return settings.navigationBarLayout
+            return AppSettings.shared.navigationBarLayout
         }
         set {
-            guard let settings = AppSettings.shared else { return }
-            settings.navigationBarLayout = newValue
+            AppSettings.shared.navigationBarLayout = newValue
             // Post notification for backward compatibility
             NotificationCenter.default.post(name: navigationBarLayoutChangedNotification, object: nil)
         }
@@ -31,15 +26,10 @@ struct UserSettings {
     @MainActor
     static var selectedDifficulties: [String] {
         get {
-            // Return default if AppSettings isn't initialized yet
-            guard let settings = AppSettings.shared else {
-                return ["easy", "medium", "hard"]
-            }
-            return settings.selectedDifficulties
+            return AppSettings.shared.selectedDifficulties
         }
         set {
-            guard let settings = AppSettings.shared else { return }
-            settings.selectedDifficulties = newValue
+            AppSettings.shared.selectedDifficulties = newValue
         }
     }
 

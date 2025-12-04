@@ -6,14 +6,14 @@ class PuzzleProgressManager: ObservableObject {
     // MARK: - Properties
     private let progressStore: PuzzleProgressStore
     @Published var currentError: DatabaseError?
-    
+
     // Session monitoring
     private var cancellables = Set<AnyCancellable>()
     private var gameStateManager: GameStateManager?
     private var encodingType: String {
         return AppSettings.shared.encodingType
     }
-    
+
     // MARK: - Initialization
     init(progressStore: PuzzleProgressStore? = nil) {
         if let store = progressStore {
@@ -21,7 +21,10 @@ class PuzzleProgressManager: ObservableObject {
         } else if let db = DatabaseService.shared.db {
             self.progressStore = LocalPuzzleProgressStore(database: db)
         } else {
-            fatalError("Database connection not initialized for progress tracking!")
+            // Gracefully handle missing database with a no-op fallback
+            print("⚠️ Warning: Database connection not initialized for progress tracking. Using fallback store.")
+            self.progressStore = NoOpProgressStore()
+            self.currentError = .connectionFailed
         }
     }
     
@@ -154,8 +157,42 @@ extension PuzzleSession {
     var wasLogged: Bool {
         get { self.userInfo["wasLogged"] as? Bool ?? false }
     }
-    
+
     mutating func setWasLogged(_ value: Bool) {
         self.userInfo["wasLogged"] = value
+    }
+}
+
+// MARK: - NoOpProgressStore (Fallback Implementation)
+/// A safe fallback progress store that performs no operations when database is unavailable.
+/// This prevents app crashes while maintaining the PuzzleProgressStore interface.
+private class NoOpProgressStore: PuzzleProgressStore {
+    func logAttempt(_ attempt: PuzzleAttempt) throws {
+        // No-op: silently ignore logging when database is unavailable
+        print("⚠️ NoOpProgressStore: Cannot log attempt (database unavailable)")
+    }
+
+    func attempts(for puzzleID: UUID, encodingType: String?) throws -> [PuzzleAttempt] {
+        // Return empty array instead of crashing
+        return []
+    }
+
+    func latestAttempt(for puzzleID: UUID, encodingType: String?) throws -> PuzzleAttempt? {
+        // Return nil when no database available
+        return nil
+    }
+
+    func bestCompletionTime(for puzzleID: UUID, encodingType: String?) throws -> TimeInterval? {
+        // Return nil when no database available
+        return nil
+    }
+
+    func clearAllProgress() throws {
+        // No-op: nothing to clear
+    }
+
+    func allAttempts() throws -> [PuzzleAttempt] {
+        // Return empty array instead of crashing
+        return []
     }
 }
