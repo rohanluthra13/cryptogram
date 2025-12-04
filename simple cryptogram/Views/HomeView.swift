@@ -39,6 +39,7 @@ struct HomeView: View {
                     HomeMainContent(
                         showLengthSelection: $showLengthSelection,
                         selectedMode: $selectedMode,
+                        showCalendar: $showCalendar,
                         isDailyPuzzleCompleted: isDailyPuzzleCompleted
                     )
                     
@@ -141,9 +142,6 @@ struct HomeView: View {
                     showCalendar = true
                     appSettings.shouldShowCalendarOnReturn = false
                 }
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .showCalendarOverlay)) { _ in
-                showCalendar = true
             }
         }
     }

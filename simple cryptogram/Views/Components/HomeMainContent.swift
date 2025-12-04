@@ -16,7 +16,8 @@ struct HomeMainContent: View {
     
     @Binding var showLengthSelection: Bool
     @Binding var selectedMode: HomeView.PuzzleMode
-    
+    @Binding var showCalendar: Bool
+
     var isDailyPuzzleCompleted: Bool
     
     var body: some View {
@@ -99,8 +100,7 @@ struct HomeMainContent: View {
             .buttonStyle(PlainButtonStyle())
             
             Button(action: {
-                // This will be handled by parent view state
-                NotificationCenter.default.post(name: .showCalendarOverlay, object: nil)
+                showCalendar = true
             }) {
                 Image(systemName: "calendar")
                     .font(.system(size: 24))
@@ -166,9 +166,4 @@ struct HomeMainContent: View {
             navigationCoordinator.navigateToPuzzle(puzzle)
         }
     }
-}
-
-// Notifications for overlays (still needed for calendar)
-extension Notification.Name {
-    static let showCalendarOverlay = Notification.Name("showCalendarOverlay")
 }

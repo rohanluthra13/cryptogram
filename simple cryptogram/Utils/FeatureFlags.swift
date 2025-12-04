@@ -57,22 +57,12 @@ enum FeatureFlag: String, CaseIterable {
 /// Debug helper for feature flag management
 #if DEBUG
 struct FeatureFlagDebugView {
-    static func printAllFlags() {
-        print("🚩 Feature Flags Status:")
-        for (flag, isEnabled) in FeatureFlag.allFlags {
-            let status = isEnabled ? "✅ ENABLED" : "❌ DISABLED"
-            print("  \(flag.rawValue): \(status)")
-        }
-    }
-    
     static func enableAll() {
         FeatureFlag.allCases.forEach { FeatureFlag.enable($0) }
-        print("🚩 All feature flags enabled")
     }
-    
+
     static func disableAll() {
         FeatureFlag.allCases.forEach { FeatureFlag.disable($0) }
-        print("🚩 All feature flags disabled")
     }
 }
 #endif

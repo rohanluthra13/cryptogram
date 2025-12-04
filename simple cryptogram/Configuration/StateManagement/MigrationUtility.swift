@@ -60,26 +60,8 @@ class MigrationUtility {
             settings.lastCompletedDailyPuzzleID = defaults.integer(forKey: "lastCompletedDailyPuzzleID")
         }
         
-        // Migrate UserSettings values only if @AppStorage values don't exist
-        // Commented out to avoid circular dependency during initialization
-        // migrateUserSettingsIfNeeded(to: settings, defaults: defaults)
     }
-    
-    /// Migrate values from UserSettings static properties if not already migrated from @AppStorage
-    @MainActor
-    private static func migrateUserSettingsIfNeeded(to settings: AppSettings, defaults: UserDefaults) {
-        // Only migrate selected difficulties if not customized
-        let defaultDifficulties = ["easy", "medium", "hard"]
-        if settings.selectedDifficulties == defaultDifficulties {
-            let userSettingsDifficulties = UserSettings.selectedDifficulties
-            if userSettingsDifficulties != defaultDifficulties {
-                settings.selectedDifficulties = userSettingsDifficulties
-            }
-        }
-        
-        // Navigation bar layout already handled by @AppStorage migration
-    }
-    
+
     /// Check if migration is needed based on stored version
     static func isMigrationNeeded(currentVersion: Int, storedVersion: Int) -> Bool {
         return storedVersion < currentVersion
