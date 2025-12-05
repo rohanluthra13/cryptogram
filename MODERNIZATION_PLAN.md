@@ -2,11 +2,11 @@
 
 **Goal:** Transform into a modern, best-practice Swift app with efficient, simple code.
 
-**Current State:** 77 Swift files | ~9,800 lines | 16 test files
+**Current State:** ~70 Swift files | ~7,500 lines | 16 test files
 
 ---
 
-## Phase 1: Performance Fixes (Critical)
+## Phase 1: Performance Fixes (Critical) ✅ COMPLETE
 
 ### 1.1 Fix Repeated Database Queries
 **File:** `ViewModels/Progress/StatisticsManager.swift`
@@ -117,78 +117,39 @@ func saveDailyPuzzleProgress(...) {
 
 ---
 
-## Phase 2: Delete Dead Code
+## Phase 2: Delete Dead Code ✅ COMPLETE
 
-| File | Reason |
-|------|--------|
-| `Configuration/UserSettings.swift` | Legacy forwarding layer, marked TODO for deletion |
-| `Views/Components/NavigationBarView.swift.backup` | Backup file in source control |
-
----
-
-## Phase 3: Consolidate Duplicates
-
-### 3.1 Extract Time Formatting Utility
-**Files:** `UserStatsView.swift:67-71`, `CompletionStatsView.swift:93-97`
-
-**Fix:** Create shared extension:
-```swift
-// Utils/TimeInterval+Formatting.swift
-extension TimeInterval {
-    var formattedAsMinutesSeconds: String {
-        let minutes = Int(self) / 60
-        let seconds = Int(self) % 60
-        return String(format: "%d:%02d", minutes, seconds)
-    }
-}
-```
+| File | Reason | Status |
+|------|--------|--------|
+| `Configuration/UserSettings.swift` | Legacy forwarding layer | ✅ Deleted |
+| `Views/Components/NavigationBarView.swift.backup` | Backup file in source control | ✅ Deleted |
+| `Views/Components/CalendarView.swift` | Unused (ContinuousCalendarView is used) | ✅ Deleted |
 
 ---
 
-### 3.2 Unify Calendar Views
-**Files:** `CalendarView.swift`, `ContinuousCalendarView.swift`
+## Phase 3: Consolidate Duplicates (Partially Complete)
 
-**Fix:** Create single `DailyCalendarView` with mode parameter:
-```swift
-enum CalendarMode {
-    case singleMonth
-    case continuous
-}
+### 3.1 Extract Time Formatting Utility ✅ COMPLETE
+**Files:** `UserStatsView.swift`, `CompletionStatsView.swift`, `StatsView.swift`
 
-struct DailyCalendarView: View {
-    let mode: CalendarMode
-    // Shared logic here
-}
-```
+**Done:** Created `Utils/TimeInterval+Formatting.swift` with two extensions:
+- `.formattedAsMinutesSeconds` → "02:45"
+- `.formattedAsShortMinutesSeconds` → "2:45"
 
 ---
 
-### 3.3 Extract Typewriter Animation
-**Files:** `InfoPanel.swift:62-82`, `PuzzleUIViewModel.swift:75-124`
-
-**Fix:** Create reusable component:
-```swift
-struct TypewriterText: View {
-    let fullText: String
-    let characterDelay: TimeInterval
-    @State private var displayedText = ""
-    // Animation logic here
-}
-```
+### 3.2 Unify Calendar Views ⏭️ SKIPPED
+**Reason:** CalendarView.swift was unused dead code (deleted in Phase 2). Only ContinuousCalendarView is used.
 
 ---
 
-### 3.4 Consolidate Stats Display Components
-**Files:** `StatsView.swift`, `UserStatsView.swift`, `CompletionStatsView.swift`
+### 3.3 Extract Typewriter Animation ⏭️ SKIPPED
+**Reason:** After analysis, InfoPanel and PuzzleUIViewModel have different timing, completion handling, and state management. Extracting would add complexity without significant benefit.
 
-**Fix:** Create shared stat display components:
-```swift
-struct StatItem: View {
-    let icon: String
-    let value: String
-    let label: String?
-}
-```
+---
+
+### 3.4 Consolidate Stats Display Components ⏭️ SKIPPED
+**Reason:** StatsView (gameplay), UserStatsView (overall stats), and CompletionStatsView (post-game) serve different purposes with minimal shared code beyond time formatting (already extracted in 3.1).
 
 ---
 
@@ -322,15 +283,15 @@ Use `.onChange(of:)` in views or Combine publishers instead.
 
 ## Summary
 
-| Phase | Effort | Impact |
+| Phase | Status | Impact |
 |-------|--------|--------|
-| 1. Performance Fixes | 1-2 days | High - fixes lag/battery issues |
-| 2. Delete Dead Code | 10 min | Low - cleanup |
-| 3. Consolidate Duplicates | 1 day | Medium - maintainability |
-| 4. @Observable Migration | 2-3 days | High - modern Swift |
-| 5. async/await Migration | 1-2 days | Medium - cleaner code |
-| 6. Completion → async | 2-3 hours | Low - cleaner code |
-| 7. Minor API Updates | 1 hour | Low - future-proofing |
-| 8. Architecture | 1-2 weeks | High - testability/maintainability |
+| 1. Performance Fixes | ✅ Complete | High - fixes lag/battery issues |
+| 2. Delete Dead Code | ✅ Complete | Low - cleanup |
+| 3. Consolidate Duplicates | ✅ Complete (3.1 done, 3.2-3.4 skipped after analysis) | Medium - maintainability |
+| 4. @Observable Migration | Pending | High - modern Swift |
+| 5. async/await Migration | Pending | Medium - cleaner code |
+| 6. Completion → async | Pending | Low - cleaner code |
+| 7. Minor API Updates | Pending | Low - future-proofing |
+| 8. Architecture | Pending | High - testability/maintainability |
 
-**Recommended Order:** Phases 1-3 first (quick wins), then 4-5 (modernization), then 8 (if time permits).
+**Next Steps:** Phase 4-5 (modernization), then 6-7 (cleanup), then 8 (if time permits).
