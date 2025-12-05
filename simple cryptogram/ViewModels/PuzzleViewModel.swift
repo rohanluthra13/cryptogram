@@ -239,6 +239,13 @@ final class PuzzleViewModel {
         }
         handleUserAction()
     }
+
+    /// Async version that waits for puzzle to load before returning
+    func loadNewPuzzleAsync() async {
+        dailyManager.resetDailyPuzzleState()
+        await loadPuzzleWithDifficulty()
+        handleUserAction()
+    }
     
     func moveToNextCell() {
         inputHandler.moveToNextCell()
@@ -306,7 +313,7 @@ final class PuzzleViewModel {
             saveDailyPuzzleProgress()
         }
     }
-    
+
     private func saveDailyPuzzleProgress() {
         guard let puzzle = currentPuzzle else { return }
         dailyManager.saveDailyPuzzleProgress(
@@ -314,6 +321,14 @@ final class PuzzleViewModel {
             cells: gameState.cells,
             session: gameState.session
         )
+    }
+
+    /// Explicitly save daily puzzle progress on completion.
+    /// Call this when completion is detected to ensure the completion state is persisted.
+    func saveCompletionIfDaily() {
+        if dailyManager.isDailyPuzzle {
+            saveDailyPuzzleProgress()
+        }
     }
     
     private func loadInitialPuzzle() {

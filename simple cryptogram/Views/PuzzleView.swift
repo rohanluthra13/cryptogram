@@ -70,16 +70,18 @@ struct PuzzleView: View {
                 // Add haptic feedback for completion
                 let generator = UINotificationFeedbackGenerator()
                 generator.notificationOccurred(.success)
-                
+
+                // Explicitly save daily puzzle completion state
+                viewModel.saveCompletionIfDaily()
+
                 // First trigger wiggle animation
                 viewModel.triggerCompletionWiggle()
-                
+
                 // Then transition to completion view with a slight delay
                 withAnimation(.easeOut(duration: PuzzleViewConstants.Animation.puzzleSwitchDuration).delay(PuzzleViewConstants.Animation.completionDelay)) {
                     // Show different completion view for daily puzzles
                     uiState.completionState = viewModel.isDailyPuzzle ? .daily : .regular
                 }
-                // Daily puzzle completion state is now handled internally by DailyPuzzleManager
             }
         }
         .onChange(of: viewModel.isFailed) { oldValue, isFailed in

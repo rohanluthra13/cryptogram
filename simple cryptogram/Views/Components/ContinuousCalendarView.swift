@@ -3,7 +3,6 @@ import SwiftUI
 struct ContinuousCalendarView: View {
     @Environment(PuzzleViewModel.self) private var viewModel
     @Environment(AppSettings.self) private var appSettings
-    @State private var dailyPuzzleManager = DailyPuzzleManager()
     @Environment(\.typography) private var typography
     @State private var currentMonthIndex: Int
     @State private var dragOffset: CGFloat = 0
@@ -111,6 +110,7 @@ struct ContinuousCalendarView: View {
     private func formatDateForKey(_ date: Date) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone.current
         return formatter.string(from: date)
     }
     

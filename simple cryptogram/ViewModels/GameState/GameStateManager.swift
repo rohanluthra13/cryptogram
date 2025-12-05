@@ -146,14 +146,15 @@ final class GameStateManager {
         completedLetters = []
         session = PuzzleSession()
         hasUserEngaged = false
-        
+
         for i in cells.indices {
             cells[i].userInput = ""
             cells[i].isError = false
             cells[i].wasJustFilled = false
             cells[i].isRevealed = false
+            cells[i].isPreFilled = false
         }
-        
+
         applyDifficultyPrefills()
         updateCompletedLetters()
         

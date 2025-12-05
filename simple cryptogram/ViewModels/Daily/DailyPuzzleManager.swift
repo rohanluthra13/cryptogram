@@ -149,17 +149,20 @@ final class DailyPuzzleManager {
         // Restore cell states
         for (i, input) in progress.userInputs.enumerated() where i < cells.count {
             cells[i].userInput = input
-            cells[i].isPreFilled = progress.isPreFilled?[i] ?? false
-            cells[i].isRevealed = progress.isRevealed?[i] ?? false
+            // Only set isPreFilled/isRevealed if there's actual content
+            // This prevents blue/green highlighted cells with no letter
+            let hasContent = !input.isEmpty
+            cells[i].isPreFilled = hasContent && (progress.isPreFilled?[i] ?? false)
+            cells[i].isRevealed = hasContent && (progress.isRevealed?[i] ?? false)
         }
-        
+
         // Restore session state
         session.hintCount = progress.hintCount
         session.mistakeCount = progress.mistakeCount
         session.startTime = progress.startTime
         session.endTime = progress.endTime
         session.isComplete = progress.isCompleted
-        
+
         if progress.isCompleted {
             session.markComplete()
         }

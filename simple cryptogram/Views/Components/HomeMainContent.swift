@@ -144,7 +144,7 @@ struct HomeMainContent: View {
     
     private func selectMode(_ mode: HomeView.PuzzleMode) {
         selectedMode = mode
-        
+
         // Update difficulty settings based on mode
         switch mode {
         case .random:
@@ -159,11 +159,13 @@ struct HomeMainContent: View {
             }
             return
         }
-        
-        // Load new puzzle and navigate
-        viewModel.loadNewPuzzle()
-        if let puzzle = viewModel.currentPuzzle {
-            navigationCoordinator.navigateToPuzzle(puzzle)
+
+        // Load new puzzle async and navigate when ready
+        Task {
+            await viewModel.loadNewPuzzleAsync()
+            if let puzzle = viewModel.currentPuzzle {
+                navigationCoordinator.navigateToPuzzle(puzzle)
+            }
         }
     }
 }
