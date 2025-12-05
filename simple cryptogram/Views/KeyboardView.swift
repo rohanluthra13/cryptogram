@@ -85,7 +85,7 @@ struct KeyboardView: View {
                 .frame(minWidth: 0, maxWidth: .infinity)
                 .foregroundColor(isLocked ? Color.gray : CryptogramTheme.Colors.text)
                 .cornerRadius(5)
-                .accessibilityLabel("Key \(key)")
+                .accessibilityLabel("Key \(String(key))")
         }
         .background(
             isRemaining ? AnyView(

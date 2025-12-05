@@ -15,9 +15,9 @@ final class PuzzleUIViewModel {
     
     // MARK: - Game Over Animation
     private let fullGameOverText = "game over"
-    // nonisolated(unsafe) allows safe access from deinit - Timer.invalidate() is thread-safe
-    nonisolated(unsafe) private var gameOverTypingTimer: Timer?
-    nonisolated(unsafe) private var frictionTypingTimer: Timer?
+    // Timer properties excluded from observation - Timer.invalidate() is thread-safe for deinit access
+    @ObservationIgnored private var gameOverTypingTimer: Timer?
+    @ObservationIgnored private var frictionTypingTimer: Timer?
     
     private let gameOverMessages = [
         "uh oh that's 3 mistakes.",

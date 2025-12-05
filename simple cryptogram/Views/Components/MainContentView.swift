@@ -35,8 +35,10 @@ struct MainContentView: View {
                     onMoveRight: { viewModel.moveToAdjacentCell(direction: 1) },
                     onTogglePause: viewModel.togglePause,
                     onNextPuzzle: {
-                        uiState.animatePuzzleSwitch {
+                        Task {
+                            await uiState.animatePuzzleSwitch()
                             viewModel.refreshPuzzleWithCurrentSettings()
+                            uiState.endPuzzleSwitch()
                         }
                     },
                     isPaused: viewModel.isPaused,

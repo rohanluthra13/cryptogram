@@ -153,9 +153,9 @@ func saveDailyPuzzleProgress(...) {
 
 ---
 
-## Phase 4: Modernize to @Observable (iOS 17+)
+## Phase 4: Modernize to @Observable (iOS 17+) ✅ COMPLETE
 
-### Files to Convert (10 ViewModels):
+### Files Converted (12 ViewModels):
 
 | File | Current | Target |
 |------|---------|--------|
@@ -193,9 +193,9 @@ final class GameStateManager {
 
 ---
 
-## Phase 5: Replace DispatchQueue with async/await
+## Phase 5: Replace DispatchQueue with async/await ✅ COMPLETE
 
-### Locations to Update:
+### Locations Updated (~22 replacements):
 
 | File | Line(s) | Current | Replacement |
 |------|---------|---------|-------------|
@@ -230,19 +230,19 @@ func showTemporarily() {
 
 ---
 
-## Phase 6: Replace Completion Handlers with async/await
+## Phase 6: Replace Completion Handlers with async/await ✅ COMPLETE
 
-| File | Function |
-|------|----------|
-| `PuzzleViewState.swift:135` | `animatePuzzleSwitch(completion:)` |
-| `OverlayManager.swift:53` | `dismiss(completion:)` |
-| `PuzzleCompletionView.swift:50` | `typeLine(..., completion:)` |
+| File | Function | Status |
+|------|----------|--------|
+| `PuzzleViewState.swift` | `animatePuzzleSwitch(completion:)` → `animatePuzzleSwitch() async` | ✅ |
+| `OverlayManager.swift` | `dismiss(completion:)` → `dismiss() async` | ✅ |
+| `PuzzleCompletionView.swift` | `typeLine(..., completion:)` → `typeLine(...) async` | ✅ |
 
 ---
 
-## Phase 7: Minor API Updates
+## Phase 7: Minor API Updates (Partially Complete)
 
-### 7.1 Replace Deprecated APIs
+### 7.1 Replace Deprecated APIs ✅ COMPLETE
 ```swift
 // Before
 .edgesIgnoringSafeArea(.all)
@@ -251,12 +251,12 @@ func showTemporarily() {
 .ignoresSafeArea()
 ```
 
-**Locations:** `OverlayManager.swift:453, 741`, `PuzzleCompletionView.swift`
+**Updated:** `OverlayManager.swift` (2 locations), `PuzzleCompletionView.swift` (1 location)
 
-### 7.2 Replace NotificationCenter with Direct Bindings
-**Files:** `PuzzleViewModel.swift:182-195`, `SettingsViewModel.swift:22`
+### 7.2 Replace NotificationCenter with Direct Bindings ⏭️ DEFERRED
+**Files:** `PuzzleViewModel.swift:166-179`, `SettingsViewModel.swift:23`
 
-Use `.onChange(of:)` in views or Combine publishers instead.
+**Reason:** The current NotificationCenter pattern works correctly with @Observable and is not deprecated. Changing it would require architectural modifications with minimal benefit. The pattern is used only for difficulty selection changes between ViewModels.
 
 ---
 
@@ -288,10 +288,10 @@ Use `.onChange(of:)` in views or Combine publishers instead.
 | 1. Performance Fixes | ✅ Complete | High - fixes lag/battery issues |
 | 2. Delete Dead Code | ✅ Complete | Low - cleanup |
 | 3. Consolidate Duplicates | ✅ Complete (3.1 done, 3.2-3.4 skipped after analysis) | Medium - maintainability |
-| 4. @Observable Migration | Pending | High - modern Swift |
-| 5. async/await Migration | Pending | Medium - cleaner code |
-| 6. Completion → async | Pending | Low - cleaner code |
-| 7. Minor API Updates | Pending | Low - future-proofing |
-| 8. Architecture | Pending | High - testability/maintainability |
+| 4. @Observable Migration | ✅ Complete | High - modern Swift |
+| 5. async/await Migration | ✅ Complete | Medium - cleaner code |
+| 6. Completion → async | ✅ Complete | Low - cleaner code |
+| 7. Minor API Updates | ✅ Partial (7.1 done, 7.2 deferred) | Low - future-proofing |
+| 8. Architecture | Optional | High - testability/maintainability |
 
-**Next Steps:** Phase 4-5 (modernization), then 6-7 (cleanup), then 8 (if time permits).
+**Modernization Complete!** Only Phase 8 (optional architecture improvements) remains.

@@ -41,33 +41,25 @@ struct PuzzleCompletionView: View {
     var hideStats: Bool = false
     var isDailyPuzzle: Bool = false
 
-    // State for managing typing animations
+    // State for managing typing animation
     @State private var summaryTypingTask: Task<Void, Never>?
-    @State private var bornTypingTask: Task<Void, Never>?
-    @State private var diedTypingTask: Task<Void, Never>?
     
     // MARK: - Helper for line typing animation
-    private func typeLine(line: String, setter: @escaping (String) -> Void, completion: @escaping () -> Void) -> Task<Void, Never> {
+    private func typeLine(line: String, setter: @escaping (String) -> Void) async {
         let characters = Array(line)
 
-        return Task {
-            for currentIndex in 0...characters.count {
-                guard !Task.isCancelled else { return }
-                setter(String(characters.prefix(currentIndex)))
-                if currentIndex < characters.count {
-                    try? await Task.sleep(for: .seconds(summaryTypingSpeed))
-                }
-            }
+        for currentIndex in 0...characters.count {
             guard !Task.isCancelled else { return }
-            completion()
+            setter(String(characters.prefix(currentIndex)))
+            if currentIndex < characters.count {
+                try? await Task.sleep(for: .seconds(summaryTypingSpeed))
+            }
         }
     }
 
     private func skipSummaryTyping() {
-        // Cancel all ongoing animations
+        // Cancel ongoing animation
         summaryTypingTask?.cancel()
-        bornTypingTask?.cancel()
-        diedTypingTask?.cancel()
         
         showSummaryLine = true
         showBornLine = true
@@ -113,7 +105,7 @@ struct PuzzleCompletionView: View {
         ZStack {
             // Background
             CryptogramTheme.Colors.background
-                .edgesIgnoringSafeArea(.all)
+                .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 // Main content (quote, author, summary)
@@ -226,37 +218,33 @@ struct PuzzleCompletionView: View {
                                         .onAppear {
                                             showSummaryLine = false; showBornLine = false; showDiedLine = false
                                             summaryTyped = ""; bornTyped = ""; diedTyped = ""
-                                            // Cancel any existing animations
+                                            // Cancel any existing animation
                                             summaryTypingTask?.cancel()
-                                            bornTypingTask?.cancel()
-                                            diedTypingTask?.cancel()
-                                            // Animate summary line typing
-                                            withAnimation(.easeOut(duration: 0.3)) { showSummaryLine = true }
-                                            summaryTypingTask = typeLine(line: summaryText, setter: { summaryTyped = $0 }) {
+                                            // Animate all lines sequentially using async/await
+                                            summaryTypingTask = Task {
+                                                withAnimation(.easeOut(duration: 0.3)) { showSummaryLine = true }
+                                                await typeLine(line: summaryText, setter: { summaryTyped = $0 })
+                                                guard !Task.isCancelled else { return }
+
                                                 if bornLine != nil {
                                                     withAnimation(.easeOut(duration: 0.3)) { showBornLine = true }
-                                                    bornTypingTask = typeLine(line: " " + String(bornLine!.dropFirst(5)), setter: { bornTyped = $0 }) {
-                                                        if diedLine != nil {
-                                                            let diedDelay = (bornLine != nil) ? 0.2 : 0.0
-                                                            Task {
-                                                                try? await Task.sleep(for: .seconds(diedDelay))
-                                                                guard !Task.isCancelled else { return }
-                                                                withAnimation(.easeOut(duration: 0.3)) { showDiedLine = true }
-                                                                diedTypingTask = typeLine(line: " " + String(diedLine!.dropFirst(5)), setter: { diedTyped = $0 }, completion: {})
-                                                            }
-                                                        }
+                                                    await typeLine(line: " " + String(bornLine!.dropFirst(5)), setter: { bornTyped = $0 })
+                                                    guard !Task.isCancelled else { return }
+                                                }
+
+                                                if diedLine != nil {
+                                                    if bornLine != nil {
+                                                        try? await Task.sleep(for: .seconds(0.2))
+                                                        guard !Task.isCancelled else { return }
                                                     }
-                                                } else if diedLine != nil {
                                                     withAnimation(.easeOut(duration: 0.3)) { showDiedLine = true }
-                                                    diedTypingTask = typeLine(line: " " + String(diedLine!.dropFirst(5)), setter: { diedTyped = $0 }, completion: {})
+                                                    await typeLine(line: " " + String(diedLine!.dropFirst(5)), setter: { diedTyped = $0 })
                                                 }
                                             }
                                         }
                                         .onDisappear {
-                                            // Cancel any ongoing animations
+                                            // Cancel ongoing animation
                                             summaryTypingTask?.cancel()
-                                            bornTypingTask?.cancel()
-                                            diedTypingTask?.cancel()
                                             showSummaryLine = false; showBornLine = false; showDiedLine = false
                                             summaryTyped = ""; bornTyped = ""; diedTyped = ""
                                         }
@@ -419,7 +407,7 @@ struct PuzzleCompletionView: View {
                 typingTimer = nil
 
                 // Bold the author name after quote is typed
-                Task {
+                Task { @MainActor in
                     try? await Task.sleep(for: .seconds(0.3))
                     guard !Task.isCancelled else { return }
                     withAnimation {

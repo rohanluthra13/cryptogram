@@ -52,15 +52,11 @@ final class UnifiedOverlayManager {
         }
     }
     
-    func dismiss(completion: (() -> Void)? = nil) {
+    func dismiss() async {
         withAnimation(.easeOut(duration: PuzzleViewConstants.Animation.overlayDuration)) {
             activeOverlay = nil
         }
-        Task {
-            try? await Task.sleep(for: .seconds(PuzzleViewConstants.Animation.overlayDuration))
-            guard !Task.isCancelled else { return }
-            completion?()
-        }
+        try? await Task.sleep(for: .seconds(PuzzleViewConstants.Animation.overlayDuration))
     }
     
     func isPresenting(_ overlay: OverlayType) -> Bool {
@@ -454,7 +450,7 @@ struct OverlayManager: ViewModifier {
             ZStack {
                 CryptogramTheme.Colors.surface
                     .opacity(0.98)
-                    .edgesIgnoringSafeArea(.all)
+                    .ignoresSafeArea()
                     .onTapGesture {
                         uiState.showSettings = false
                     }
@@ -748,7 +744,7 @@ struct UnifiedOverlayModifier: ViewModifier {
         ZStack {
             CryptogramTheme.Colors.background
                 .opacity(0.98)
-                .edgesIgnoringSafeArea(.all)
+                .ignoresSafeArea()
                 .onTapGesture {
                     dismissSettings()
                 }

@@ -133,18 +133,18 @@ final class PuzzleViewState {
     }
     
     /// Handles puzzle switching animation
-    func animatePuzzleSwitch(completion: @escaping () -> Void) {
+    func animatePuzzleSwitch() async {
         withAnimation(.easeInOut(duration: PuzzleViewConstants.Animation.puzzleSwitchDuration)) {
             isSwitchingPuzzle = true
         }
 
-        Task {
-            try? await Task.sleep(for: .seconds(PuzzleViewConstants.Animation.puzzleSwitchDuration))
-            guard !Task.isCancelled else { return }
-            completion()
-            withAnimation(.easeInOut(duration: PuzzleViewConstants.Animation.puzzleSwitchDuration)) {
-                self.isSwitchingPuzzle = false
-            }
+        try? await Task.sleep(for: .seconds(PuzzleViewConstants.Animation.puzzleSwitchDuration))
+    }
+
+    /// Ends puzzle switching animation
+    func endPuzzleSwitch() {
+        withAnimation(.easeInOut(duration: PuzzleViewConstants.Animation.puzzleSwitchDuration)) {
+            isSwitchingPuzzle = false
         }
     }
     
