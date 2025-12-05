@@ -72,6 +72,10 @@ class PuzzleViewModel: ObservableObject {
     var progressPercentage: Double { gameState.progressPercentage }
     var wordGroups: [WordGroup] { gameState.wordGroups }
     var cellsToAnimate: [UUID] { gameState.cellsToAnimate }
+
+    // Keyboard optimization mappings (pre-computed for performance)
+    var solutionToEncodedMap: [Character: Set<String>] { gameState.solutionToEncodedMap }
+    var lettersInPuzzle: Set<Character> { gameState.lettersInPuzzle }
     
     // Daily puzzle properties
     var isDailyPuzzle: Bool { dailyManager.isDailyPuzzle }

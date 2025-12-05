@@ -16,6 +16,12 @@ class GameStateManager: ObservableObject {
     private let databaseService: DatabaseService
     private var letterMapping: [String: String] = [:]
     private var letterUsage: [String: String] = [:]
+
+    // MARK: - Keyboard Optimization (pre-computed mappings)
+    /// Maps each solution letter to its encoded characters (for number encoding mode)
+    private(set) var solutionToEncodedMap: [Character: Set<String>] = [:]
+    /// Set of letters that appear in the puzzle solution
+    private(set) var lettersInPuzzle: Set<Character> = []
     
     // Computed property for encodingType
     private var encodingType: String {
@@ -114,10 +120,13 @@ class GameStateManager: ObservableObject {
         currentPuzzle = puzzle
         cells = puzzle.createCells(encodingType: encodingType)
         session = PuzzleSession()
-        
+
         letterMapping = [:]
         letterUsage = [:]
-        
+
+        // Pre-compute keyboard mappings for performance
+        updateKeyboardMappings()
+
         if !skipAnimationInit {
             applyDifficultyPrefills()
         }
@@ -261,6 +270,21 @@ class GameStateManager: ObservableObject {
     }
     
     // MARK: - Private Methods
+    private func updateKeyboardMappings() {
+        var solutionMap: [Character: Set<String>] = [:]
+        var puzzleLetters: Set<Character> = []
+
+        for cell in cells where !cell.isSymbol {
+            if let solution = cell.solutionChar {
+                solutionMap[solution, default: []].insert(cell.encodedChar)
+                puzzleLetters.insert(solution)
+            }
+        }
+
+        solutionToEncodedMap = solutionMap
+        lettersInPuzzle = puzzleLetters
+    }
+
     private func applyDifficultyPrefills() {
         // Always apply prefills (previously normal mode behavior)
         guard let solution = currentPuzzle?.solution.uppercased() else { return }
@@ -293,19 +317,19 @@ class GameStateManager: ObservableObject {
     }
     
     func updateCompletedLetters() {
-        // Always update completed letters (previously normal mode behavior)
-        
-        let allLetters = Set(cells.filter { !$0.isSymbol }.map { $0.encodedChar })
-        var newCompleted: Set<String> = []
-        
-        for letter in allLetters {
-            let letterCells = cells.filter { $0.encodedChar == letter && !$0.isSymbol }
-            if letterCells.allSatisfy({ !$0.userInput.isEmpty }) {
-                newCompleted.insert(letter)
+        // Single-pass O(n) algorithm instead of O(n*m)
+        var letterHasEmpty: [String: Bool] = [:]
+
+        for cell in cells where !cell.isSymbol {
+            let letter = cell.encodedChar
+            if letterHasEmpty[letter] == nil {
+                letterHasEmpty[letter] = cell.userInput.isEmpty
+            } else if cell.userInput.isEmpty {
+                letterHasEmpty[letter] = true
             }
         }
-        
-        completedLetters = newCompleted
+
+        completedLetters = Set(letterHasEmpty.filter { !$0.value }.keys)
     }
     
     private func checkPuzzleCompletion() {

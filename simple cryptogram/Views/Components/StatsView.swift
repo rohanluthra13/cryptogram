@@ -22,7 +22,8 @@ struct TimerView: View {
         .onAppear {
             updateDisplayTime()
         }
-        .onReceive(Timer.publish(every: 0.25, on: .main, in: .common).autoconnect()) { _ in
+        .onReceive(Timer.publish(every: 1.0, on: .main, in: .common).autoconnect()) { _ in
+            guard !isPaused else { return }
             updateDisplayTime()
         }
     }

@@ -10,6 +10,9 @@ class DailyPuzzleManager: ObservableObject {
     // MARK: - Dependencies
     private let databaseService: DatabaseService
     private(set) var currentPuzzleDate: Date?
+
+    // MARK: - Debounce
+    private var saveTask: Task<Void, Never>?
     
     // Computed property for encodingType
     private var encodingType: String {
@@ -54,26 +57,83 @@ class DailyPuzzleManager: ObservableObject {
         session: PuzzleSession
     ) {
         guard isDailyPuzzle else { return }
-        
-        // Use the stored puzzle date
+
+        // Cancel any pending save
+        saveTask?.cancel()
+
+        // Capture values for the async task
         let dateStr = Self.dateString(from: currentPuzzleDate ?? Date())
         let userInputs = cells.map { $0.userInput }
         let isPreFilled = cells.map { $0.isPreFilled }
         let isRevealed = cells.map { $0.isRevealed }
-        
+        let quoteId = puzzle.quoteId
+        let hintCount = session.hintCount
+        let mistakeCount = session.mistakeCount
+        let startTime = session.startTime
+        let endTime = session.endTime
+        let isComplete = session.isComplete
+
+        // If puzzle is complete, save immediately
+        if isComplete {
+            performSave(
+                dateStr: dateStr,
+                quoteId: quoteId,
+                userInputs: userInputs,
+                hintCount: hintCount,
+                mistakeCount: mistakeCount,
+                startTime: startTime,
+                endTime: endTime,
+                isCompleted: isComplete,
+                isPreFilled: isPreFilled,
+                isRevealed: isRevealed
+            )
+            return
+        }
+
+        // Debounce non-completion saves by 1 second
+        saveTask = Task {
+            try? await Task.sleep(nanoseconds: 1_000_000_000)
+            guard !Task.isCancelled else { return }
+            performSave(
+                dateStr: dateStr,
+                quoteId: quoteId,
+                userInputs: userInputs,
+                hintCount: hintCount,
+                mistakeCount: mistakeCount,
+                startTime: startTime,
+                endTime: endTime,
+                isCompleted: isComplete,
+                isPreFilled: isPreFilled,
+                isRevealed: isRevealed
+            )
+        }
+    }
+
+    private func performSave(
+        dateStr: String,
+        quoteId: Int,
+        userInputs: [String],
+        hintCount: Int,
+        mistakeCount: Int,
+        startTime: Date?,
+        endTime: Date?,
+        isCompleted: Bool,
+        isPreFilled: [Bool],
+        isRevealed: [Bool]
+    ) {
         let progress = DailyPuzzleProgress(
             date: dateStr,
-            quoteId: puzzle.quoteId,
+            quoteId: quoteId,
             userInputs: userInputs,
-            hintCount: session.hintCount,
-            mistakeCount: session.mistakeCount,
-            startTime: session.startTime,
-            endTime: session.endTime,
-            isCompleted: session.isComplete,
+            hintCount: hintCount,
+            mistakeCount: mistakeCount,
+            startTime: startTime,
+            endTime: endTime,
+            isCompleted: isCompleted,
             isPreFilled: isPreFilled,
             isRevealed: isRevealed
         )
-        
+
         if let data = try? JSONEncoder().encode(progress) {
             UserDefaults.standard.set(data, forKey: dailyProgressKey(for: dateStr))
         }

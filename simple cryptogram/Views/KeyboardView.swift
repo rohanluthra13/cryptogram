@@ -58,35 +58,24 @@ struct KeyboardView: View {
     
     // Helper method to create a key button
     private func keyButton(for key: Character) -> some View {
+        let uppercaseKey = Character(String(key).uppercased())
+
+        // Use pre-computed mappings for O(1) lookups instead of O(n) filtering
         let baseLocked: Bool
         if appSettings.encodingType == "Letters" {
             baseLocked = completedLetters.contains(String(key).uppercased())
         } else {
-            // For number encoding, lock the key if ANY encodedChar for this letter is in completedLetters
-            let mappedNumbers = viewModel.cells.filter { cell in
-                guard let solutionChar = cell.solutionChar else { return false }
-                return String(solutionChar).uppercased() == String(key).uppercased() && !cell.isSymbol
-            }.map { $0.encodedChar }
-            baseLocked = mappedNumbers.contains(where: { completedLetters.contains($0) })
-        }
-        let isLocked = baseLocked  // always lock keys based on completion, independent of toggle
-
-        // Determine if this key is a remaining letter (in puzzle, not completed)
-        let isInPuzzle: Bool = {
-            if appSettings.encodingType == "Letters" {
-                // Any cell in the puzzle with this solutionChar
-                return viewModel.cells.contains { cell in
-                    guard let solutionChar = cell.solutionChar else { return false }
-                    return String(solutionChar).uppercased() == String(key).uppercased() && !cell.isSymbol
-                }
+            // For number encoding, check pre-computed map
+            if let encodedChars = viewModel.solutionToEncodedMap[uppercaseKey] {
+                baseLocked = encodedChars.contains(where: { completedLetters.contains($0) })
             } else {
-                // For number encoding, similar logic, but solutionChar
-                return viewModel.cells.contains { cell in
-                    guard let solutionChar = cell.solutionChar else { return false }
-                    return String(solutionChar).uppercased() == String(key).uppercased() && !cell.isSymbol
-                }
+                baseLocked = false
             }
-        }()
+        }
+        let isLocked = baseLocked
+
+        // Use pre-computed lettersInPuzzle for O(1) lookup
+        let isInPuzzle = viewModel.lettersInPuzzle.contains(uppercaseKey)
         let isRemaining = isInPuzzle && !isLocked && showRemainingLetters
 
         return Button(action: { onLetterPress(key) }) {
