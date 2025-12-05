@@ -47,7 +47,7 @@ struct UserStatsView: View {
                         Text("average time:")
                             .font(typography.footnote)
                             .foregroundColor(CryptogramTheme.Colors.text)
-                        Text(viewModel.averageTime.map { formatTime($0) } ?? "--:--")
+                        Text(viewModel.averageTime?.formattedAsMinutesSeconds ?? "--:--")
                             .font(typography.footnote)
                             .fontWeight(.bold)
                             .foregroundColor(CryptogramTheme.Colors.text)
@@ -62,12 +62,6 @@ struct UserStatsView: View {
         .padding(.top, 100)
         .frame(maxHeight: .infinity, alignment: .top)
         .padding()
-    }
-    
-    private func formatTime(_ time: TimeInterval) -> String {
-        let minutes = Int(time) / 60
-        let seconds = Int(time) % 60
-        return String(format: "%02d:%02d", minutes, seconds)
     }
 }
 

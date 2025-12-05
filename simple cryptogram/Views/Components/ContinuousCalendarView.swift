@@ -274,3 +274,45 @@ struct CalendarMonthView: View {
         .padding()
     }
 }
+
+struct DayCell: View {
+    @Environment(\.typography) private var typography
+    @Environment(AppSettings.self) private var appSettings
+    let date: Date
+    let isAvailable: Bool
+    let isCompleted: Bool
+    let onTap: () -> Void
+
+    private var dayNumber: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "d"
+        return formatter.string(from: date)
+    }
+
+    var body: some View {
+        Button(action: onTap) {
+            VStack(spacing: 8) {
+                ZStack {
+                    Color.clear
+                        .frame(width: 20, height: 20)
+
+                    if isCompleted {
+                        Image(systemName: "checkmark")
+                            .foregroundColor(isAvailable ? Color(hex: "#01780F").opacity(0.5) : Color("Text").opacity(0.3))
+                            .font(.system(size: 16))
+                    } else {
+                        Image(systemName: "square")
+                            .foregroundColor(isAvailable ? Color("Text") : Color("Text").opacity(0.3))
+                            .font(.system(size: 18))
+                    }
+                }
+
+                Text(dayNumber)
+                    .font(.system(size: appSettings.textSize.calendarDaySize, design: typography.fontOption.design))
+                    .foregroundColor(isAvailable ? Color("Text") : Color("Text").opacity(0.3))
+            }
+            .frame(height: 50)
+        }
+        .disabled(!isAvailable)
+    }
+}

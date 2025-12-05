@@ -39,9 +39,7 @@ struct TimerView: View {
     }
     
     private var timeFormatted: String {
-        let minutes = Int(displayTime) / 60
-        let seconds = Int(displayTime) % 60
-        return String(format: "%02d:%02d", minutes, seconds)
+        displayTime.formattedAsMinutesSeconds
     }
 }
 

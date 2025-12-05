@@ -19,7 +19,7 @@ struct CompletionStatsView: View {
                         Text("time:")
                             .foregroundColor(CryptogramTheme.Colors.text)
                             .font(typography.footnote)
-                        Text(formatTime(completionTime))
+                        Text(completionTime.formattedAsShortMinutesSeconds)
                             .foregroundColor(CryptogramTheme.Colors.text)
                     }
                 }
@@ -88,11 +88,5 @@ struct CompletionStatsView: View {
             
             Spacer()
         }
-    }
-    
-    private func formatTime(_ timeInterval: TimeInterval) -> String {
-        let minutes = Int(timeInterval) / 60
-        let seconds = Int(timeInterval) % 60
-        return String(format: "%d:%02d", minutes, seconds)
     }
 }
