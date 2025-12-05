@@ -1,5 +1,5 @@
 import Foundation
-import Combine
+import Observation
 import SwiftUI
 import UIKit
 
@@ -11,36 +11,35 @@ struct WordGroup: Identifiable {
 }
 
 @MainActor
-class PuzzleViewModel: ObservableObject {
+@Observable
+final class PuzzleViewModel {
     // MARK: - Managers
-    @Published private(set) var gameState: GameStateManager
-    @Published private(set) var progressManager: PuzzleProgressManager
-    @Published private(set) var dailyManager: DailyPuzzleManager
-    @Published private(set) var authorService: AuthorService
-    
+    private(set) var gameState: GameStateManager
+    private(set) var progressManager: PuzzleProgressManager
+    private(set) var dailyManager: DailyPuzzleManager
+    private(set) var authorService: AuthorService
+
     private let inputHandler: InputHandler
     private let hintManager: HintManager
     private let statisticsManager: StatisticsManager
     private let databaseService: DatabaseService
     private let puzzleSelectionManager: PuzzleSelectionManager
-    
+
     // Computed property for encodingType
     private var encodingType: String {
         return AppSettings.shared.encodingType
     }
-    
+
     // Computed property for selectedDifficulties
     private var selectedDifficulties: [String] {
         return AppSettings.shared.selectedDifficulties
     }
-    
-    private var cancellables = Set<AnyCancellable>()
-    
+
     // MARK: - Loading State
-    @Published var isLoadingPuzzle: Bool = false
-    
+    var isLoadingPuzzle: Bool = false
+
     // MARK: - Error Handling
-    @Published var currentError: DatabaseError? {
+    var currentError: DatabaseError? {
         didSet {
             if let error = currentError {
                 if ErrorRecoveryService.shared.attemptRecovery(from: error) {
@@ -159,28 +158,9 @@ class PuzzleViewModel: ObservableObject {
     
     // MARK: - Setup
     private func setupObservers() {
-        // Forward objectWillChange from gameState to trigger view updates
-        gameState.objectWillChange
-            .sink { [weak self] _ in
-                self?.objectWillChange.send()
-            }
-            .store(in: &cancellables)
-        
-        // Forward objectWillChange from dailyManager for daily puzzle UI updates
-        dailyManager.objectWillChange
-            .sink { [weak self] _ in
-                self?.objectWillChange.send()
-            }
-            .store(in: &cancellables)
-        
-        
-        // Observe progress manager errors
-        progressManager.$currentError
-            .compactMap { $0 }
-            .sink { [weak self] error in
-                self?.currentError = error
-            }
-            .store(in: &cancellables)
+        // With @Observable, view updates happen automatically
+        // No need for manual objectWillChange forwarding
+        // Error handling will be done directly through computed properties or manual checks
     }
     
     private func setupNotificationObservers() {

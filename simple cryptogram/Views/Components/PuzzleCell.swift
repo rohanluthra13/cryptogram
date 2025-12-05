@@ -10,8 +10,8 @@ struct PuzzleCell: View {
     
     @State private var cellHighlightAmount: CGFloat = 0.0
     @State private var animateCompletionBorder: Bool = false  // flash border on group completion
-    @EnvironmentObject private var viewModel: PuzzleViewModel
-    @EnvironmentObject private var settingsViewModel: SettingsViewModel
+    @Environment(PuzzleViewModel.self) private var viewModel
+    @Environment(SettingsViewModel.self) private var settingsViewModel
     @Environment(AppSettings.self) private var appSettings
     @Environment(\.typography) private var typography
     

@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct WordAwarePuzzleGrid: View {
-    @EnvironmentObject private var viewModel: PuzzleViewModel
+    @Environment(PuzzleViewModel.self) private var viewModel
     
     var body: some View {
         ScrollView {
@@ -178,5 +178,6 @@ struct FlowLayout: Layout {
     WordAwarePuzzleGrid()
         .background(CryptogramTheme.Colors.background)
         .frame(height: 300)
-        .environmentObject(PuzzleViewModel())
+        .environment(PuzzleViewModel())
+        .environment(AppSettings())
 } 

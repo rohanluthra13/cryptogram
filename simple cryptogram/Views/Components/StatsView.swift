@@ -7,7 +7,7 @@ struct TimerView: View {
     let totalPausedTime: TimeInterval
     @State private var displayTime: TimeInterval = 0
     var isPaused: Bool = false
-    @ObservedObject var settingsViewModel: SettingsViewModel
+    var settingsViewModel: SettingsViewModel
     @Environment(\.typography) private var typography
     
     var body: some View {
@@ -138,8 +138,8 @@ struct StatsView: View {
     let startTime: Date
     var onRequestHint: () -> Void = {}
     var isPaused: Bool = false
-    @ObservedObject var viewModel: PuzzleViewModel // required for UserStatsView
-    @ObservedObject var settingsViewModel: SettingsViewModel
+    var viewModel: PuzzleViewModel // required for UserStatsView
+    var settingsViewModel: SettingsViewModel
     @Environment(\.typography) private var typography
     
     var body: some View {

@@ -1,8 +1,10 @@
 import Foundation
 import UIKit
+import Observation
 
 @MainActor
-class InputHandler: ObservableObject {
+@Observable
+final class InputHandler {
     // MARK: - Dependencies
     private weak var gameState: GameStateManager?
     
@@ -17,9 +19,9 @@ class InputHandler: ObservableObject {
               index >= 0 && index < gameState.cells.count else { return }
         
         gameState.selectCell(at: index)
-        
+
         // Add subtle haptic feedback for cell selection
-        DispatchQueue.main.async {
+        Task {
             let generator = UIImpactFeedbackGenerator(style: .light)
             generator.impactOccurred(intensity: 0.5)
         }
@@ -52,9 +54,9 @@ class InputHandler: ObservableObject {
         if isCorrect {
             // Correct input
             gameState.updateCell(at: index, with: uppercaseLetter, isRevealed: false, isError: false)
-            
+
             // Light haptic feedback for correct letter
-            DispatchQueue.main.async {
+            Task {
                 let generator = UIImpactFeedbackGenerator(style: .light)
                 generator.impactOccurred()
             }
@@ -64,21 +66,22 @@ class InputHandler: ObservableObject {
         } else if !uppercaseLetter.isEmpty {
             // Incorrect input
             gameState.updateCell(at: index, with: uppercaseLetter, isRevealed: false, isError: true)
-            
+
             // Medium haptic feedback for incorrect letter
-            DispatchQueue.main.async {
+            Task {
                 let generator = UIImpactFeedbackGenerator(style: .medium)
                 generator.impactOccurred()
             }
-            
+
             // Only count a mistake once per entry and only for newly entered incorrect letters
             if wasEmpty {
                 gameState.incrementMistakes()
             }
-            
+
             // Clear incorrect input after brief delay
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak gameState] in
-                guard let gameState = gameState else { return }
+            Task { [weak gameState] in
+                try? await Task.sleep(for: .seconds(0.5))
+                guard !Task.isCancelled, let gameState = gameState else { return }
                 gameState.clearCell(at: index)
             }
         }

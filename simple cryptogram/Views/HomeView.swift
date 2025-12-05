@@ -1,18 +1,18 @@
 import SwiftUI
 
 struct HomeView: View {
-    @EnvironmentObject private var viewModel: PuzzleViewModel
+    @Environment(PuzzleViewModel.self) private var viewModel
     @Environment(AppSettings.self) private var appSettings
-    @EnvironmentObject private var themeManager: ThemeManager
-    @EnvironmentObject private var settingsViewModel: SettingsViewModel
+    @Environment(ThemeManager.self) private var themeManager
+    @Environment(SettingsViewModel.self) private var settingsViewModel
     @Environment(\.typography) private var typography
-    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
+    @Environment(NavigationCoordinator.self) private var navigationCoordinator
     @State private var showSettings = false
     @State private var showStats = false
     @State private var selectedMode: PuzzleMode = .random
     @State private var showLengthSelection = false
     @State private var isBottomBarVisible = true
-    @State private var bottomBarHideWorkItem: DispatchWorkItem?
+    @State private var bottomBarHideTask: Task<Void, Never>?
     @State private var showCalendar = false
     @State private var showInfoOverlay = false
     
@@ -150,22 +150,23 @@ struct HomeView: View {
         withAnimation {
             isBottomBarVisible = true
         }
-        bottomBarHideWorkItem?.cancel()
-        
-        let workItem = DispatchWorkItem {
+        bottomBarHideTask?.cancel()
+
+        bottomBarHideTask = Task {
+            try? await Task.sleep(for: .seconds(PuzzleViewConstants.Animation.bottomBarAutoHideDelay))
+            guard !Task.isCancelled else { return }
             withAnimation {
-                self.isBottomBarVisible = false
+                isBottomBarVisible = false
             }
         }
-        bottomBarHideWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + PuzzleViewConstants.Animation.bottomBarAutoHideDelay, execute: workItem)
     }
 }
 
 #Preview {
     HomeView()
-        .environmentObject(PuzzleViewModel())
+        .environment(PuzzleViewModel())
         .environment(AppSettings())
-        .environmentObject(ThemeManager())
-        .environmentObject(NavigationCoordinator())
+        .environment(ThemeManager())
+        .environment(SettingsViewModel())
+        .environment(NavigationCoordinator())
 }

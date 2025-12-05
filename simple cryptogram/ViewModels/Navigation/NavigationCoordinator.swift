@@ -6,13 +6,16 @@
 //
 
 import SwiftUI
+import Observation
 
 /// NavigationCoordinator handles NavigationStack-based navigation
-final class NavigationCoordinator: ObservableObject {
+@MainActor
+@Observable
+final class NavigationCoordinator {
     // MARK: - Navigation State
-    
+
     /// Navigation path for puzzle navigation
-    @Published var navigationPath = NavigationPath()
+    var navigationPath = NavigationPath()
     
     // MARK: - Navigation Methods
     

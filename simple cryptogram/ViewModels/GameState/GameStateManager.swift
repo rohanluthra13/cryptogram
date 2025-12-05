@@ -1,16 +1,18 @@
 import Foundation
 import SwiftUI
+import Observation
 
 @MainActor
-class GameStateManager: ObservableObject {
-    // MARK: - Published Properties
-    @Published var cells: [CryptogramCell] = []
-    @Published private(set) var currentPuzzle: Puzzle?
-    @Published var session: PuzzleSession = PuzzleSession()
-    @Published var isWiggling = false
-    @Published var completedLetters: Set<String> = []
-    @Published var hasUserEngaged: Bool = false
-    @Published var showCompletedHighlights: Bool = false
+@Observable
+final class GameStateManager {
+    // MARK: - Properties
+    var cells: [CryptogramCell] = []
+    private(set) var currentPuzzle: Puzzle?
+    var session: PuzzleSession = PuzzleSession()
+    var isWiggling = false
+    var completedLetters: Set<String> = []
+    var hasUserEngaged: Bool = false
+    var showCompletedHighlights: Bool = false
     
     // MARK: - Private Properties
     private let databaseService: DatabaseService
@@ -197,34 +199,32 @@ class GameStateManager: ObservableObject {
     
     func selectCell(at index: Int) {
         guard index >= 0 && index < cells.count else { return }
-        
+
         // Don't select symbol cells
         guard !cells[index].isSymbol else { return }
-        
+
         session.selectedCellIndex = index
-        objectWillChange.send()
     }
     
     func incrementMistakes() {
         session.incrementMistakes()
-        objectWillChange.send()
-        
+
         if session.mistakeCount >= 3 && !session.isFailed && !session.hasContinuedAfterFailure {
             // Delay game over overlay to allow mistake animation to complete
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+            Task { [weak self] in
+                try? await Task.sleep(for: .seconds(0.6))
+                guard !Task.isCancelled else { return }
                 self?.markFailed()
             }
         }
     }
-    
+
     func incrementHints() {
         session.revealCell(at: 0) // Session tracks hint count
-        objectWillChange.send()
     }
-    
+
     func togglePause() {
         session.togglePause()
-        objectWillChange.send()
     }
 
     func pause() {
@@ -236,18 +236,19 @@ class GameStateManager: ObservableObject {
         guard hasStarted && isPaused else { return }
         togglePause()
     }
-    
+
     func startTimer() {
         if session.startTime == nil {
             session.startTime = Date()
-            objectWillChange.send()
         }
     }
     
     func triggerCompletionWiggle() {
         isWiggling = true
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(0.6))
+            guard !Task.isCancelled else { return }
             self?.isWiggling = false
         }
     }
@@ -345,21 +346,17 @@ class GameStateManager: ObservableObject {
     
     private func markComplete() {
         session.markComplete()
-        objectWillChange.send()
     }
-    
+
     private func markFailed() {
         session.markFailed()
-        objectWillChange.send()
     }
-    
+
     func clearFailureState() {
         session.clearFailureState()
-        objectWillChange.send()
     }
-    
+
     func markSessionAsLogged() {
         session.setWasLogged(true)
-        objectWillChange.send()
     }
 }

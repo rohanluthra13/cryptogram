@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ResetAccountSection: View {
-    @ObservedObject var viewModel: PuzzleViewModel
+    var viewModel: PuzzleViewModel
     @State private var showResetConfirmation = false
     @State private var displayedConfirmationText = ""
     private let confirmationFullText = "are you sure? this will delete all your user history."

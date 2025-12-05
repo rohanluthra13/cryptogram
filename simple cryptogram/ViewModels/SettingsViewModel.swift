@@ -1,10 +1,11 @@
 import SwiftUI
-import Combine
+import Observation
 
 @MainActor
-class SettingsViewModel: ObservableObject {
+@Observable
+final class SettingsViewModel {
     // Direct references to AppSettings properties
-    
+
     // Notification name for difficulty selection changes
     static let difficultySelectionChangedNotification = Notification.Name("DifficultySelectionChanged")
     

@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct CompletionStatsView: View {
-    @EnvironmentObject private var viewModel: PuzzleViewModel
+    @Environment(PuzzleViewModel.self) private var viewModel
     @Environment(\.typography) private var typography
     let maxMistakes: Int = 3
     

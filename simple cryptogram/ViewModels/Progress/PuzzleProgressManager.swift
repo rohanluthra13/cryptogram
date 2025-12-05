@@ -1,14 +1,14 @@
 import Foundation
-import Combine
+import Observation
 
 @MainActor
-class PuzzleProgressManager: ObservableObject {
+@Observable
+final class PuzzleProgressManager {
     // MARK: - Properties
     private let progressStore: PuzzleProgressStore
-    @Published var currentError: DatabaseError?
+    var currentError: DatabaseError?
 
     // Session monitoring
-    private var cancellables = Set<AnyCancellable>()
     private var gameStateManager: GameStateManager?
     private var encodingType: String {
         return AppSettings.shared.encodingType
@@ -121,31 +121,28 @@ class PuzzleProgressManager: ObservableObject {
     // MARK: - Session Monitoring
     func startMonitoring(gameState: GameStateManager) {
         self.gameStateManager = gameState
-        
-        gameState.$session
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] session in
-                self?.handleSessionChange(session)
-            }
-            .store(in: &cancellables)
+        // With @Observable, we can manually check session changes where needed
+        // Session completion is typically logged after explicit events
     }
-    
-    private func handleSessionChange(_ session: PuzzleSession) {
+
+    func checkAndLogSessionIfNeeded() {
         guard let gameState = gameStateManager,
               let currentPuzzle = gameState.currentPuzzle else { return }
-        
+
+        let session = gameState.session
+
         if session.isComplete && session.endTime != nil && !session.wasLogged {
             logPuzzleCompletion(puzzle: currentPuzzle, session: session)
         } else if session.isFailed && !session.wasLogged {
             logPuzzleFailure(puzzle: currentPuzzle, session: session)
         }
     }
-    
+
     private func logPuzzleCompletion(puzzle: Puzzle, session: PuzzleSession) {
         logCompletion(puzzle: puzzle, session: session, encodingType: encodingType)
         gameStateManager?.markSessionAsLogged()
     }
-    
+
     private func logPuzzleFailure(puzzle: Puzzle, session: PuzzleSession) {
         logFailure(puzzle: puzzle, session: session, encodingType: encodingType)
         gameStateManager?.markSessionAsLogged()

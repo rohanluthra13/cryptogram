@@ -6,7 +6,7 @@ struct KeyboardView: View {
     var onBackspacePress: () -> Void
     var completedLetters: Set<String> // Remove default value to force explicit passing
 
-    @EnvironmentObject private var viewModel: PuzzleViewModel
+    @Environment(PuzzleViewModel.self) private var viewModel
     @Environment(AppSettings.self) private var appSettings
 
     // New state for showing/hiding remaining letters (session only, defaults to hide)

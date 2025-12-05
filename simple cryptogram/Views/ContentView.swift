@@ -1,19 +1,20 @@
 import SwiftUI
 
 struct ContentView: View {
-    @EnvironmentObject private var viewModel: PuzzleViewModel
+    @Environment(PuzzleViewModel.self) private var viewModel
     @State private var showError = false
-    @StateObject private var navigationCoordinator = NavigationCoordinator()
-    
+    @State private var navigationCoordinator = NavigationCoordinator()
+
     var body: some View {
-        NavigationStack(path: $navigationCoordinator.navigationPath) {
+        @Bindable var navCoordinator = navigationCoordinator
+
+        NavigationStack(path: $navCoordinator.navigationPath) {
             HomeView()
                 .navigationDestination(for: Puzzle.self) { puzzle in
                     PuzzleView(showPuzzle: .constant(true))
-                        .environmentObject(viewModel)
                 }
         }
-        .environmentObject(navigationCoordinator)
+        .environment(navigationCoordinator)
         .injectTypography()
         .onChange(of: viewModel.currentError) { _, newError in
             if newError != nil {
@@ -58,8 +59,9 @@ struct ContentView: View {
 }
 
 #Preview {
-    let viewModel = PuzzleViewModel()
-    return ContentView()
-        .environmentObject(viewModel)
+    ContentView()
+        .environment(PuzzleViewModel())
         .environment(AppSettings())
+        .environment(ThemeManager())
+        .environment(SettingsViewModel())
 }

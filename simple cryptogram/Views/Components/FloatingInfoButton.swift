@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct FloatingInfoButton: View {
-    @EnvironmentObject private var viewModel: PuzzleViewModel
-    @ObservedObject var uiState: PuzzleViewState
+    @Environment(PuzzleViewModel.self) private var viewModel
+    var uiState: PuzzleViewState
     
     private var shouldShow: Bool {
         viewModel.currentPuzzle != nil && uiState.isMainUIVisible
@@ -37,5 +37,5 @@ struct FloatingInfoButton: View {
 
 #Preview {
     FloatingInfoButton(uiState: PuzzleViewState())
-        .environmentObject(PuzzleViewModel())
+        .environment(PuzzleViewModel())
 }

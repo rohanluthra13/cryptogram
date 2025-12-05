@@ -1,13 +1,12 @@
 import SwiftUI
-import Combine
 
 struct PuzzleView: View {
-    @EnvironmentObject private var viewModel: PuzzleViewModel
-    @EnvironmentObject private var themeManager: ThemeManager
-    @EnvironmentObject private var settingsViewModel: SettingsViewModel
+    @Environment(PuzzleViewModel.self) private var viewModel
+    @Environment(ThemeManager.self) private var themeManager
+    @Environment(SettingsViewModel.self) private var settingsViewModel
     @Environment(AppSettings.self) private var appSettings
-    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
-    @StateObject private var uiState = PuzzleViewState()
+    @Environment(NavigationCoordinator.self) private var navigationCoordinator
+    @State private var uiState = PuzzleViewState()
     @Environment(\.dismiss) private var dismiss
     @Binding var showPuzzle: Bool
     
@@ -30,8 +29,6 @@ struct PuzzleView: View {
                 // --- Persistent Top Bar (always visible) ---
                 VStack {
                     TopBarView(uiState: uiState)
-                        .environmentObject(viewModel)
-                        .environmentObject(settingsViewModel)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .zIndex(0)
@@ -43,7 +40,6 @@ struct PuzzleView: View {
                         uiState: uiState,
                         layoutBinding: layoutBinding
                     )
-                    .environmentObject(viewModel)
                     
                     // --- Bottom Banner Placeholder (for keyboard spacing) ---
                     Color.clear
@@ -69,9 +65,6 @@ struct PuzzleView: View {
         )
         .navigationBarBackButtonHidden(true)
         .overlayManager(uiState: uiState)
-        .environmentObject(viewModel)
-        .environmentObject(themeManager)
-        .environmentObject(settingsViewModel)
         .onChange(of: viewModel.isComplete) { oldValue, isComplete in
             if isComplete {
                 // Add haptic feedback for completion
@@ -122,9 +115,9 @@ struct PuzzleView: View {
 
 #Preview {
     PuzzleView(showPuzzle: .constant(true))
-        .environmentObject(PuzzleViewModel())
-        .environmentObject(ThemeManager())
-        .environmentObject(SettingsViewModel())
+        .environment(PuzzleViewModel())
+        .environment(ThemeManager())
+        .environment(SettingsViewModel())
         .environment(AppSettings())
-        .environmentObject(NavigationCoordinator())
+        .environment(NavigationCoordinator())
 }

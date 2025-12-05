@@ -1,21 +1,23 @@
 import Foundation
 import SwiftUI
-import Combine
+import Observation
 
 /// View model specifically for PuzzleView UI state
 /// Handles presentation logic without business logic
 @MainActor
-class PuzzleUIViewModel: ObservableObject {
+@Observable
+final class PuzzleUIViewModel {
     // MARK: - Animation States
-    @Published var displayedGameOver = ""
-    @Published var showGameOverButtons = false
-    @Published var showContinueFriction = false
-    @Published var frictionTypedText = ""
+    var displayedGameOver = ""
+    var showGameOverButtons = false
+    var showContinueFriction = false
+    var frictionTypedText = ""
     
     // MARK: - Game Over Animation
     private let fullGameOverText = "game over"
-    private var gameOverTypingTimer: Timer?
-    private var frictionTypingTimer: Timer?
+    // nonisolated(unsafe) allows safe access from deinit - Timer.invalidate() is thread-safe
+    nonisolated(unsafe) private var gameOverTypingTimer: Timer?
+    nonisolated(unsafe) private var frictionTypingTimer: Timer?
     
     private let gameOverMessages = [
         "uh oh that's 3 mistakes.",

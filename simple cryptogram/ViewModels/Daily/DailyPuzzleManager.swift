@@ -1,11 +1,13 @@
 import Foundation
 import SwiftUI
+import Observation
 
 @MainActor
-class DailyPuzzleManager: ObservableObject {
-    // MARK: - Published Properties
-    @Published var isDailyPuzzle: Bool = false
-    @Published var isDailyPuzzleCompletedPublished: Bool = false
+@Observable
+final class DailyPuzzleManager {
+    // MARK: - Properties
+    var isDailyPuzzle: Bool = false
+    var isDailyPuzzleCompletedPublished: Bool = false
     
     // MARK: - Dependencies
     private let databaseService: DatabaseService

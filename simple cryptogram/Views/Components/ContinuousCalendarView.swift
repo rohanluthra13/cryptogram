@@ -1,9 +1,9 @@
 import SwiftUI
 
 struct ContinuousCalendarView: View {
-    @EnvironmentObject private var viewModel: PuzzleViewModel
+    @Environment(PuzzleViewModel.self) private var viewModel
     @Environment(AppSettings.self) private var appSettings
-    @StateObject private var dailyPuzzleManager = DailyPuzzleManager()
+    @State private var dailyPuzzleManager = DailyPuzzleManager()
     @Environment(\.typography) private var typography
     @State private var currentMonthIndex: Int
     @State private var dragOffset: CGFloat = 0

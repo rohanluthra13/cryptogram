@@ -1,10 +1,10 @@
 import SwiftUI
 
 struct TopBarView: View {
-    @EnvironmentObject private var viewModel: PuzzleViewModel
-    @EnvironmentObject private var settingsViewModel: SettingsViewModel
-    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
-    @ObservedObject var uiState: PuzzleViewState
+    @Environment(PuzzleViewModel.self) private var viewModel
+    @Environment(SettingsViewModel.self) private var settingsViewModel
+    @Environment(NavigationCoordinator.self) private var navigationCoordinator
+    var uiState: PuzzleViewState
     @Environment(\.dismiss) private var dismiss
     @Environment(\.typography) private var typography
     
@@ -95,7 +95,7 @@ struct TopBarView: View {
 
 #Preview {
     TopBarView(uiState: PuzzleViewState())
-        .environmentObject(PuzzleViewModel())
-        .environmentObject(SettingsViewModel())
-        .environmentObject(NavigationCoordinator())
+        .environment(PuzzleViewModel())
+        .environment(SettingsViewModel())
+        .environment(NavigationCoordinator())
 }

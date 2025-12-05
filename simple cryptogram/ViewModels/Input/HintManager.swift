@@ -1,8 +1,10 @@
 import Foundation
 import UIKit
+import Observation
 
 @MainActor
-class HintManager: ObservableObject {
+@Observable
+final class HintManager {
     // MARK: - Dependencies
     private weak var gameState: GameStateManager?
     private weak var inputHandler: InputHandler?

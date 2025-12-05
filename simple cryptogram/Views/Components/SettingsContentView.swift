@@ -1,9 +1,9 @@
 import SwiftUI
 
 struct SettingsContentView: View {
-    @EnvironmentObject private var puzzleViewModel: PuzzleViewModel
-    @EnvironmentObject private var themeManager: ThemeManager
-    @EnvironmentObject private var settingsViewModel: SettingsViewModel
+    @Environment(PuzzleViewModel.self) private var puzzleViewModel
+    @Environment(ThemeManager.self) private var themeManager
+    @Environment(SettingsViewModel.self) private var settingsViewModel
     @Environment(AppSettings.self) private var appSettings
     @Environment(\.typography) private var typography
     
@@ -31,6 +31,8 @@ struct SettingsContentView: View {
     private let lengthInfoText = "short: quotes under 50 characters\nmedium: quotes 50-99 characters\nlong: quotes 100+ characters"
     
     var body: some View {
+        @Bindable var settingsVM = settingsViewModel
+
         VStack(spacing: 20) {
             // Top spacing to position content as needed
             Spacer()
@@ -278,7 +280,7 @@ struct SettingsContentView: View {
                         .zIndex(showFontSelector ? 1 : 0)
                         
                         // Layout selection with visual previews
-                        NavBarLayoutSelector(selection: $settingsViewModel.selectedNavBarLayout)
+                        NavBarLayoutSelector(selection: $settingsVM.selectedNavBarLayout)
                         
                     }
                 }

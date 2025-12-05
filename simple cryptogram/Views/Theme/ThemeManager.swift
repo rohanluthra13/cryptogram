@@ -1,12 +1,13 @@
 import SwiftUI
-import Combine
+import Observation
 
 @MainActor
-class ThemeManager: ObservableObject {
-    
+@Observable
+final class ThemeManager {
+
     var isDarkMode: Bool {
         get { AppSettings.shared.isDarkMode }
-        set { 
+        set {
             AppSettings.shared.isDarkMode = newValue
             applyTheme()
         }

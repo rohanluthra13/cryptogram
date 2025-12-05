@@ -1,7 +1,9 @@
 import Foundation
+import Observation
 
 @MainActor
-class StatisticsManager: ObservableObject {
+@Observable
+final class StatisticsManager {
     // MARK: - Dependencies
     private let progressManager: PuzzleProgressManager
 

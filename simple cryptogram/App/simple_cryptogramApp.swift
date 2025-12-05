@@ -4,10 +4,10 @@ import SwiftUI
 struct simple_cryptogramApp: App {
     @State private var appSettings: AppSettings
     @Environment(\.scenePhase) private var scenePhase
-    @StateObject private var viewModel: PuzzleViewModel
-    @StateObject private var themeManager = ThemeManager()
-    @StateObject private var settingsViewModel = SettingsViewModel()
-    
+    @State private var viewModel: PuzzleViewModel
+    @State private var themeManager = ThemeManager()
+    @State private var settingsViewModel = SettingsViewModel()
+
     init() {
         // Create AppSettings instance on main thread first
         let settings = AppSettings()
@@ -15,16 +15,16 @@ struct simple_cryptogramApp: App {
         _appSettings = State(wrappedValue: settings)
 
         // Now create ViewModels that depend on AppSettings
-        _viewModel = StateObject(wrappedValue: PuzzleViewModel())
+        _viewModel = State(wrappedValue: PuzzleViewModel())
     }
-    
+
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environment(appSettings)
-                .environmentObject(viewModel)
-                .environmentObject(themeManager)
-                .environmentObject(settingsViewModel)
+                .environment(viewModel)
+                .environment(themeManager)
+                .environment(settingsViewModel)
                 .preferredColorScheme(appSettings.isDarkMode ? .dark : .light)
         }
         .onChange(of: scenePhase) { _, newPhase in

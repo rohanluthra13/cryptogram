@@ -1,5 +1,5 @@
 import SwiftUI
-import Combine
+import Observation
 
 /// Represents the different completion view states
 enum CompletionState: Equatable {
@@ -10,13 +10,14 @@ enum CompletionState: Equatable {
 
 /// Manages UI state for PuzzleView, separating presentation logic from game logic
 @MainActor
-class PuzzleViewState: ObservableObject {
+@Observable
+final class PuzzleViewState {
     // MARK: - Overlay States
-    @Published var showSettings = false
-    @Published var completionState: CompletionState = .none
-    @Published var showStatsOverlay = false
-    @Published var showInfoOverlay = false
-    @Published var showCalendar = false
+    var showSettings = false
+    var completionState: CompletionState = .none
+    var showStatsOverlay = false
+    var showInfoOverlay = false
+    var showCalendar = false
     
     // Legacy completion view properties (for backward compatibility during transition)
     var showCompletionView: Bool {
@@ -30,14 +31,14 @@ class PuzzleViewState: ObservableObject {
     }
     
     // MARK: - Animation States
-    @Published var isSwitchingPuzzle = false
-    @Published var displayedGameOver = ""
-    
+    var isSwitchingPuzzle = false
+    var displayedGameOver = ""
+
     // MARK: - Bottom Bar
-    @Published var isBottomBarVisible = true
-    @Published var isGameOverBottomBarVisible = false
-    private var bottomBarHideWorkItem: DispatchWorkItem?
-    private var gameOverBottomBarHideWorkItem: DispatchWorkItem?
+    var isBottomBarVisible = true
+    var isGameOverBottomBarVisible = false
+    private var bottomBarHideTask: Task<Void, Never>?
+    private var gameOverBottomBarHideTask: Task<Void, Never>?
     
     // MARK: - Constants
     let fullGameOverText = "game over"
@@ -59,34 +60,34 @@ class PuzzleViewState: ObservableObject {
     /// Shows the bottom bar temporarily, auto-hiding after 3 seconds
     func showBottomBarTemporarily() {
         isBottomBarVisible = true
-        bottomBarHideWorkItem?.cancel()
-        
-        let workItem = DispatchWorkItem { [weak self] in
+        bottomBarHideTask?.cancel()
+
+        bottomBarHideTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(PuzzleViewConstants.Animation.bottomBarAutoHideDelay))
+            guard !Task.isCancelled else { return }
             withAnimation {
                 self?.isBottomBarVisible = false
             }
         }
-        bottomBarHideWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + PuzzleViewConstants.Animation.bottomBarAutoHideDelay, execute: workItem)
     }
     
     /// Shows the game over bottom bar temporarily, auto-hiding after 3 seconds
     func showGameOverBottomBarTemporarily() {
         isGameOverBottomBarVisible = true
-        gameOverBottomBarHideWorkItem?.cancel()
-        
-        let workItem = DispatchWorkItem { [weak self] in
+        gameOverBottomBarHideTask?.cancel()
+
+        gameOverBottomBarHideTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(PuzzleViewConstants.Animation.bottomBarAutoHideDelay))
+            guard !Task.isCancelled else { return }
             withAnimation {
                 self?.isGameOverBottomBarVisible = false
             }
         }
-        gameOverBottomBarHideWorkItem = workItem
-        DispatchQueue.main.asyncAfter(deadline: .now() + PuzzleViewConstants.Animation.bottomBarAutoHideDelay, execute: workItem)
     }
     
     /// Cancels auto-hide of bottom bar
     func cancelBottomBarHide() {
-        bottomBarHideWorkItem?.cancel()
+        bottomBarHideTask?.cancel()
         isBottomBarVisible = true
     }
     
@@ -136,8 +137,10 @@ class PuzzleViewState: ObservableObject {
         withAnimation(.easeInOut(duration: PuzzleViewConstants.Animation.puzzleSwitchDuration)) {
             isSwitchingPuzzle = true
         }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + PuzzleViewConstants.Animation.puzzleSwitchDuration) {
+
+        Task {
+            try? await Task.sleep(for: .seconds(PuzzleViewConstants.Animation.puzzleSwitchDuration))
+            guard !Task.isCancelled else { return }
             completion()
             withAnimation(.easeInOut(duration: PuzzleViewConstants.Animation.puzzleSwitchDuration)) {
                 self.isSwitchingPuzzle = false
@@ -148,9 +151,14 @@ class PuzzleViewState: ObservableObject {
     /// Starts typewriter effect for game over text
     func startGameOverTypewriter(delay: TimeInterval = 1.2) {
         displayedGameOver = ""
-        for (i, ch) in fullGameOverText.enumerated() {
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay + Double(i) * 0.2) { [weak self] in
-                self?.displayedGameOver.append(ch)
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(delay))
+            guard !Task.isCancelled, let self = self else { return }
+
+            for (i, ch) in fullGameOverText.enumerated() {
+                try? await Task.sleep(for: .seconds(Double(i) * 0.2))
+                guard !Task.isCancelled else { return }
+                self.displayedGameOver.append(ch)
             }
         }
     }

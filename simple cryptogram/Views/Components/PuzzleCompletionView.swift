@@ -1,16 +1,16 @@
 import SwiftUI
 
 struct PuzzleCompletionView: View {
-    @EnvironmentObject private var viewModel: PuzzleViewModel
-    @EnvironmentObject private var themeManager: ThemeManager
-    @EnvironmentObject private var settingsViewModel: SettingsViewModel
+    @Environment(PuzzleViewModel.self) private var viewModel
+    @Environment(ThemeManager.self) private var themeManager
+    @Environment(SettingsViewModel.self) private var settingsViewModel
     @Environment(AppSettings.self) private var appSettings
-    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
+    @Environment(NavigationCoordinator.self) private var navigationCoordinator
     @Environment(\.typography) private var typography
     @Binding var showCompletionView: Bool
-    
+
     // Bottom bar state
-    @StateObject private var uiState = PuzzleViewState()
+    @State private var uiState = PuzzleViewState()
     
     // Animation states
     @State private var showQuote = false
@@ -42,42 +42,32 @@ struct PuzzleCompletionView: View {
     var isDailyPuzzle: Bool = false
 
     // State for managing typing animations
-    @State private var summaryTypingWorkItem: DispatchWorkItem?
-    @State private var bornTypingWorkItem: DispatchWorkItem?
-    @State private var diedTypingWorkItem: DispatchWorkItem?
+    @State private var summaryTypingTask: Task<Void, Never>?
+    @State private var bornTypingTask: Task<Void, Never>?
+    @State private var diedTypingTask: Task<Void, Never>?
     
     // MARK: - Helper for line typing animation
-    private func typeLine(line: String, setter: @escaping (String) -> Void, completion: @escaping () -> Void) -> DispatchWorkItem {
+    private func typeLine(line: String, setter: @escaping (String) -> Void, completion: @escaping () -> Void) -> Task<Void, Never> {
         let characters = Array(line)
-        var currentIndex = 0
-        var workItem: DispatchWorkItem!
-        
-        func typeNext() {
-            if !workItem.isCancelled && currentIndex <= characters.count {
+
+        return Task {
+            for currentIndex in 0...characters.count {
+                guard !Task.isCancelled else { return }
                 setter(String(characters.prefix(currentIndex)))
-                currentIndex += 1
-                if currentIndex <= characters.count {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + summaryTypingSpeed) {
-                        if !workItem.isCancelled {
-                            typeNext()
-                        }
-                    }
-                } else {
-                    completion()
+                if currentIndex < characters.count {
+                    try? await Task.sleep(for: .seconds(summaryTypingSpeed))
                 }
             }
+            guard !Task.isCancelled else { return }
+            completion()
         }
-        
-        workItem = DispatchWorkItem { typeNext() }
-        DispatchQueue.main.async(execute: workItem)
-        return workItem
     }
 
     private func skipSummaryTyping() {
         // Cancel all ongoing animations
-        summaryTypingWorkItem?.cancel()
-        bornTypingWorkItem?.cancel()
-        diedTypingWorkItem?.cancel()
+        summaryTypingTask?.cancel()
+        bornTypingTask?.cancel()
+        diedTypingTask?.cancel()
         
         showSummaryLine = true
         showBornLine = true
@@ -237,34 +227,36 @@ struct PuzzleCompletionView: View {
                                             showSummaryLine = false; showBornLine = false; showDiedLine = false
                                             summaryTyped = ""; bornTyped = ""; diedTyped = ""
                                             // Cancel any existing animations
-                                            summaryTypingWorkItem?.cancel()
-                                            bornTypingWorkItem?.cancel()
-                                            diedTypingWorkItem?.cancel()
+                                            summaryTypingTask?.cancel()
+                                            bornTypingTask?.cancel()
+                                            diedTypingTask?.cancel()
                                             // Animate summary line typing
                                             withAnimation(.easeOut(duration: 0.3)) { showSummaryLine = true }
-                                            summaryTypingWorkItem = typeLine(line: summaryText, setter: { summaryTyped = $0 }) {
+                                            summaryTypingTask = typeLine(line: summaryText, setter: { summaryTyped = $0 }) {
                                                 if bornLine != nil {
                                                     withAnimation(.easeOut(duration: 0.3)) { showBornLine = true }
-                                                    bornTypingWorkItem = typeLine(line: " " + String(bornLine!.dropFirst(5)), setter: { bornTyped = $0 }) {
+                                                    bornTypingTask = typeLine(line: " " + String(bornLine!.dropFirst(5)), setter: { bornTyped = $0 }) {
                                                         if diedLine != nil {
                                                             let diedDelay = (bornLine != nil) ? 0.2 : 0.0
-                                                            DispatchQueue.main.asyncAfter(deadline: .now() + diedDelay) {
+                                                            Task {
+                                                                try? await Task.sleep(for: .seconds(diedDelay))
+                                                                guard !Task.isCancelled else { return }
                                                                 withAnimation(.easeOut(duration: 0.3)) { showDiedLine = true }
-                                                                diedTypingWorkItem = typeLine(line: " " + String(diedLine!.dropFirst(5)), setter: { diedTyped = $0 }, completion: {})
+                                                                diedTypingTask = typeLine(line: " " + String(diedLine!.dropFirst(5)), setter: { diedTyped = $0 }, completion: {})
                                                             }
                                                         }
                                                     }
                                                 } else if diedLine != nil {
                                                     withAnimation(.easeOut(duration: 0.3)) { showDiedLine = true }
-                                                    diedTypingWorkItem = typeLine(line: " " + String(diedLine!.dropFirst(5)), setter: { diedTyped = $0 }, completion: {})
+                                                    diedTypingTask = typeLine(line: " " + String(diedLine!.dropFirst(5)), setter: { diedTyped = $0 }, completion: {})
                                                 }
                                             }
                                         }
                                         .onDisappear {
                                             // Cancel any ongoing animations
-                                            summaryTypingWorkItem?.cancel()
-                                            bornTypingWorkItem?.cancel()
-                                            diedTypingWorkItem?.cancel()
+                                            summaryTypingTask?.cancel()
+                                            bornTypingTask?.cancel()
+                                            diedTypingTask?.cancel()
                                             showSummaryLine = false; showBornLine = false; showDiedLine = false
                                             summaryTyped = ""; bornTyped = ""; diedTyped = ""
                                         }
@@ -305,7 +297,7 @@ struct PuzzleCompletionView: View {
                 VStack(spacing: 8) {
                     if !hideStats {
                         CompletionStatsView()
-                            .environmentObject(viewModel)
+                            .environment(viewModel)
                             .opacity(showStats ? 1 : 0)
                             .offset(y: showStats ? 0 : 20)
                     }
@@ -341,7 +333,7 @@ struct PuzzleCompletionView: View {
             
             // Bottom bar with three icons (for all completion views)
             BottomBarView(uiState: uiState)
-                .environmentObject(navigationCoordinator)
+                .environment(navigationCoordinator)
                 .opacity(showNextButton ? 1 : 0)
                 .animation(.easeInOut(duration: 0.5), value: showNextButton)
             
@@ -384,23 +376,25 @@ struct PuzzleCompletionView: View {
         withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.4)) {
             showQuote = true
         }
-        
+
         // Start typewriter effect after quote container appears
         if let quoteText = viewModel.currentPuzzle?.solution {
             // Delay the start of typing to ensure container is visible first
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+            Task {
+                try? await Task.sleep(for: .seconds(0.8))
+                guard !Task.isCancelled else { return }
                 startTypewriterAnimation(for: quoteText)
             }
         }
-        
+
         withAnimation(.easeInOut(duration: 0.5).delay(1.2)) {
             showAttribution = true
         }
-        
+
         withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(1.8)) {
             showStats = true
         }
-        
+
         withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(2.3)) {
             showNextButton = true
         }
@@ -423,9 +417,11 @@ struct PuzzleCompletionView: View {
             } else {
                 timer.invalidate()
                 typingTimer = nil
-                
+
                 // Bold the author name after quote is typed
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                Task {
+                    try? await Task.sleep(for: .seconds(0.3))
+                    guard !Task.isCancelled else { return }
                     withAnimation {
                         authorIsBold = true
                     }
@@ -478,11 +474,11 @@ struct PuzzleCompletionView_Previews: PreviewProvider {
     @State static var showCompletionView = true
     static var previews: some View {
         PuzzleCompletionView(showCompletionView: $showCompletionView)
-            .environmentObject(PuzzleViewModel())
-            .environmentObject(ThemeManager())
-            .environmentObject(SettingsViewModel())
+            .environment(PuzzleViewModel())
+            .environment(ThemeManager())
+            .environment(SettingsViewModel())
             .environment(AppSettings())
-            .environmentObject(NavigationCoordinator())
+            .environment(NavigationCoordinator())
     }
 }
 #endif

@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct MainContentView: View {
-    @EnvironmentObject private var viewModel: PuzzleViewModel
-    @ObservedObject var uiState: PuzzleViewState
+    @Environment(PuzzleViewModel.self) private var viewModel
+    var uiState: PuzzleViewState
     let layoutBinding: Binding<NavigationBarLayout>
     
     var body: some View {
@@ -11,7 +11,6 @@ struct MainContentView: View {
                 Group {
                     ScrollView {
                         WordAwarePuzzleGrid()
-                            .environmentObject(viewModel)
                             .padding(.horizontal, PuzzleViewConstants.Spacing.puzzleGridHorizontalPadding)
                             .allowsHitTesting(!viewModel.isPaused)
                     }
@@ -76,5 +75,6 @@ struct MainContentView: View {
         uiState: PuzzleViewState(),
         layoutBinding: .constant(.leftLayout)
     )
-    .environmentObject(PuzzleViewModel())
+    .environment(PuzzleViewModel())
+    .environment(AppSettings())
 }

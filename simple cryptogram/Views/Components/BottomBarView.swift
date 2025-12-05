@@ -1,8 +1,8 @@
 import SwiftUI
 
 struct BottomBarView: View {
-    @ObservedObject var uiState: PuzzleViewState
-    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
+    var uiState: PuzzleViewState
+    @Environment(NavigationCoordinator.self) private var navigationCoordinator
     
     private var shouldShowBar: Bool {
         !uiState.showInfoOverlay && 
@@ -96,5 +96,5 @@ struct BottomBarView: View {
 
 #Preview {
     BottomBarView(uiState: PuzzleViewState())
-        .environmentObject(NavigationCoordinator())
+        .environment(NavigationCoordinator())
 }

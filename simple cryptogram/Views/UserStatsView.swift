@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct UserStatsView: View {
-    @ObservedObject var viewModel: PuzzleViewModel
+    var viewModel: PuzzleViewModel
     @Environment(\.typography) private var typography
     
     var body: some View {

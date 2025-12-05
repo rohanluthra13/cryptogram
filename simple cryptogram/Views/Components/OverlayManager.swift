@@ -1,4 +1,5 @@
 import SwiftUI
+import Observation
 
 // Z-Index hierarchy constants
 enum OverlayZIndex {
@@ -40,9 +41,10 @@ enum OverlayType: Hashable, Equatable {
 }
 
 // Unified overlay state manager
-class UnifiedOverlayManager: ObservableObject {
-    @Published var activeOverlay: OverlayType?
-    @Published var overlayQueue: [OverlayType] = []
+@Observable
+final class UnifiedOverlayManager {
+    var activeOverlay: OverlayType?
+    var overlayQueue: [OverlayType] = []
     
     func present(_ overlay: OverlayType) {
         withAnimation(.easeIn(duration: PuzzleViewConstants.Animation.overlayDuration)) {
@@ -54,7 +56,9 @@ class UnifiedOverlayManager: ObservableObject {
         withAnimation(.easeOut(duration: PuzzleViewConstants.Animation.overlayDuration)) {
             activeOverlay = nil
         }
-        DispatchQueue.main.asyncAfter(deadline: .now() + PuzzleViewConstants.Animation.overlayDuration) {
+        Task {
+            try? await Task.sleep(for: .seconds(PuzzleViewConstants.Animation.overlayDuration))
+            guard !Task.isCancelled else { return }
             completion?()
         }
     }
@@ -81,14 +85,14 @@ class UnifiedOverlayManager: ObservableObject {
 }
 
 struct OverlayManager: ViewModifier {
-    @EnvironmentObject private var viewModel: PuzzleViewModel
-    @EnvironmentObject private var themeManager: ThemeManager
-    @EnvironmentObject private var settingsViewModel: SettingsViewModel
-    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
+    @Environment(PuzzleViewModel.self) private var viewModel
+    @Environment(ThemeManager.self) private var themeManager
+    @Environment(SettingsViewModel.self) private var settingsViewModel
+    @Environment(NavigationCoordinator.self) private var navigationCoordinator
     @Environment(\.typography) private var typography
     @Environment(\.dismiss) private var dismiss
     @Environment(AppSettings.self) private var appSettings
-    @ObservedObject var uiState: PuzzleViewState
+    @Bindable var uiState: PuzzleViewState
     @Namespace private var statsOverlayNamespace
     
     // Game over typing animation state
@@ -461,9 +465,9 @@ struct OverlayManager: ViewModifier {
                             .background(Color.clear)
                             .contentShape(Rectangle())
                             .onTapGesture {}
-                            .environmentObject(viewModel)
-                            .environmentObject(themeManager)
-                            .environmentObject(settingsViewModel)
+                            .environment(viewModel)
+                            .environment(themeManager)
+                            .environment(settingsViewModel)
                     )
                 
                 // X button positioned at screen level
@@ -492,19 +496,19 @@ struct OverlayManager: ViewModifier {
         switch uiState.completionState {
         case .regular:
             PuzzleCompletionView(showCompletionView: $uiState.showCompletionView)
-                .environmentObject(themeManager)
-                .environmentObject(viewModel)
-                .environmentObject(navigationCoordinator)
-                .environmentObject(settingsViewModel)
+                .environment(themeManager)
+                .environment(viewModel)
+                .environment(navigationCoordinator)
+                .environment(settingsViewModel)
                 .transition(.opacity)
                 .animation(.easeInOut(duration: 0.2), value: uiState.completionState)
                 .zIndex(OverlayZIndex.completion)
         case .daily:
             PuzzleCompletionView(showCompletionView: $uiState.showDailyCompletionView, isDailyPuzzle: true)
-                .environmentObject(themeManager)
-                .environmentObject(viewModel)
-                .environmentObject(navigationCoordinator)
-                .environmentObject(settingsViewModel)
+                .environment(themeManager)
+                .environment(viewModel)
+                .environment(navigationCoordinator)
+                .environment(settingsViewModel)
                 .transition(.opacity)
                 .animation(.easeInOut(duration: 0.2), value: uiState.completionState)
                 .zIndex(OverlayZIndex.dailyCompletion)
@@ -532,7 +536,7 @@ struct OverlayManager: ViewModifier {
                                 }
                             }
                         )
-                        .environmentObject(viewModel)
+                        .environment(viewModel)
                         .environment(appSettings)
                     )
                 
@@ -563,12 +567,14 @@ struct OverlayManager: ViewModifier {
         // Reset state
         gameOverTypedText = ""
         showGameOverButtons = false
-        
+
         // Select a random message
         currentGameOverMessage = gameOverMessages.randomElement() ?? "game over"
-        
+
         // Start typing after 0.7s delay (increased from 0.5s to avoid overlap with mistake animation)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) {
+        Task {
+            try? await Task.sleep(for: .seconds(0.7))
+            guard !Task.isCancelled else { return }
             typeGameOverMessage()
         }
     }
@@ -613,12 +619,14 @@ struct OverlayManager: ViewModifier {
             showGameOverButtons = false
             showContinueFriction = true
         }
-        
+
         // Reset friction text
         frictionTypedText = ""
-        
+
         // Start typing after a short delay
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+        Task {
+            try? await Task.sleep(for: .seconds(0.3))
+            guard !Task.isCancelled else { return }
             typeFrictionMessage()
         }
     }
@@ -637,7 +645,9 @@ struct OverlayManager: ViewModifier {
             } else {
                 timer.invalidate()
                 // Auto-continue after typing completes
-                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(1.0))
+                    guard !Task.isCancelled else { return }
                     viewModel.continueAfterFailure()
                 }
             }
@@ -647,10 +657,10 @@ struct OverlayManager: ViewModifier {
 
 // Unified overlay modifier that can be used by any view
 struct UnifiedOverlayModifier: ViewModifier {
-    @EnvironmentObject private var viewModel: PuzzleViewModel
-    @EnvironmentObject private var themeManager: ThemeManager
-    @EnvironmentObject private var settingsViewModel: SettingsViewModel
-    @EnvironmentObject private var navigationCoordinator: NavigationCoordinator
+    @Environment(PuzzleViewModel.self) private var viewModel
+    @Environment(ThemeManager.self) private var themeManager
+    @Environment(SettingsViewModel.self) private var settingsViewModel
+    @Environment(NavigationCoordinator.self) private var navigationCoordinator
     @Environment(\.typography) private var typography
     @Environment(AppSettings.self) private var appSettings
     
@@ -749,9 +759,9 @@ struct UnifiedOverlayModifier: ViewModifier {
                         .background(Color.clear)
                         .contentShape(Rectangle())
                         .onTapGesture {}
-                        .environmentObject(viewModel)
-                        .environmentObject(themeManager)
-                        .environmentObject(settingsViewModel)
+                        .environment(viewModel)
+                        .environment(themeManager)
+                        .environment(settingsViewModel)
                 )
             
             VStack {
@@ -826,10 +836,10 @@ struct UnifiedOverlayModifier: ViewModifier {
                             }
                         }
                     )
-                    .environmentObject(viewModel)
+                    .environment(viewModel)
                     .environment(appSettings)
                 )
-            
+
             VStack {
                 HStack {
                     Spacer()
@@ -898,7 +908,7 @@ extension View {
     }
     
     func unifiedOverlayManager(_ overlayManager: UnifiedOverlayManager) -> some View {
-        self.environmentObject(overlayManager)
+        self.environment(overlayManager)
     }
     
     func commonOverlays(
