@@ -234,7 +234,7 @@ struct CalendarMonthView: View {
         VStack(spacing: 0) {
             // Day labels
             HStack(spacing: 0) {
-                ForEach(dayLabels, id: \.self) { label in
+                ForEach(Array(dayLabels.enumerated()), id: \.offset) { _, label in
                     Text(label)
                         .font(.system(size: appSettings.textSize.calendarLabelSize, design: typography.fontOption.design))
                         .foregroundColor(Color("Text"))
