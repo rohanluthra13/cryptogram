@@ -1,9 +1,10 @@
 import Foundation
 
 @MainActor
-class AuthorService: ObservableObject {
-    @Published private(set) var currentAuthor: Author?
-    @Published private(set) var isLoading: Bool = false
+@Observable
+class AuthorService {
+    private(set) var currentAuthor: Author?
+    private(set) var isLoading: Bool = false
     
     private let databaseService: DatabaseService
     private var lastAuthorName: String?
