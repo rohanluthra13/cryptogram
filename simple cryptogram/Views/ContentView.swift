@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(PuzzleViewModel.self) private var viewModel
+    @Environment(\.scenePhase) private var scenePhase
     @State private var showError = false
     @State private var navigationCoordinator = NavigationCoordinator()
 
@@ -19,6 +20,11 @@ struct ContentView: View {
         .onChange(of: viewModel.currentError) { _, newError in
             if newError != nil {
                 showError = true
+            }
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .background || newPhase == .inactive {
+                viewModel.flushPendingDailySave()
             }
         }
         .alert("Puzzle Error", isPresented: $showError) {

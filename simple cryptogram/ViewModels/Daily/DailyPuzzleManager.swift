@@ -8,6 +8,7 @@ final class DailyPuzzleManager {
     // MARK: - Properties
     var isDailyPuzzle: Bool = false
     var isDailyPuzzleCompletedPublished: Bool = false
+    var completionVersion: Int = 0  // Increments on each completion to trigger calendar refresh
     
     // MARK: - Dependencies
     private let databaseService: DatabaseService
@@ -15,6 +16,7 @@ final class DailyPuzzleManager {
 
     // MARK: - Debounce
     private var saveTask: Task<Void, Never>?
+    private var pendingSaveParams: (dateStr: String, quoteId: Int, userInputs: [String], hintCount: Int, mistakeCount: Int, startTime: Date?, endTime: Date?, isCompleted: Bool, isPreFilled: [Bool], isRevealed: [Bool])?
     
     // Computed property for encodingType
     private var encodingType: String {
@@ -92,6 +94,9 @@ final class DailyPuzzleManager {
             return
         }
 
+        // Store pending params for potential flush
+        pendingSaveParams = (dateStr, quoteId, userInputs, hintCount, mistakeCount, startTime, endTime, isComplete, isPreFilled, isRevealed)
+
         // Debounce non-completion saves by 1 second
         saveTask = Task {
             try? await Task.sleep(nanoseconds: 1_000_000_000)
@@ -108,7 +113,29 @@ final class DailyPuzzleManager {
                 isPreFilled: isPreFilled,
                 isRevealed: isRevealed
             )
+            pendingSaveParams = nil
         }
+    }
+
+    /// Flushes any pending debounced save immediately. Call when app goes to background.
+    func flushPendingSave() {
+        saveTask?.cancel()
+        saveTask = nil
+
+        guard let params = pendingSaveParams else { return }
+        performSave(
+            dateStr: params.dateStr,
+            quoteId: params.quoteId,
+            userInputs: params.userInputs,
+            hintCount: params.hintCount,
+            mistakeCount: params.mistakeCount,
+            startTime: params.startTime,
+            endTime: params.endTime,
+            isCompleted: params.isCompleted,
+            isPreFilled: params.isPreFilled,
+            isRevealed: params.isRevealed
+        )
+        pendingSaveParams = nil
     }
 
     private func performSave(
@@ -138,6 +165,9 @@ final class DailyPuzzleManager {
 
         if let data = try? JSONEncoder().encode(progress) {
             UserDefaults.standard.set(data, forKey: dailyProgressKey(for: dateStr))
+            if isCompleted {
+                completionVersion += 1
+            }
         }
     }
     
@@ -221,9 +251,7 @@ final class DailyPuzzleManager {
     
     private func updateCompletedStatus(_ completed: Bool) {
         if isDailyPuzzleCompletedPublished != completed {
-            DispatchQueue.main.async { [weak self] in
-                self?.isDailyPuzzleCompletedPublished = completed
-            }
+            isDailyPuzzleCompletedPublished = completed
         }
     }
 }

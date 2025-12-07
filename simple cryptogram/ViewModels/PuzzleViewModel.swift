@@ -82,6 +82,7 @@ final class PuzzleViewModel {
     var isDailyPuzzleCompleted: Bool { dailyManager.checkDailyPuzzleCompleted(puzzle: currentPuzzle) }
     var isTodaysDailyPuzzleCompleted: Bool { dailyManager.isTodaysDailyPuzzleCompleted() }
     var currentDailyPuzzleDate: Date? { dailyManager.currentPuzzleDate }
+    var dailyCompletionVersion: Int { dailyManager.completionVersion }
     
     // Author properties (delegated to AuthorService)
     var currentAuthor: Author? { authorService.currentAuthor }
@@ -329,6 +330,11 @@ final class PuzzleViewModel {
         if dailyManager.isDailyPuzzle {
             saveDailyPuzzleProgress()
         }
+    }
+
+    /// Flush any pending debounced daily puzzle saves. Call when app goes to background.
+    func flushPendingDailySave() {
+        dailyManager.flushPendingSave()
     }
     
     private func loadInitialPuzzle() {

@@ -532,6 +532,7 @@ struct OverlayManager: ViewModifier {
                                 }
                             }
                         )
+                        .id(viewModel.dailyCompletionVersion)
                         .environment(viewModel)
                         .environment(appSettings)
                     )
@@ -832,6 +833,7 @@ struct UnifiedOverlayModifier: ViewModifier {
                             }
                         }
                     )
+                    .id(viewModel.dailyCompletionVersion)
                     .environment(viewModel)
                     .environment(appSettings)
                 )
