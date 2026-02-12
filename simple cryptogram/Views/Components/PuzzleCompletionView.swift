@@ -3,7 +3,6 @@ import SwiftUI
 struct PuzzleCompletionView: View {
     @Environment(PuzzleViewModel.self) private var viewModel
     @Environment(ThemeManager.self) private var themeManager
-    @Environment(SettingsViewModel.self) private var settingsViewModel
     @Environment(AppSettings.self) private var appSettings
     @Environment(NavigationCoordinator.self) private var navigationCoordinator
     @Environment(\.typography) private var typography
@@ -64,7 +63,7 @@ struct PuzzleCompletionView: View {
         showSummaryLine = true
         showBornLine = true
         showDiedLine = true
-        if let author = viewModel.authorService.currentAuthor {
+        if let author = viewModel.currentAuthor {
             summaryTyped = (author.summary ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             if let birthDate = formattedDate(author.birthDate) {
                 bornTyped = (author.placeOfBirth?.isEmpty == false) ? " \(birthDate) (\(author.placeOfBirth!))" : " \(birthDate)"
@@ -142,16 +141,13 @@ struct PuzzleCompletionView: View {
                                 .opacity(showAttribution ? 1 : 0)
                                 .onTapGesture {
                                     guard let name = viewModel.currentPuzzle?.authorName else { return }
-                                    viewModel.authorService.loadAuthorIfNeeded(name: name)
                                     withAnimation { isAuthorVisible.toggle() }
                                 }
-                            
+
                             // Info button positioned to the right
                             HStack {
                                 Spacer()
                                 Button(action: {
-                                    guard let name = viewModel.currentPuzzle?.authorName else { return }
-                                    viewModel.authorService.loadAuthorIfNeeded(name: name)
                                     withAnimation { isAuthorVisible.toggle() }
                                 }) {
                                     Text("i")
@@ -170,7 +166,7 @@ struct PuzzleCompletionView: View {
                         if isAuthorVisible {
                             ScrollView(.vertical, showsIndicators: false) {
                                 VStack(spacing: 0) {
-                                    if let author = viewModel.authorService.currentAuthor {
+                                    if let author = viewModel.currentAuthor {
                                         let summaryText = (author.summary ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
                                         let bornDate = formattedDate(author.birthDate)
                                         let diedDate = formattedDate(author.deathDate)
@@ -345,7 +341,6 @@ struct PuzzleCompletionView: View {
         )
         .onAppear {
             // Reset author summary state on appear
-            viewModel.authorService.clearAuthor()
             isAuthorVisible = false
             summaryTyped = ""
             bornTyped = ""
@@ -464,7 +459,6 @@ struct PuzzleCompletionView_Previews: PreviewProvider {
         PuzzleCompletionView(showCompletionView: $showCompletionView)
             .environment(PuzzleViewModel())
             .environment(ThemeManager())
-            .environment(SettingsViewModel())
             .environment(AppSettings())
             .environment(NavigationCoordinator())
     }

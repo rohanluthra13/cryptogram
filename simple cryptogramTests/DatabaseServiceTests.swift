@@ -123,7 +123,7 @@ struct DatabaseServiceTests {
         var randomIds: Set<Int> = []
         
         for _ in 0..<10 {
-            if let puzzle = try DatabaseService.shared.fetchRandomPuzzle(encodingType: "Letters", selectedDifficulties: ["Normal", "Expert"]) {
+            if let puzzle = try DatabaseService.shared.fetchRandomPuzzle(encodingType: "Letters", selectedDifficulties: ["easy", "medium", "hard"]) {
                 randomIds.insert(puzzle.quoteId)
             }
         }
@@ -147,7 +147,7 @@ struct DatabaseServiceTests {
     
     @Test func fetchAuthorInfo() async throws {
         // Get a puzzle first
-        guard let puzzle = try DatabaseService.shared.fetchRandomPuzzle(encodingType: "Letters", selectedDifficulties: ["Normal", "Expert"]) else {
+        guard let puzzle = try DatabaseService.shared.fetchRandomPuzzle(encodingType: "Letters", selectedDifficulties: ["easy", "medium", "hard"]) else {
             Issue.record("Should be able to fetch a puzzle")
             return
         }

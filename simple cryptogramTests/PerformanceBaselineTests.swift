@@ -248,10 +248,7 @@ struct PerformanceMonitor {
     }
     
     static func logPerformanceBaseline() {
-        if FeatureFlag.performanceMonitoring.isEnabled {
-            print("📊 Performance monitoring is enabled")
-            print("📊 Run PerformanceBaselineTests to establish baseline metrics")
-        }
+        print("📊 Run PerformanceBaselineTests to establish baseline metrics")
     }
 }
 

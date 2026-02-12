@@ -4,7 +4,6 @@ struct HomeView: View {
     @Environment(PuzzleViewModel.self) private var viewModel
     @Environment(AppSettings.self) private var appSettings
     @Environment(ThemeManager.self) private var themeManager
-    @Environment(SettingsViewModel.self) private var settingsViewModel
     @Environment(\.typography) private var typography
     @Environment(NavigationCoordinator.self) private var navigationCoordinator
     @State private var showSettings = false
@@ -15,39 +14,29 @@ struct HomeView: View {
     @State private var bottomBarHideTask: Task<Void, Never>?
     @State private var showCalendar = false
     @State private var showInfoOverlay = false
-    
+
     enum PuzzleMode {
         case random
         case daily
     }
-    
-    // Computed property to check if today's daily puzzle is completed
+
     private var isDailyPuzzleCompleted: Bool {
-        // Check if today's daily puzzle is completed regardless of current puzzle
-        return viewModel.isTodaysDailyPuzzleCompleted
+        viewModel.isTodaysDailyPuzzleCompleted()
     }
-    
+
     var body: some View {
         ZStack {
-            // Background
             CryptogramTheme.Colors.background
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Main content
-                HomeMainContent(
-                    showLengthSelection: $showLengthSelection,
-                    selectedMode: $selectedMode,
-                    showCalendar: $showCalendar,
-                    isDailyPuzzleCompleted: isDailyPuzzleCompleted
-                )
+                // Main content (was HomeMainContent)
+                mainContent
 
                 // Bottom bar
                 ZStack {
-                    // Visible bottom bar with icons
                     if isBottomBarVisible || showSettings || showStats {
                         HStack {
-                            // Stats button
                             Button(action: {
                                 showStats.toggle()
                                 showBottomBarTemporarily()
@@ -61,7 +50,6 @@ struct HomeView: View {
 
                             Spacer()
 
-                            // Settings button
                             Button(action: {
                                 showSettings.toggle()
                                 showBottomBarTemporarily()
@@ -78,7 +66,6 @@ struct HomeView: View {
                         .transition(.opacity)
                     }
 
-                    // Invisible tap area to bring back bottom bar
                     if !isBottomBarVisible && !showSettings && !showStats {
                         Rectangle()
                             .fill(Color.clear)
@@ -92,7 +79,7 @@ struct HomeView: View {
                 .frame(height: PuzzleViewConstants.Spacing.bottomBarHeight)
             }
 
-            // Floating info button (top-right corner) - only show when no overlays are active
+            // Floating info button
             if !showInfoOverlay && !showSettings && !showStats && !showCalendar {
                 VStack {
                     HStack {
@@ -127,17 +114,163 @@ struct HomeView: View {
         )
         .onAppear {
             showBottomBarTemporarily()
-            // Reset to initial state when returning to HomeView
             showLengthSelection = false
 
-            // Check if we should show calendar on return
             if appSettings.shouldShowCalendarOnReturn {
                 showCalendar = true
                 appSettings.shouldShowCalendarOnReturn = false
             }
         }
     }
-    
+
+    // MARK: - Main Content (inlined from HomeMainContent)
+
+    private var mainContent: some View {
+        VStack(spacing: 20) {
+            Spacer()
+            Spacer()
+            Spacer()
+
+            if !showLengthSelection {
+                VStack(spacing: 50) {
+                    playButton
+                    dailyPuzzleButton
+                }
+                .transition(.opacity.combined(with: .scale))
+            } else {
+                VStack(spacing: 20) {
+                    randomButton
+
+                    Text("or select length")
+                        .font(typography.footnote)
+                        .italic()
+                        .foregroundColor(CryptogramTheme.Colors.text.opacity(0.7))
+                        .padding(.vertical, 4)
+
+                    HStack(spacing: 30) {
+                        lengthButton("short", difficulty: "easy")
+                        lengthButton("medium", difficulty: "medium")
+                        lengthButton("long", difficulty: "hard")
+                    }
+                }
+                .transition(.opacity.combined(with: .scale))
+            }
+
+            Spacer()
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if showLengthSelection {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showLengthSelection = false
+                }
+            }
+        }
+    }
+
+    private var playButton: some View {
+        Button(action: {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                showLengthSelection = true
+            }
+        }) {
+            Text("play")
+                .font(typography.body)
+                .foregroundColor(CryptogramTheme.Colors.text)
+                .padding(.vertical, 8)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    private var dailyPuzzleButton: some View {
+        VStack(spacing: 36) {
+            Button(action: {
+                selectMode(.daily)
+            }) {
+                HStack(spacing: 8) {
+                    Text("daily puzzle")
+                        .font(typography.body)
+                        .foregroundColor(CryptogramTheme.Colors.text)
+                        .padding(.vertical, 8)
+
+                    if isDailyPuzzleCompleted {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(Color(hex: "#01780F").opacity(0.5))
+                    }
+                }
+            }
+            .buttonStyle(PlainButtonStyle())
+
+            Button(action: {
+                showCalendar = true
+            }) {
+                Image(systemName: "calendar")
+                    .font(.system(size: 24))
+                    .foregroundColor(CryptogramTheme.Colors.text.opacity(0.8))
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+    }
+
+    private var randomButton: some View {
+        Button(action: {
+            appSettings.selectedDifficulties = ["easy", "medium", "hard"]
+            selectMode(.random)
+        }) {
+            HStack(spacing: 4) {
+                Text("just play")
+                    .font(typography.body)
+                    .foregroundColor(CryptogramTheme.Colors.text)
+                Image(systemName: "dice")
+                    .font(typography.caption)
+                    .foregroundColor(CryptogramTheme.Colors.text)
+                    .rotationEffect(.degrees(30))
+            }
+            .padding(.vertical, 8)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    private func lengthButton(_ title: String, difficulty: String) -> some View {
+        Button(action: {
+            appSettings.selectedDifficulties = [difficulty]
+            selectMode(.random)
+        }) {
+            Text(title)
+                .font(typography.body)
+                .foregroundColor(CryptogramTheme.Colors.text)
+                .padding(.vertical, 8)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+
+    // MARK: - Actions
+
+    private func selectMode(_ mode: PuzzleMode) {
+        selectedMode = mode
+
+        switch mode {
+        case .random:
+            if appSettings.selectedDifficulties.isEmpty {
+                appSettings.selectedDifficulties = ["easy", "medium", "hard"]
+            }
+        case .daily:
+            viewModel.loadDailyPuzzle()
+            if let puzzle = viewModel.currentPuzzle {
+                navigationCoordinator.navigateToPuzzle(puzzle)
+            }
+            return
+        }
+
+        Task {
+            await viewModel.loadNewPuzzleAsync()
+            if let puzzle = viewModel.currentPuzzle {
+                navigationCoordinator.navigateToPuzzle(puzzle)
+            }
+        }
+    }
+
     private func showBottomBarTemporarily() {
         withAnimation {
             isBottomBarVisible = true
@@ -159,6 +292,5 @@ struct HomeView: View {
         .environment(PuzzleViewModel())
         .environment(AppSettings())
         .environment(ThemeManager())
-        .environment(SettingsViewModel())
         .environment(NavigationCoordinator())
 }

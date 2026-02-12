@@ -1,33 +1,29 @@
-//
-//  AppSettingsTests.swift
-//  simple cryptogramTests
-//
-//  Created on 25/05/2025.
-//
-
 import XCTest
 @testable import simple_cryptogram
 
 @MainActor
 final class AppSettingsTests: XCTestCase {
-    
+
     var appSettings: AppSettings!
-    var mockPersistence: MockPersistence!
-    
+    var testDefaults: UserDefaults!
+
     override func setUp() {
         super.setUp()
-        mockPersistence = MockPersistence()
-        appSettings = AppSettings(persistence: mockPersistence)
+        testDefaults = UserDefaults(suiteName: "AppSettingsTests")!
+        // Clear any leftover state
+        testDefaults.removePersistentDomain(forName: "AppSettingsTests")
+        appSettings = AppSettings(defaults: testDefaults)
     }
-    
+
     override func tearDown() {
+        testDefaults.removePersistentDomain(forName: "AppSettingsTests")
         appSettings = nil
-        mockPersistence = nil
+        testDefaults = nil
         super.tearDown()
     }
-    
+
     // MARK: - Initial State Tests
-    
+
     func testInitialValues() {
         XCTAssertEqual(appSettings.encodingType, "Letters")
         XCTAssertEqual(appSettings.selectedDifficulties, ["easy", "medium", "hard"])
@@ -37,101 +33,80 @@ final class AppSettingsTests: XCTestCase {
         XCTAssertTrue(appSettings.soundFeedbackEnabled)
         XCTAssertTrue(appSettings.hapticFeedbackEnabled)
     }
-    
+
     // MARK: - Persistence Tests
-    
+
     func testSettingsPersistence() {
-        // Change settings
         appSettings.encodingType = "Numbers"
         appSettings.selectedDifficulties = ["hard"]
         appSettings.textSize = .large
-        
-        // Verify persistence was called
-        XCTAssertEqual(mockPersistence.storedValues["appSettings.encodingType"] as? String, "Numbers")
-        XCTAssertEqual(mockPersistence.storedValues["appSettings.selectedDifficulties"] as? [String], ["hard"])
-        XCTAssertEqual(mockPersistence.storedValues["appSettings.textSize"] as? String, "large")
+
+        XCTAssertEqual(testDefaults.string(forKey: "appSettings.encodingType"), "Numbers")
+        XCTAssertEqual(testDefaults.stringArray(forKey: "appSettings.selectedDifficulties"), ["hard"])
+        XCTAssertEqual(testDefaults.string(forKey: "appSettings.textSize"), "large")
     }
-    
+
     // MARK: - Reset Tests
-    
+
     func testResetToUserDefaults() {
-        // Change settings
         appSettings.encodingType = "Numbers"
         appSettings.selectedDifficulties = ["hard"]
-        
-        // Save as user defaults
+
         appSettings.saveAsUserDefaults()
-        
-        // Change settings again
+
         appSettings.encodingType = "Letters"
         appSettings.selectedDifficulties = ["easy", "medium", "hard"]
-        
-        // Reset to user defaults
+
         appSettings.reset()
-        
-        // Should go back to saved user defaults
+
         XCTAssertEqual(appSettings.encodingType, "Numbers")
         XCTAssertEqual(appSettings.selectedDifficulties, ["hard"])
     }
-    
+
     func testResetToFactory() {
-        // Change settings
         appSettings.encodingType = "Numbers"
         appSettings.selectedDifficulties = ["hard"]
         appSettings.textSize = .large
-        
-        // Save as user defaults
+
         appSettings.saveAsUserDefaults()
-        
-        // Reset to factory
+
         appSettings.resetToFactory()
-        
-        // Should go back to factory defaults
+
         XCTAssertEqual(appSettings.encodingType, "Letters")
         XCTAssertEqual(appSettings.selectedDifficulties, ["easy", "medium", "hard"])
         XCTAssertEqual(appSettings.textSize, .medium)
     }
-    
-    // MARK: - Migration Tests
-    
-    func testMigrationFromAppStorage() {
-        // Set up @AppStorage values in mock persistence
-        mockPersistence.storedValues["encodingType"] = "Numbers"
-        mockPersistence.storedValues["autoSubmitLetter"] = true
-        mockPersistence.storedValues["navBarLayout"] = "leftLayout"
-        mockPersistence.storedValues["textSize"] = "large"
-        mockPersistence.storedValues["hapticFeedbackEnabled"] = false
-        
-        // Create new AppSettings instance to trigger migration
-        let migratedSettings = AppSettings(persistence: mockPersistence)
-        
-        // Verify migration worked
-        XCTAssertEqual(migratedSettings.encodingType, "Numbers")
-        XCTAssertTrue(migratedSettings.autoSubmitLetter)
-        XCTAssertEqual(migratedSettings.navigationBarLayout, .leftLayout)
-        XCTAssertEqual(migratedSettings.textSize, .large)
-        XCTAssertFalse(migratedSettings.hapticFeedbackEnabled)
-    }
-}
 
-// MARK: - Mock Persistence
+    // MARK: - Quote Length Display Tests (absorbed from SettingsViewModel)
 
-class MockPersistence: PersistenceStrategy {
-    var storedValues: [String: Any] = [:]
-    
-    func value<T>(for key: String, type: T.Type) -> T? where T: Codable {
-        return storedValues[key] as? T
+    func testQuoteLengthDisplayText() {
+        appSettings.selectedDifficulties = ["easy", "medium", "hard"]
+        XCTAssertEqual(appSettings.quoteLengthDisplayText, "all")
+
+        appSettings.selectedDifficulties = ["easy"]
+        XCTAssertEqual(appSettings.quoteLengthDisplayText, "short")
+
+        appSettings.selectedDifficulties = ["medium"]
+        XCTAssertEqual(appSettings.quoteLengthDisplayText, "medium")
+
+        appSettings.selectedDifficulties = ["hard"]
+        XCTAssertEqual(appSettings.quoteLengthDisplayText, "long")
     }
-    
-    func setValue<T>(_ value: T, for key: String) where T: Codable {
-        storedValues[key] = value
-    }
-    
-    func removeValue(for key: String) {
-        storedValues.removeValue(forKey: key)
-    }
-    
-    func synchronize() {
-        // No-op for mock
+
+    func testToggleLength() {
+        appSettings.selectedDifficulties = ["easy", "medium", "hard"]
+
+        appSettings.toggleLength("hard")
+        XCTAssertEqual(appSettings.selectedDifficulties, ["easy", "medium"])
+
+        // Can't deselect when only one left
+        appSettings.toggleLength("easy")
+        XCTAssertEqual(appSettings.selectedDifficulties, ["medium"])
+        appSettings.toggleLength("medium")
+        XCTAssertEqual(appSettings.selectedDifficulties, ["medium"]) // unchanged
+
+        // Can add back
+        appSettings.toggleLength("hard")
+        XCTAssertTrue(appSettings.selectedDifficulties.contains("hard"))
     }
 }

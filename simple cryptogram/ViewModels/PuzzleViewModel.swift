@@ -3,377 +3,843 @@ import Observation
 import SwiftUI
 import UIKit
 
-// Keep WordGroup struct for backward compatibility
+// MARK: - Supporting Types
+
 struct WordGroup: Identifiable {
     let id = UUID()
     let indices: [Int]
     let includesSpace: Bool
 }
 
+// MARK: - PuzzleViewModel
+
 @MainActor
 @Observable
 final class PuzzleViewModel {
-    // MARK: - Managers
-    private(set) var gameState: GameStateManager
-    private(set) var progressManager: PuzzleProgressManager
-    private(set) var dailyManager: DailyPuzzleManager
-    private(set) var authorService: AuthorService
 
-    private let inputHandler: InputHandler
-    private let hintManager: HintManager
-    private let statisticsManager: StatisticsManager
-    private let databaseService: DatabaseService
-    private let puzzleSelectionManager: PuzzleSelectionManager
+    // MARK: - Core State (was GameStateManager)
 
-    // Computed property for encodingType
-    private var encodingType: String {
-        return AppSettings.shared.encodingType
-    }
+    var cells: [CryptogramCell] = []
+    var session: PuzzleSession = PuzzleSession()
+    private(set) var currentPuzzle: Puzzle?
+    var isWiggling = false
+    var completedLetters: Set<String> = []
+    var hasUserEngaged: Bool = false
+    var showCompletedHighlights: Bool = false
 
-    // Computed property for selectedDifficulties
-    private var selectedDifficulties: [String] {
-        return AppSettings.shared.selectedDifficulties
-    }
+    // Keyboard optimization mappings (pre-computed)
+    private(set) var solutionToEncodedMap: [Character: Set<String>] = [:]
+    private(set) var lettersInPuzzle: Set<Character> = []
 
-    // MARK: - Loading State
+    // MARK: - Daily State (was DailyPuzzleManager)
+
+    var isDailyPuzzle: Bool = false
+    var isDailyPuzzleCompletedPublished: Bool = false
+    var completionVersion: Int = 0
+    private(set) var currentDailyDate: Date?
+
+    // MARK: - Author (was AuthorService)
+
+    private(set) var currentAuthor: Author?
+    private var lastAuthorName: String?
+
+    // MARK: - Loading / Error
+
     var isLoadingPuzzle: Bool = false
+    var currentError: DatabaseError?
 
-    // MARK: - Error Handling
-    var currentError: DatabaseError? {
-        didSet {
-            if let error = currentError {
-                if ErrorRecoveryService.shared.attemptRecovery(from: error) {
-                    currentError = nil
+    // MARK: - Dependencies (2, not 9)
+
+    private let db: DatabaseService
+    private let progressStore: PuzzleProgressStore
+
+    // MARK: - Statistics Cache
+
+    private var cachedAttempts: [PuzzleAttempt]?
+    private var cacheTimestamp: Date?
+    private let cacheDuration: TimeInterval = 1.0
+
+    // MARK: - Settings Access
+
+    private var encodingType: String { AppSettings.shared.encodingType }
+    private var selectedDifficulties: [String] { AppSettings.shared.selectedDifficulties }
+
+    // MARK: - Computed Properties
+
+    var selectedCellIndex: Int? { session.selectedCellIndex }
+    var isComplete: Bool { session.isComplete }
+    var isFailed: Bool { session.isFailed }
+    var mistakeCount: Int { session.mistakeCount }
+    var startTime: Date? { session.startTime }
+    var endTime: Date? { session.endTime }
+    var isPaused: Bool { session.isPaused }
+    var hintCount: Int { session.hintCount }
+    var completionTime: TimeInterval? { session.completionTime }
+
+    var nonSymbolCells: [CryptogramCell] {
+        cells.filter { !$0.isSymbol }
+    }
+
+    var progressPercentage: Double {
+        let total = nonSymbolCells.count
+        guard total > 0 else { return 0.0 }
+        let filled = nonSymbolCells.filter { !$0.userInput.isEmpty }.count
+        return Double(filled) / Double(total)
+    }
+
+    var wordGroups: [WordGroup] {
+        var groups: [WordGroup] = []
+        var current: [Int] = []
+        for index in cells.indices {
+            if cells[index].isSymbol && cells[index].encodedChar == " " {
+                if !current.isEmpty {
+                    groups.append(WordGroup(indices: current, includesSpace: true))
+                    current = []
                 }
+            } else {
+                current.append(index)
             }
         }
+        if !current.isEmpty {
+            groups.append(WordGroup(indices: current, includesSpace: false))
+        }
+        return groups
     }
-    
-    // MARK: - Computed Properties for Backward Compatibility
-    var cells: [CryptogramCell] { gameState.cells }
-    var session: PuzzleSession { gameState.session }
-    var currentPuzzle: Puzzle? { gameState.currentPuzzle }
-    var isWiggling: Bool { gameState.isWiggling }
-    var completedLetters: Set<String> { gameState.completedLetters }
-    var hasUserEngaged: Bool { gameState.hasUserEngaged }
-    var showCompletedHighlights: Bool { gameState.showCompletedHighlights }
-    
-    var selectedCellIndex: Int? { gameState.selectedCellIndex }
-    var isComplete: Bool { gameState.isComplete }
-    var isFailed: Bool { gameState.isFailed }
-    var mistakeCount: Int { gameState.mistakeCount }
-    var startTime: Date? { gameState.startTime }
-    var endTime: Date? { gameState.endTime }
-    var isPaused: Bool { gameState.isPaused }
-    var hintCount: Int { gameState.hintCount }
-    var completionTime: TimeInterval? { gameState.completionTime }
-    var nonSymbolCells: [CryptogramCell] { gameState.nonSymbolCells }
-    var progressPercentage: Double { gameState.progressPercentage }
-    var wordGroups: [WordGroup] { gameState.wordGroups }
-    var cellsToAnimate: [UUID] { gameState.cellsToAnimate }
 
-    // Keyboard optimization mappings (pre-computed for performance)
-    var solutionToEncodedMap: [Character: Set<String>] { gameState.solutionToEncodedMap }
-    var lettersInPuzzle: Set<Character> { gameState.lettersInPuzzle }
-    
-    // Daily puzzle properties
-    var isDailyPuzzle: Bool { dailyManager.isDailyPuzzle }
-    var isDailyPuzzleCompletedPublished: Bool { dailyManager.isDailyPuzzleCompletedPublished }
-    var isDailyPuzzleCompleted: Bool { dailyManager.checkDailyPuzzleCompleted(puzzle: currentPuzzle) }
-    var isTodaysDailyPuzzleCompleted: Bool { dailyManager.isTodaysDailyPuzzleCompleted() }
-    var currentDailyPuzzleDate: Date? { dailyManager.currentPuzzleDate }
-    var dailyCompletionVersion: Int { dailyManager.completionVersion }
-    
-    // Author properties (delegated to AuthorService)
-    var currentAuthor: Author? { authorService.currentAuthor }
-    
-    // Statistics properties
+    var cellsToAnimate: [UUID] {
+        cells.filter { $0.wasJustFilled }.map { $0.id }
+    }
+
+    var isCompletedDailyPuzzle: Bool {
+        isDailyPuzzle && isComplete && session.endTime != nil
+    }
+
+    var currentDailyPuzzleDate: Date? { currentDailyDate }
+    var dailyCompletionVersion: Int { completionVersion }
+
+    // Daily puzzle completion checks
+    var isDailyPuzzleCompleted: Bool {
+        checkDailyPuzzleCompleted()
+    }
+
+    func isTodaysDailyPuzzleCompleted() -> Bool {
+        let dateStr = Self.dateString(from: Date())
+        return readDailyProgress(for: dateStr)?.isCompleted ?? false
+    }
+
+    // MARK: - Statistics Properties
+
     var completionCountForCurrentPuzzle: Int {
         guard let puzzle = currentPuzzle else { return 0 }
-        return statisticsManager.completionCount(for: puzzle.id, encodingType: encodingType)
+        return progressStore_completionCount(for: puzzle.id, encodingType: encodingType)
     }
-    
+
     var failureCountForCurrentPuzzle: Int {
         guard let puzzle = currentPuzzle else { return 0 }
-        return statisticsManager.failureCount(for: puzzle.id, encodingType: encodingType)
+        return progressStore_failureCount(for: puzzle.id, encodingType: encodingType)
     }
-    
+
     var bestTimeForCurrentPuzzle: TimeInterval? {
         guard let puzzle = currentPuzzle else { return nil }
-        return statisticsManager.bestTime(for: puzzle.id, encodingType: encodingType)
+        return try? progressStore.bestCompletionTime(for: puzzle.id, encodingType: encodingType)
     }
-    
-    var totalAttempts: Int { statisticsManager.totalAttempts }
-    var totalCompletions: Int { statisticsManager.totalCompletions }
-    var totalFailures: Int { statisticsManager.totalFailures }
-    var globalBestTime: TimeInterval? { statisticsManager.globalBestTime }
-    var winRatePercentage: Int { statisticsManager.winRatePercentage }
-    var averageTime: TimeInterval? { statisticsManager.averageTime }
-    
-    var isCompletedDailyPuzzle: Bool {
-        return isDailyPuzzle && isComplete && session.endTime != nil
+
+    var totalAttempts: Int { getCachedAttempts().count }
+    var totalCompletions: Int { getCachedAttempts().filter { $0.completedAt != nil }.count }
+    var totalFailures: Int { getCachedAttempts().filter { $0.failedAt != nil }.count }
+    var globalBestTime: TimeInterval? { getCachedAttempts().compactMap { $0.completionTime }.min() }
+
+    var winRatePercentage: Int {
+        let attempts = getCachedAttempts()
+        guard !attempts.isEmpty else { return 0 }
+        let completions = attempts.filter { $0.completedAt != nil }.count
+        return Int(Double(completions) / Double(attempts.count) * 100)
     }
-    
+
+    var averageTime: TimeInterval? {
+        let times = getCachedAttempts().compactMap { $0.completionTime }
+        guard !times.isEmpty else { return nil }
+        return times.reduce(0, +) / Double(times.count)
+    }
+
     // MARK: - Initialization
+
     init(initialPuzzle: Puzzle? = nil, progressStore: PuzzleProgressStore? = nil) {
-        self.databaseService = DatabaseService.shared
-        
-        // Initialize managers in proper order
-        let gameStateManager = GameStateManager(databaseService: databaseService)
-        let progressManager = PuzzleProgressManager(progressStore: progressStore)
-        let inputHandler = InputHandler(gameState: gameStateManager)
-        let hintManager = HintManager(gameState: gameStateManager, inputHandler: inputHandler)
-        
-        self.gameState = gameStateManager
-        self.progressManager = progressManager
-        self.inputHandler = inputHandler
-        self.hintManager = hintManager
-        self.statisticsManager = StatisticsManager(progressManager: progressManager)
-        self.dailyManager = DailyPuzzleManager(databaseService: databaseService)
-        self.authorService = AuthorService(databaseService: databaseService)
-        self.puzzleSelectionManager = PuzzleSelectionManager(
-            databaseService: databaseService,
-            progressManager: progressManager,
-            statisticsManager: statisticsManager
-        )
-        
-        // Setup observers
-        setupObservers()
-        
-        // Start progress monitoring
-        progressManager.startMonitoring(gameState: gameState)
-        
-        // Load initial puzzle
+        self.db = DatabaseService.shared
+
+        if let store = progressStore {
+            self.progressStore = store
+        } else if let conn = DatabaseService.shared.db {
+            self.progressStore = LocalPuzzleProgressStore(database: conn)
+        } else {
+            self.progressStore = NoOpProgressStore()
+        }
+
         if let puzzle = initialPuzzle {
-            gameState.startNewPuzzle(puzzle)
+            startNewPuzzle(puzzle: puzzle)
         } else {
             loadInitialPuzzle()
         }
-        
-        setupNotificationObservers()
     }
-    
-    deinit {
-        NotificationCenter.default.removeObserver(self)
+
+    // MARK: - Puzzle Loading
+
+    func startNewPuzzle(puzzle: Puzzle, skipAnimationInit: Bool = false) {
+        completedLetters = []
+        currentPuzzle = puzzle
+        cells = puzzle.createCells(encodingType: encodingType)
+        session = PuzzleSession()
+        updateKeyboardMappings()
+
+        if !skipAnimationInit {
+            applyDifficultyPrefills()
+        }
+
+        selectFirstEditableCell()
+        loadAuthorIfNeeded(name: puzzle.author)
     }
-    
-    // MARK: - Setup
-    private func setupObservers() {
-        // With @Observable, view updates happen automatically
-        // No need for manual objectWillChange forwarding
-        // Error handling will be done directly through computed properties or manual checks
-    }
-    
-    private func setupNotificationObservers() {
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleDifficultySelectionChanged),
-            name: SettingsViewModel.difficultySelectionChangedNotification,
-            object: nil
-        )
-    }
-    
-    @objc private func handleDifficultySelectionChanged() {
-        if gameState.session.isComplete || !gameState.session.hasStarted {
-            loadNewPuzzle()
+
+    func loadNewPuzzle() {
+        // Clear daily state FIRST — prevents stale daily saves
+        isDailyPuzzle = false
+        isDailyPuzzleCompletedPublished = false
+        currentDailyDate = nil
+
+        Task {
+            await loadPuzzleWithDifficulty()
         }
     }
-    
-    // MARK: - Public Methods
-    func startNewPuzzle(puzzle: Puzzle, skipAnimationInit: Bool = false) {
-        gameState.startNewPuzzle(puzzle, skipAnimationInit: skipAnimationInit)
-        authorService.loadAuthorIfNeeded(name: puzzle.hint)
-    }
-    
-    func selectCell(at index: Int) {
-        inputHandler.selectCell(at: index)
-    }
-    
-    func inputLetter(_ letter: String, at index: Int) {
-        inputHandler.inputLetter(letter, at: index)
-        handleUserAction()
-    }
-    
-    func handleDelete(at index: Int? = nil) {
-        inputHandler.handleDelete(at: index)
-        handleUserAction()
-    }
-    
-    func revealCell(at index: Int? = nil) {
-        hintManager.revealCell(at: index)
-        handleUserAction()
-    }
-    
-    func reset() {
-        gameState.resetPuzzle()
-        handleUserAction()
-    }
-    
-    func continueAfterFailure() {
-        gameState.clearFailureState()
-        handleUserAction()
-    }
-    
-    func togglePause() {
-        gameState.togglePause()
+
+    func loadNewPuzzleAsync() async {
+        isDailyPuzzle = false
+        isDailyPuzzleCompletedPublished = false
+        currentDailyDate = nil
+        await loadPuzzleWithDifficulty()
     }
 
-    func pause() {
-        gameState.pause()
-    }
-
-    func resume() {
-        gameState.resume()
-    }
-    
     func refreshPuzzleWithCurrentSettings() {
-        dailyManager.resetDailyPuzzleState()
+        isDailyPuzzle = false
+        isDailyPuzzleCompletedPublished = false
+        currentDailyDate = nil
         Task {
             await loadPuzzleWithExclusions()
         }
     }
-    
-    func loadNewPuzzle() {
-        dailyManager.resetDailyPuzzleState()
-        Task {
-            await loadPuzzleWithDifficulty()
-        }
-        handleUserAction()
-    }
 
-    /// Async version that waits for puzzle to load before returning
-    func loadNewPuzzleAsync() async {
-        dailyManager.resetDailyPuzzleState()
-        await loadPuzzleWithDifficulty()
-        handleUserAction()
-    }
-    
-    func moveToNextCell() {
-        inputHandler.moveToNextCell()
-    }
-    
-    func moveToAdjacentCell(direction: Int) {
-        inputHandler.moveToAdjacentCell(direction: direction)
-    }
-    
-    func triggerCompletionWiggle() {
-        gameState.triggerCompletionWiggle()
-    }
-    
-    func userEngaged() {
-        gameState.userEngaged()
-        handleUserAction()
-    }
-    
-    func markCellAnimationComplete(_ cellId: UUID) {
-        gameState.markCellAnimationComplete(cellId)
-    }
-    
-    func resetAllProgress() {
-        statisticsManager.resetAllStatistics()
-    }
-    
     func loadDailyPuzzle() {
         loadDailyPuzzle(for: Date())
     }
-    
+
     func loadDailyPuzzle(for date: Date) {
         isLoadingPuzzle = true
+        isDailyPuzzle = true
+        currentDailyDate = date
+        let dateStr = Self.dateString(from: date)
+
         do {
-            let (puzzle, progress) = try dailyManager.loadDailyPuzzle(for: date)
-            
-            if let progress = progress {
-                // Restore from saved progress
-                gameState.startNewPuzzle(puzzle, skipAnimationInit: true)
-                var cells = gameState.cells
-                var session = gameState.session
-                dailyManager.restoreDailyProgress(to: &cells, session: &session, from: progress)
-                // Update game state with restored values
-                gameState.cells = cells
-                gameState.session = session
-                gameState.updateCompletedLetters()
-            } else {
-                // Fresh daily puzzle
-                gameState.startNewPuzzle(puzzle, skipAnimationInit: false)
+            // Check for saved progress first
+            if let progress = readDailyProgress(for: dateStr),
+               let puzzle = try db.fetchPuzzleById(progress.quoteId, encodingType: encodingType) {
+                startNewPuzzle(puzzle: puzzle, skipAnimationInit: true)
+                restoreDailyProgress(from: progress)
+                isLoadingPuzzle = false
+                return
             }
-            
-            authorService.loadAuthorIfNeeded(name: puzzle.hint)
+
+            // No saved progress — load fresh
+            guard let puzzle = try db.fetchDailyPuzzle(for: date, encodingType: encodingType) else {
+                isDailyPuzzle = false
+                currentDailyDate = nil
+                isLoadingPuzzle = false
+                currentError = .noDataFound
+                loadNewPuzzle()
+                return
+            }
+
+            startNewPuzzle(puzzle: puzzle, skipAnimationInit: false)
             isLoadingPuzzle = false
         } catch {
             isLoadingPuzzle = false
-            currentError = error as? DatabaseError ?? DatabaseError.connectionFailed
-            dailyManager.resetDailyPuzzleState()
+            currentError = error as? DatabaseError ?? .connectionFailed
+            isDailyPuzzle = false
+            currentDailyDate = nil
             loadNewPuzzle()
         }
     }
-    
-    
-    // MARK: - Private Methods
-    private func handleUserAction() {
-        if dailyManager.isDailyPuzzle {
-            saveDailyPuzzleProgress()
-        }
+
+    private func loadInitialPuzzle() {
+        Task { await loadPuzzleWithDifficulty() }
     }
 
-    private func saveDailyPuzzleProgress() {
-        guard let puzzle = currentPuzzle else { return }
-        dailyManager.saveDailyPuzzleProgress(
-            puzzle: puzzle,
-            cells: gameState.cells,
-            session: gameState.session
+    private func loadPuzzleWithExclusions() async {
+        isLoadingPuzzle = true
+        let completedIds = getCompletedPuzzleIds(for: encodingType)
+
+        for _ in 0..<10 {
+            if let puzzle = try? db.fetchRandomPuzzle(
+                encodingType: encodingType,
+                selectedDifficulties: selectedDifficulties
+            ), !completedIds.contains(puzzle.id) {
+                startNewPuzzle(puzzle: puzzle)
+                isLoadingPuzzle = false
+                return
+            }
+        }
+        // Fallback
+        await loadPuzzleWithDifficulty()
+    }
+
+    private func loadPuzzleWithDifficulty() async {
+        isLoadingPuzzle = true
+        do {
+            if let puzzle = try db.fetchRandomPuzzle(
+                encodingType: encodingType,
+                selectedDifficulties: selectedDifficulties
+            ) {
+                startNewPuzzle(puzzle: puzzle)
+            } else {
+                startNewPuzzle(puzzle: Self.fallbackPuzzle())
+            }
+        } catch {
+            currentError = error as? DatabaseError ?? .connectionFailed
+            startNewPuzzle(puzzle: Self.fallbackPuzzle())
+        }
+        isLoadingPuzzle = false
+    }
+
+    private static func fallbackPuzzle() -> Puzzle {
+        Puzzle(
+            id: UUID(),
+            quoteId: 0,
+            encodedText: "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
+            solution: "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG",
+            hint: "A pangram containing every letter of the alphabet",
+            author: "Unknown",
+            difficulty: "easy",
+            length: 43
         )
     }
 
-    /// Explicitly save daily puzzle progress on completion.
-    /// Call this when completion is detected to ensure the completion state is persisted.
-    func saveCompletionIfDaily() {
-        if dailyManager.isDailyPuzzle {
-            saveDailyPuzzleProgress()
+    // MARK: - Input Handling (was InputHandler)
+
+    func selectCell(at index: Int) {
+        guard index >= 0 && index < cells.count, !cells[index].isSymbol else { return }
+        session.selectedCellIndex = index
+
+        Task {
+            let generator = UIImpactFeedbackGenerator(style: .light)
+            generator.impactOccurred(intensity: 0.5)
         }
     }
 
-    /// Flush any pending debounced daily puzzle saves. Call when app goes to background.
+    func inputLetter(_ letter: String, at index: Int) {
+        guard index >= 0 && index < cells.count,
+              !cells[index].isSymbol,
+              letter.count == 1,
+              let firstChar = letter.first, firstChar.isLetter else { return }
+
+        startTimerIfNeeded()
+        let uppercased = letter.uppercased()
+        let cell = cells[index]
+        let wasEmpty = cell.userInput.isEmpty
+
+        resetAllWasJustFilled()
+
+        let isCorrect = String(cell.solutionChar ?? " ") == uppercased
+
+        if isCorrect {
+            updateCell(at: index, with: uppercased, isRevealed: false, isError: false)
+            Task {
+                let gen = UIImpactFeedbackGenerator(style: .light)
+                gen.impactOccurred()
+            }
+            moveToNextCell()
+        } else {
+            updateCell(at: index, with: uppercased, isRevealed: false, isError: true)
+            Task {
+                let gen = UIImpactFeedbackGenerator(style: .medium)
+                gen.impactOccurred()
+            }
+            if wasEmpty {
+                incrementMistakes()
+            }
+            Task { [weak self] in
+                try? await Task.sleep(for: .seconds(0.5))
+                guard !Task.isCancelled else { return }
+                self?.clearCell(at: index)
+            }
+        }
+
+        markEngaged()
+        saveDailyProgressIfNeeded()
+    }
+
+    func handleDelete(at index: Int? = nil) {
+        let targetIndex = index ?? selectedCellIndex ?? -1
+        guard targetIndex >= 0 && targetIndex < cells.count,
+              !cells[targetIndex].isSymbol else { return }
+
+        clearCell(at: targetIndex)
+        markEngaged()
+        saveDailyProgressIfNeeded()
+    }
+
+    // MARK: - Hints (was HintManager)
+
+    func revealCell(at index: Int? = nil) {
+        let targetIndex: Int
+
+        if let idx = index,
+           idx >= 0 && idx < cells.count,
+           !cells[idx].isSymbol,
+           !cells[idx].isRevealed {
+            targetIndex = idx
+        } else if let sel = selectedCellIndex,
+                  sel >= 0 && sel < cells.count,
+                  !cells[sel].isSymbol,
+                  !cells[sel].isRevealed {
+            targetIndex = sel
+        } else if let first = cells.indices.first(where: {
+            !cells[$0].isSymbol && !cells[$0].isRevealed && cells[$0].userInput.isEmpty
+        }) {
+            targetIndex = first
+        } else {
+            return
+        }
+
+        startTimerIfNeeded()
+
+        guard let sol = cells[targetIndex].solutionChar else { return }
+        let solStr = String(sol)
+
+        updateCell(at: targetIndex, with: solStr, isRevealed: true, isError: false)
+        cells[targetIndex].isRevealed = true
+        cells[targetIndex].isPreFilled = false
+        session.revealCell(at: targetIndex)
+
+        DispatchQueue.main.async {
+            let gen = UISelectionFeedbackGenerator()
+            gen.selectionChanged()
+        }
+
+        selectNextUnrevealedCell(after: targetIndex)
+        markEngaged()
+        saveDailyProgressIfNeeded()
+    }
+
+    // MARK: - Game State
+
+    func reset() {
+        completedLetters = []
+        session = PuzzleSession()
+        hasUserEngaged = false
+
+        for i in cells.indices {
+            cells[i].userInput = ""
+            cells[i].isError = false
+            cells[i].wasJustFilled = false
+            cells[i].isRevealed = false
+            cells[i].isPreFilled = false
+        }
+
+        applyDifficultyPrefills()
+        updateCompletedLetters()
+        selectFirstEditableCell()
+    }
+
+    func continueAfterFailure() {
+        session.clearFailureState()
+    }
+
+    func togglePause() { session.togglePause() }
+
+    func pause() {
+        guard session.startTime != nil && !session.isComplete && !session.isFailed && !isPaused else { return }
+        session.togglePause()
+    }
+
+    func resume() {
+        guard session.startTime != nil && !session.isComplete && !session.isFailed && isPaused else { return }
+        session.togglePause()
+    }
+
+    func triggerCompletionWiggle() {
+        isWiggling = true
+        Task { [weak self] in
+            try? await Task.sleep(for: .seconds(0.6))
+            guard !Task.isCancelled else { return }
+            self?.isWiggling = false
+        }
+    }
+
+    func markCellAnimationComplete(_ cellId: UUID) {
+        if let idx = cells.firstIndex(where: { $0.id == cellId }) {
+            cells[idx].wasJustFilled = false
+        }
+    }
+
+    func userEngaged() {
+        markEngaged()
+    }
+
+    func moveToNextCell() {
+        guard let current = selectedCellIndex else { return }
+        var next = current + 1
+        while next < cells.count {
+            if !shouldSkipCell(cells[next]) {
+                session.selectedCellIndex = next
+                return
+            }
+            next += 1
+        }
+    }
+
+    func moveToAdjacentCell(direction: Int) {
+        if selectedCellIndex == nil {
+            if let first = cells.indices.first(where: { !shouldSkipCell(cells[$0]) }) {
+                session.selectedCellIndex = first
+            }
+            return
+        }
+        guard let current = selectedCellIndex else { return }
+        var target = current + direction
+        while target >= 0 && target < cells.count {
+            if !shouldSkipCell(cells[target]) {
+                session.selectedCellIndex = target
+                return
+            }
+            target += direction
+        }
+    }
+
+    // MARK: - Daily Puzzle Save (NO debounce, synchronous)
+
+    func saveDailyProgressIfNeeded() {
+        guard isDailyPuzzle, let puzzle = currentPuzzle else { return }
+        let dateStr = Self.dateString(from: currentDailyDate ?? Date())
+
+        let progress = DailyPuzzleProgress(
+            date: dateStr,
+            quoteId: puzzle.quoteId,
+            userInputs: cells.map { $0.userInput },
+            hintCount: session.hintCount,
+            mistakeCount: session.mistakeCount,
+            startTime: session.startTime,
+            endTime: session.endTime,
+            isCompleted: session.isComplete,
+            isPreFilled: cells.map { $0.isPreFilled },
+            isRevealed: cells.map { $0.isRevealed }
+        )
+
+        if let data = try? JSONEncoder().encode(progress) {
+            UserDefaults.standard.set(data, forKey: dailyProgressKey(for: dateStr))
+            if session.isComplete {
+                completionVersion += 1
+            }
+        }
+    }
+
+    /// Called when completion is detected. Alias for saveDailyProgressIfNeeded.
+    func saveCompletionIfDaily() {
+        saveDailyProgressIfNeeded()
+    }
+
+    /// Called on app background. No debounce means nothing pending — just save current state.
     func flushPendingDailySave() {
-        dailyManager.flushPendingSave()
+        saveDailyProgressIfNeeded()
     }
-    
-    private func loadInitialPuzzle() {
-        Task {
-            await loadPuzzleWithDifficulty()
+
+    // MARK: - Progress & Stats (was PuzzleProgressManager + StatisticsManager)
+
+    func logCompletionIfNeeded() {
+        guard let puzzle = currentPuzzle,
+              session.isComplete,
+              session.endTime != nil,
+              !session.wasLogged else { return }
+
+        let attempt = PuzzleAttempt(
+            attemptID: UUID(),
+            puzzleID: puzzle.id,
+            encodingType: encodingType,
+            completedAt: session.endTime ?? Date(),
+            failedAt: nil,
+            completionTime: session.completionTime ?? 0,
+            mode: "normal",
+            hintCount: session.hintCount,
+            mistakeCount: session.mistakeCount
+        )
+        try? progressStore.logAttempt(attempt)
+        session.wasLogged = true
+        invalidateStatsCache()
+    }
+
+    func logFailureIfNeeded() {
+        guard let puzzle = currentPuzzle,
+              session.isFailed,
+              !session.wasLogged else { return }
+
+        let attempt = PuzzleAttempt(
+            attemptID: UUID(),
+            puzzleID: puzzle.id,
+            encodingType: encodingType,
+            completedAt: nil,
+            failedAt: Date(),
+            completionTime: nil,
+            mode: "normal",
+            hintCount: session.hintCount,
+            mistakeCount: session.mistakeCount
+        )
+        try? progressStore.logAttempt(attempt)
+        session.wasLogged = true
+        invalidateStatsCache()
+    }
+
+    func resetAllProgress() {
+        try? progressStore.clearAllProgress()
+        invalidateStatsCache()
+    }
+
+    // MARK: - Author (was AuthorService)
+
+    private func loadAuthorIfNeeded(name: String) {
+        guard name != lastAuthorName else { return }
+        lastAuthorName = name
+
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let author = try await self.db.fetchAuthor(byName: name)
+                self.currentAuthor = author
+            } catch {
+                self.currentAuthor = nil
+            }
         }
     }
-    
-    private func loadPuzzleWithExclusions() async {
-        do {
-            isLoadingPuzzle = true
-            let puzzle = try await puzzleSelectionManager.loadRandomPuzzle(
-                encodingType: encodingType,
-                difficulties: selectedDifficulties,
-                excludeCompleted: true
-            )
-            gameState.startNewPuzzle(puzzle)
-            authorService.loadAuthorIfNeeded(name: puzzle.hint)
-        } catch {
-            currentError = error as? DatabaseError ?? DatabaseError.connectionFailed
-        }
-        isLoadingPuzzle = false
+
+    // MARK: - Cell Helpers
+
+    private func updateCell(at index: Int, with input: String, isRevealed: Bool, isError: Bool) {
+        guard index >= 0 && index < cells.count else { return }
+        cells[index].userInput = input
+        cells[index].isRevealed = isRevealed
+        cells[index].isError = isError
+        if !input.isEmpty { cells[index].wasJustFilled = true }
+        updateCompletedLetters()
+        checkPuzzleCompletion()
     }
-    
-    private func loadPuzzleWithDifficulty() async {
-        do {
-            isLoadingPuzzle = true
-            let puzzle = try await puzzleSelectionManager.loadRandomPuzzle(
-                encodingType: encodingType,
-                difficulties: selectedDifficulties,
-                excludeCompleted: false
-            )
-            gameState.startNewPuzzle(puzzle)
-            authorService.loadAuthorIfNeeded(name: puzzle.hint)
-        } catch {
-            currentError = error as? DatabaseError ?? DatabaseError.connectionFailed
-        }
-        isLoadingPuzzle = false
+
+    private func clearCell(at index: Int) {
+        guard index >= 0 && index < cells.count else { return }
+        cells[index].userInput = ""
+        cells[index].isError = false
+        cells[index].wasJustFilled = false
+        updateCompletedLetters()
     }
-    
+
+    func updateCompletedLetters() {
+        var letterHasEmpty: [String: Bool] = [:]
+        for cell in cells where !cell.isSymbol {
+            let letter = cell.encodedChar
+            if letterHasEmpty[letter] == nil {
+                letterHasEmpty[letter] = cell.userInput.isEmpty
+            } else if cell.userInput.isEmpty {
+                letterHasEmpty[letter] = true
+            }
+        }
+        completedLetters = Set(letterHasEmpty.filter { !$0.value }.keys)
+    }
+
+    private func checkPuzzleCompletion() {
+        let correct = nonSymbolCells.filter { $0.isCorrect }.count
+        let total = nonSymbolCells.count
+        if correct == total && !session.isComplete {
+            session.markComplete()
+        }
+    }
+
+    private func incrementMistakes() {
+        session.incrementMistakes()
+        if session.mistakeCount >= 3 && !session.isFailed && !session.hasContinuedAfterFailure {
+            Task { [weak self] in
+                try? await Task.sleep(for: .seconds(0.6))
+                guard !Task.isCancelled else { return }
+                self?.session.markFailed()
+            }
+        }
+    }
+
+    private func startTimerIfNeeded() {
+        if session.startTime == nil {
+            session.startTime = Date()
+        }
+    }
+
+    private func markEngaged() {
+        guard !hasUserEngaged else { return }
+        hasUserEngaged = true
+    }
+
+    private func resetAllWasJustFilled() {
+        for i in cells.indices { cells[i].wasJustFilled = false }
+    }
+
+    private func shouldSkipCell(_ cell: CryptogramCell) -> Bool {
+        cell.isSymbol || cell.isRevealed || cell.isPreFilled || (!cell.userInput.isEmpty && cell.isCorrect)
+    }
+
+    private func selectFirstEditableCell() {
+        if let idx = cells.indices.first(where: { !cells[$0].isSymbol && !cells[$0].isRevealed && !cells[$0].isPreFilled }) {
+            session.selectedCellIndex = idx
+        }
+    }
+
+    private func selectNextUnrevealedCell(after index: Int) {
+        if let next = cells.indices.first(where: {
+            $0 > index && !cells[$0].isSymbol && !cells[$0].isRevealed && cells[$0].userInput.isEmpty
+        }) {
+            session.selectedCellIndex = next
+        }
+    }
+
+    private func updateKeyboardMappings() {
+        var solutionMap: [Character: Set<String>] = [:]
+        var puzzleLetters: Set<Character> = []
+        for cell in cells where !cell.isSymbol {
+            if let sol = cell.solutionChar {
+                solutionMap[sol, default: []].insert(cell.encodedChar)
+                puzzleLetters.insert(sol)
+            }
+        }
+        solutionToEncodedMap = solutionMap
+        lettersInPuzzle = puzzleLetters
+    }
+
+    private func applyDifficultyPrefills() {
+        guard let solution = currentPuzzle?.solution.uppercased() else { return }
+        let uniqueLetters = Set(solution.filter { $0.isLetter })
+        guard !uniqueLetters.isEmpty else { return }
+
+        let numToReveal = max(1, Int(ceil(Double(uniqueLetters.count) * 0.20)))
+        let lettersToReveal = uniqueLetters.shuffled().prefix(numToReveal)
+        var revealedIndices = Set<Int>()
+
+        for letter in lettersToReveal {
+            let matching = cells.indices.filter {
+                cells[$0].solutionChar == letter &&
+                !revealedIndices.contains($0) &&
+                !cells[$0].isRevealed
+            }
+            if let idx = matching.randomElement() {
+                cells[idx].userInput = String(letter)
+                cells[idx].isRevealed = true
+                cells[idx].isError = false
+                cells[idx].isPreFilled = true
+                revealedIndices.insert(idx)
+            }
+        }
+    }
+
+    // MARK: - Daily Puzzle Helpers
+
+    private func checkDailyPuzzleCompleted() -> Bool {
+        guard isDailyPuzzle, let puzzle = currentPuzzle else {
+            updateDailyCompletedStatus(false)
+            return false
+        }
+        let dateStr = currentDailyDate != nil ? Self.dateString(from: currentDailyDate!) : Self.dateString(from: Date())
+        if let progress = readDailyProgress(for: dateStr),
+           progress.quoteId == puzzle.quoteId {
+            let completed = progress.isCompleted
+            updateDailyCompletedStatus(completed)
+            return completed
+        }
+        updateDailyCompletedStatus(false)
+        return false
+    }
+
+    private func restoreDailyProgress(from progress: DailyPuzzleProgress) {
+        for (i, input) in progress.userInputs.enumerated() where i < cells.count {
+            cells[i].userInput = input
+            let hasContent = !input.isEmpty
+            cells[i].isPreFilled = hasContent && (progress.isPreFilled?[i] ?? false)
+            cells[i].isRevealed = hasContent && (progress.isRevealed?[i] ?? false)
+        }
+        session.hintCount = progress.hintCount
+        session.mistakeCount = progress.mistakeCount
+        session.startTime = progress.startTime
+        session.endTime = progress.endTime
+        session.isComplete = progress.isCompleted
+        if progress.isCompleted {
+            session.markComplete()
+        }
+        updateCompletedLetters()
+    }
+
+    private func readDailyProgress(for dateStr: String) -> DailyPuzzleProgress? {
+        guard let data = UserDefaults.standard.data(forKey: dailyProgressKey(for: dateStr)) else { return nil }
+        return try? JSONDecoder().decode(DailyPuzzleProgress.self, from: data)
+    }
+
+    private func dailyProgressKey(for dateStr: String) -> String {
+        "dailyPuzzleProgress-\(dateStr)"
+    }
+
+    private static func dateString(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone.current
+        return formatter.string(from: date)
+    }
+
+    private func updateDailyCompletedStatus(_ completed: Bool) {
+        if isDailyPuzzleCompletedPublished != completed {
+            isDailyPuzzleCompletedPublished = completed
+        }
+    }
+
+    // MARK: - Statistics Helpers
+
+    private func getCachedAttempts() -> [PuzzleAttempt] {
+        if let cached = cachedAttempts,
+           let ts = cacheTimestamp,
+           Date().timeIntervalSince(ts) < cacheDuration {
+            return cached
+        }
+        let attempts = (try? progressStore.allAttempts()) ?? []
+        cachedAttempts = attempts
+        cacheTimestamp = Date()
+        return attempts
+    }
+
+    private func invalidateStatsCache() {
+        cachedAttempts = nil
+        cacheTimestamp = nil
+    }
+
+    private func progressStore_completionCount(for puzzleId: UUID, encodingType: String) -> Int {
+        let attempts = (try? progressStore.attempts(for: puzzleId, encodingType: encodingType)) ?? []
+        return attempts.filter { $0.completedAt != nil }.count
+    }
+
+    private func progressStore_failureCount(for puzzleId: UUID, encodingType: String) -> Int {
+        let attempts = (try? progressStore.attempts(for: puzzleId, encodingType: encodingType)) ?? []
+        return attempts.filter { $0.failedAt != nil }.count
+    }
+
+    private func getCompletedPuzzleIds(for encodingType: String) -> Set<UUID> {
+        Set(getCachedAttempts()
+            .filter { $0.encodingType == encodingType && $0.completedAt != nil }
+            .map { $0.puzzleID })
+    }
 }
 
+// MARK: - NoOpProgressStore
+
+private class NoOpProgressStore: PuzzleProgressStore {
+    func logAttempt(_ attempt: PuzzleAttempt) throws {}
+    func attempts(for puzzleID: UUID, encodingType: String?) throws -> [PuzzleAttempt] { [] }
+    func latestAttempt(for puzzleID: UUID, encodingType: String?) throws -> PuzzleAttempt? { nil }
+    func bestCompletionTime(for puzzleID: UUID, encodingType: String?) throws -> TimeInterval? { nil }
+    func clearAllProgress() throws {}
+    func allAttempts() throws -> [PuzzleAttempt] { [] }
+}

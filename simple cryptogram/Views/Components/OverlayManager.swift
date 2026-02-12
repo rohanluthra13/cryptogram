@@ -83,7 +83,6 @@ final class UnifiedOverlayManager {
 struct OverlayManager: ViewModifier {
     @Environment(PuzzleViewModel.self) private var viewModel
     @Environment(ThemeManager.self) private var themeManager
-    @Environment(SettingsViewModel.self) private var settingsViewModel
     @Environment(NavigationCoordinator.self) private var navigationCoordinator
     @Environment(\.typography) private var typography
     @Environment(\.dismiss) private var dismiss
@@ -463,7 +462,7 @@ struct OverlayManager: ViewModifier {
                             .onTapGesture {}
                             .environment(viewModel)
                             .environment(themeManager)
-                            .environment(settingsViewModel)
+                            .environment(appSettings)
                     )
                 
                 // X button positioned at screen level
@@ -495,7 +494,7 @@ struct OverlayManager: ViewModifier {
                 .environment(themeManager)
                 .environment(viewModel)
                 .environment(navigationCoordinator)
-                .environment(settingsViewModel)
+                .environment(appSettings)
                 .transition(.opacity)
                 .animation(.easeInOut(duration: 0.2), value: uiState.completionState)
                 .zIndex(OverlayZIndex.completion)
@@ -504,7 +503,7 @@ struct OverlayManager: ViewModifier {
                 .environment(themeManager)
                 .environment(viewModel)
                 .environment(navigationCoordinator)
-                .environment(settingsViewModel)
+                .environment(appSettings)
                 .transition(.opacity)
                 .animation(.easeInOut(duration: 0.2), value: uiState.completionState)
                 .zIndex(OverlayZIndex.dailyCompletion)
@@ -656,7 +655,6 @@ struct OverlayManager: ViewModifier {
 struct UnifiedOverlayModifier: ViewModifier {
     @Environment(PuzzleViewModel.self) private var viewModel
     @Environment(ThemeManager.self) private var themeManager
-    @Environment(SettingsViewModel.self) private var settingsViewModel
     @Environment(NavigationCoordinator.self) private var navigationCoordinator
     @Environment(\.typography) private var typography
     @Environment(AppSettings.self) private var appSettings
@@ -758,7 +756,7 @@ struct UnifiedOverlayModifier: ViewModifier {
                         .onTapGesture {}
                         .environment(viewModel)
                         .environment(themeManager)
-                        .environment(settingsViewModel)
+                        .environment(appSettings)
                 )
             
             VStack {

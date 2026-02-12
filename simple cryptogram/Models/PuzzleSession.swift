@@ -22,8 +22,7 @@ struct PuzzleSession {
     private var pauseStartTime: Date?
     var totalPausedTime: TimeInterval = 0
     
-    // Store additional data
-    var userInfo: [String: Any] = [:]
+    var wasLogged: Bool = false
     
     // Determines if the session has actively started
     var hasStarted: Bool {
@@ -100,6 +99,7 @@ struct PuzzleSession {
         isPaused = false
         pauseStartTime = nil
         hasContinuedAfterFailure = false
+        wasLogged = false
     }
     
     mutating func clearFailureState() {

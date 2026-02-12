@@ -3,7 +3,6 @@ import SwiftUI
 struct PuzzleView: View {
     @Environment(PuzzleViewModel.self) private var viewModel
     @Environment(ThemeManager.self) private var themeManager
-    @Environment(SettingsViewModel.self) private var settingsViewModel
     @Environment(AppSettings.self) private var appSettings
     @Environment(NavigationCoordinator.self) private var navigationCoordinator
     @State private var uiState = PuzzleViewState()
@@ -119,7 +118,6 @@ struct PuzzleView: View {
     PuzzleView(showPuzzle: .constant(true))
         .environment(PuzzleViewModel())
         .environment(ThemeManager())
-        .environment(SettingsViewModel())
         .environment(AppSettings())
         .environment(NavigationCoordinator())
 }

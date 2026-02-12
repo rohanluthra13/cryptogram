@@ -3,7 +3,6 @@ import SwiftUI
 struct SettingsContentView: View {
     @Environment(PuzzleViewModel.self) private var puzzleViewModel
     @Environment(ThemeManager.self) private var themeManager
-    @Environment(SettingsViewModel.self) private var settingsViewModel
     @Environment(AppSettings.self) private var appSettings
     @Environment(\.typography) private var typography
     
@@ -31,7 +30,7 @@ struct SettingsContentView: View {
     private let lengthInfoText = "short: quotes under 50 characters\nmedium: quotes 50-99 characters\nlong: quotes 100+ characters"
     
     var body: some View {
-        @Bindable var settingsVM = settingsViewModel
+        @Bindable var settings = appSettings
 
         VStack(spacing: 20) {
             // Top spacing to position content as needed
@@ -63,7 +62,7 @@ struct SettingsContentView: View {
                                         Text("quote length: ")
                                             .font(typography.footnote)
                                             .foregroundColor(CryptogramTheme.Colors.text) +
-                                        Text(settingsViewModel.quoteLengthDisplayText)
+                                        Text(appSettings.quoteLengthDisplayText)
                                             .font(typography.footnote)
                                             .fontWeight(.bold)
                                             .foregroundColor(CryptogramTheme.Colors.text)
@@ -86,18 +85,18 @@ struct SettingsContentView: View {
                                     HStack(spacing: 4) {
                                         MultiCheckboxRow(
                                             title: "short",
-                                            isSelected: settingsViewModel.isLengthSelected("easy"),
-                                            action: { settingsViewModel.toggleLength("easy") }
+                                            isSelected: appSettings.isLengthSelected("easy"),
+                                            action: { appSettings.toggleLength("easy") }
                                         )
                                         MultiCheckboxRow(
                                             title: "medium",
-                                            isSelected: settingsViewModel.isLengthSelected("medium"),
-                                            action: { settingsViewModel.toggleLength("medium") }
+                                            isSelected: appSettings.isLengthSelected("medium"),
+                                            action: { appSettings.toggleLength("medium") }
                                         )
                                         MultiCheckboxRow(
                                             title: "long",
-                                            isSelected: settingsViewModel.isLengthSelected("hard"),
-                                            action: { settingsViewModel.toggleLength("hard") }
+                                            isSelected: appSettings.isLengthSelected("hard"),
+                                            action: { appSettings.toggleLength("hard") }
                                         )
                                     }
                                     .frame(maxWidth: .infinity)
@@ -177,7 +176,7 @@ struct SettingsContentView: View {
                                     Text("text size: ")
                                         .font(typography.footnote)
                                         .foregroundColor(CryptogramTheme.Colors.text)
-                                    Text(settingsViewModel.textSize.displayName.lowercased())
+                                    Text(appSettings.textSize.displayName.lowercased())
                                         .font(typography.footnote)
                                         .fontWeight(.bold)
                                         .foregroundColor(CryptogramTheme.Colors.text)
@@ -197,22 +196,22 @@ struct SettingsContentView: View {
                                 HStack(spacing: 16) {
                                     ForEach(TextSizeOption.allCases) { opt in
                                         Button {
-                                            settingsViewModel.textSize = opt
+                                            appSettings.textSize = opt
                                         } label: {
                                             VStack(spacing: 4) {
                                                 Text("A")
                                                     .font(.system(size: opt.inputSize,
-                                                                  weight: settingsViewModel.textSize == opt ? .bold : .regular,
+                                                                  weight: appSettings.textSize == opt ? .bold : .regular,
                                                                   design: typography.fontOption.design))
-                                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(settingsViewModel.textSize == opt ? 1 : 0.4))
+                                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(appSettings.textSize == opt ? 1 : 0.4))
                                                 Rectangle()
                                                     .frame(height: 1)
                                                     .foregroundColor(CryptogramTheme.Colors.border)
                                                 Text(opt == .small ? "4" : opt == .medium ? "2" : "0")
                                                     .font(.system(size: opt.encodedSize,
-                                                                  weight: settingsViewModel.textSize == opt ? .bold : .regular,
+                                                                  weight: appSettings.textSize == opt ? .bold : .regular,
                                                                   design: typography.fontOption.design))
-                                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(settingsViewModel.textSize == opt ? 1 : 0.4))
+                                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(appSettings.textSize == opt ? 1 : 0.4))
                                             }
                                             .frame(width: 28)
                                         }
@@ -280,7 +279,7 @@ struct SettingsContentView: View {
                         .zIndex(showFontSelector ? 1 : 0)
                         
                         // Layout selection with visual previews
-                        NavBarLayoutSelector(selection: $settingsVM.selectedNavBarLayout)
+                        NavBarLayoutSelector(selection: $settings.navigationBarLayout)
                         
                     }
                 }

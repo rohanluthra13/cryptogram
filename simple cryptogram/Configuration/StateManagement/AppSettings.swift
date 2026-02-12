@@ -1,76 +1,168 @@
-//
-//  AppSettings.swift
-//  simple cryptogram
-//
-//  Created on 25/05/2025.
-//
-
 import Foundation
 import SwiftUI
 import Observation
 
-/// Central settings manager for the application
+/// Central settings manager for the application.
+/// Reads/writes directly to UserDefaults — no abstraction layer.
 @MainActor
 @Observable final class AppSettings {
     // MARK: - Game Settings
     var encodingType: String = "Letters" {
-        didSet { persistence.setValue(encodingType, for: "appSettings.encodingType") }
+        didSet { defaults.set(encodingType, forKey: "appSettings.encodingType") }
     }
-    
+
     var selectedDifficulties: [String] = ["easy", "medium", "hard"] {
-        didSet { persistence.setValue(selectedDifficulties, for: "appSettings.selectedDifficulties") }
+        didSet { defaults.set(selectedDifficulties, forKey: "appSettings.selectedDifficulties") }
     }
-    
+
     var autoSubmitLetter: Bool = false {
-        didSet { persistence.setValue(autoSubmitLetter, for: "appSettings.autoSubmitLetter") }
+        didSet { defaults.set(autoSubmitLetter, forKey: "appSettings.autoSubmitLetter") }
     }
-    
+
     // MARK: - UI Settings
     var navigationBarLayout: NavigationBarLayout = .centerLayout {
-        didSet { persistence.setValue(navigationBarLayout.rawValue, for: "appSettings.navigationBarLayout") }
+        didSet { defaults.set(navigationBarLayout.rawValue, forKey: "appSettings.navigationBarLayout") }
     }
-    
+
     var textSize: TextSizeOption = .medium {
-        didSet { persistence.setValue(textSize.rawValue, for: "appSettings.textSize") }
+        didSet { defaults.set(textSize.rawValue, forKey: "appSettings.textSize") }
     }
-    
+
     var fontFamily: FontOption = .system {
-        didSet { persistence.setValue(fontFamily.rawValue, for: "appSettings.fontFamily") }
+        didSet { defaults.set(fontFamily.rawValue, forKey: "appSettings.fontFamily") }
     }
-    
+
     var soundFeedbackEnabled: Bool = true {
-        didSet { persistence.setValue(soundFeedbackEnabled, for: "appSettings.soundFeedbackEnabled") }
+        didSet { defaults.set(soundFeedbackEnabled, forKey: "appSettings.soundFeedbackEnabled") }
     }
-    
+
     var hapticFeedbackEnabled: Bool = true {
-        didSet { persistence.setValue(hapticFeedbackEnabled, for: "appSettings.hapticFeedbackEnabled") }
+        didSet { defaults.set(hapticFeedbackEnabled, forKey: "appSettings.hapticFeedbackEnabled") }
     }
-    
+
     // MARK: - Navigation State
     var shouldShowCalendarOnReturn: Bool = false
-    
+
     // MARK: - Theme Settings
     var isDarkMode: Bool = false {
-        didSet { persistence.setValue(isDarkMode, for: "appSettings.isDarkMode") }
+        didSet { defaults.set(isDarkMode, forKey: "appSettings.isDarkMode") }
     }
-    
+
     var highContrastMode: Bool = false {
-        didSet { persistence.setValue(highContrastMode, for: "appSettings.highContrastMode") }
+        didSet { defaults.set(highContrastMode, forKey: "appSettings.highContrastMode") }
     }
-    
+
     // MARK: - Daily Puzzle State
     var lastCompletedDailyPuzzleID: Int = 0 {
-        didSet { persistence.setValue(lastCompletedDailyPuzzleID, for: "appSettings.lastCompletedDailyPuzzleID") }
+        didSet { defaults.set(lastCompletedDailyPuzzleID, forKey: "appSettings.lastCompletedDailyPuzzleID") }
     }
-    
-    // MARK: - Migration Support
+
+    // MARK: - Quote Length Display (absorbed from SettingsViewModel)
+
+    var quoteLengthDisplayText: String {
+        let hasEasy = selectedDifficulties.contains("easy")
+        let hasMedium = selectedDifficulties.contains("medium")
+        let hasHard = selectedDifficulties.contains("hard")
+
+        if hasEasy && hasMedium && hasHard { return "all" }
+        if hasEasy && !hasMedium && !hasHard { return "short" }
+        if !hasEasy && hasMedium && !hasHard { return "medium" }
+        if !hasEasy && !hasMedium && hasHard { return "long" }
+        if hasEasy && hasMedium && !hasHard { return "short & medium" }
+        if !hasEasy && hasMedium && hasHard { return "medium & long" }
+        if hasEasy && !hasMedium && hasHard { return "short & long" }
+        return "custom"
+    }
+
+    func isLengthSelected(_ length: String) -> Bool {
+        selectedDifficulties.contains(length)
+    }
+
+    func toggleLength(_ length: String) {
+        if isLengthSelected(length) {
+            guard selectedDifficulties.count > 1 else { return }
+            selectedDifficulties.removeAll { $0 == length }
+        } else {
+            selectedDifficulties.append(length)
+        }
+    }
+
+    // MARK: - Singleton
+
+    private static var _shared: AppSettings?
+
+    @MainActor
+    static var shared: AppSettings {
+        get {
+            if let existing = _shared { return existing }
+            let instance = AppSettings()
+            _shared = instance
+            return instance
+        }
+        set { _shared = newValue }
+    }
+
+    // MARK: - Storage
+
+    private let defaults: Foundation.UserDefaults
+
+    // MARK: - Initialization
+
+    init(defaults: Foundation.UserDefaults = .standard) {
+        self.defaults = defaults
+        loadSettings()
+        migrateFromAppStorageIfNeeded()
+        savedDefaults = SavedDefaults()
+        snapshotCurrentAsDefaults()
+    }
+
+    // MARK: - Loading
+
+    private func loadSettings() {
+        if let v = defaults.string(forKey: "appSettings.encodingType") { encodingType = v }
+        if let v = defaults.stringArray(forKey: "appSettings.selectedDifficulties") { selectedDifficulties = v }
+        if defaults.object(forKey: "appSettings.autoSubmitLetter") != nil { autoSubmitLetter = defaults.bool(forKey: "appSettings.autoSubmitLetter") }
+
+        if let raw = defaults.string(forKey: "appSettings.navigationBarLayout"),
+           let v = NavigationBarLayout(rawValue: raw) { navigationBarLayout = v }
+        if let raw = defaults.string(forKey: "appSettings.textSize"),
+           let v = TextSizeOption(rawValue: raw) { textSize = v }
+        if let raw = defaults.string(forKey: "appSettings.fontFamily"),
+           let v = FontOption(rawValue: raw) { fontFamily = v }
+        if defaults.object(forKey: "appSettings.soundFeedbackEnabled") != nil { soundFeedbackEnabled = defaults.bool(forKey: "appSettings.soundFeedbackEnabled") }
+        if defaults.object(forKey: "appSettings.hapticFeedbackEnabled") != nil { hapticFeedbackEnabled = defaults.bool(forKey: "appSettings.hapticFeedbackEnabled") }
+        if defaults.object(forKey: "appSettings.isDarkMode") != nil { isDarkMode = defaults.bool(forKey: "appSettings.isDarkMode") }
+        if defaults.object(forKey: "appSettings.highContrastMode") != nil { highContrastMode = defaults.bool(forKey: "appSettings.highContrastMode") }
+        if defaults.object(forKey: "appSettings.lastCompletedDailyPuzzleID") != nil { lastCompletedDailyPuzzleID = defaults.integer(forKey: "appSettings.lastCompletedDailyPuzzleID") }
+    }
+
+    // MARK: - One-Time Migration from Legacy @AppStorage Keys
+
     private static let settingsVersion = 1
-    private var migratedVersion: Int = 0 {
-        didSet { persistence.setValue(migratedVersion, for: "appSettings.migratedVersion") }
+
+    private func migrateFromAppStorageIfNeeded() {
+        let storedVersion = defaults.integer(forKey: "appSettings.migratedVersion")
+        guard storedVersion < Self.settingsVersion else { return }
+
+        // Migrate from old @AppStorage keys to appSettings.* keys
+        if let v = defaults.string(forKey: "encodingType") { encodingType = v }
+        if defaults.object(forKey: "autoSubmitLetter") != nil { autoSubmitLetter = defaults.bool(forKey: "autoSubmitLetter") }
+        if let raw = defaults.string(forKey: "navBarLayout"),
+           let v = NavigationBarLayout(rawValue: raw) { navigationBarLayout = v }
+        if let raw = defaults.string(forKey: "textSize"),
+           let v = TextSizeOption(rawValue: raw) { textSize = v }
+        if defaults.object(forKey: "soundFeedbackEnabled") != nil { soundFeedbackEnabled = defaults.bool(forKey: "soundFeedbackEnabled") }
+        if defaults.object(forKey: "hapticFeedbackEnabled") != nil { hapticFeedbackEnabled = defaults.bool(forKey: "hapticFeedbackEnabled") }
+        if defaults.object(forKey: "isDarkMode") != nil { isDarkMode = defaults.bool(forKey: "isDarkMode") }
+        if defaults.object(forKey: "highContrastMode") != nil { highContrastMode = defaults.bool(forKey: "highContrastMode") }
+        if defaults.object(forKey: "lastCompletedDailyPuzzleID") != nil { lastCompletedDailyPuzzleID = defaults.integer(forKey: "lastCompletedDailyPuzzleID") }
+
+        defaults.set(Self.settingsVersion, forKey: "appSettings.migratedVersion")
     }
-    
-    // MARK: - User-Defined Defaults
-    private struct UserDefaults {
+
+    // MARK: - Reset
+
+    private struct SavedDefaults {
         var encodingType: String = "Letters"
         var selectedDifficulties: [String] = ["easy", "medium", "hard"]
         var autoSubmitLetter: Bool = false
@@ -82,145 +174,37 @@ import Observation
         var isDarkMode: Bool = false
         var highContrastMode: Bool = false
     }
-    
-    private var userDefaults = UserDefaults()
-    
-    // MARK: - Singleton
-    // Note: shared instance is preferably created in App struct to ensure main thread initialization
-    // Falls back to lazy initialization if accessed before App struct initialization
-    private static var _shared: AppSettings?
 
-    @MainActor
-    static var shared: AppSettings {
-        get {
-            if let existing = _shared {
-                return existing
-            }
-            // Lazy fallback initialization - creates instance if not already set by App
-            let instance = AppSettings()
-            _shared = instance
-            return instance
-        }
-        set {
-            _shared = newValue
-        }
+    private var savedDefaults = SavedDefaults()
+
+    private func snapshotCurrentAsDefaults() {
+        savedDefaults = SavedDefaults(
+            encodingType: encodingType,
+            selectedDifficulties: selectedDifficulties,
+            autoSubmitLetter: autoSubmitLetter,
+            navigationBarLayout: navigationBarLayout,
+            textSize: textSize,
+            fontFamily: fontFamily,
+            soundFeedbackEnabled: soundFeedbackEnabled,
+            hapticFeedbackEnabled: hapticFeedbackEnabled,
+            isDarkMode: isDarkMode,
+            highContrastMode: highContrastMode
+        )
     }
-    
-    // MARK: - Dependencies
-    private let persistence: PersistenceStrategy
-    
-    // MARK: - Initialization
-    init(persistence: PersistenceStrategy = UserDefaultsPersistence()) {
-        self.persistence = persistence
-        loadSettings()
-        performMigrationIfNeeded()
-        saveCurrentAsUserDefaults()
-    }
-    
-    // MARK: - Loading
-    private func loadSettings() {
-        // Game Settings
-        if let encodingType = persistence.value(for: "appSettings.encodingType", type: String.self) {
-            self.encodingType = encodingType
-        }
-        
-        if let selectedDifficulties = persistence.value(for: "appSettings.selectedDifficulties", type: [String].self) {
-            self.selectedDifficulties = selectedDifficulties
-        }
-        
-        if let autoSubmitLetter = persistence.value(for: "appSettings.autoSubmitLetter", type: Bool.self) {
-            self.autoSubmitLetter = autoSubmitLetter
-        }
-        
-        // UI Settings
-        if let navBarLayoutRaw = persistence.value(for: "appSettings.navigationBarLayout", type: String.self),
-           let navigationBarLayout = NavigationBarLayout(rawValue: navBarLayoutRaw) {
-            self.navigationBarLayout = navigationBarLayout
-        }
-        
-        if let textSizeRaw = persistence.value(for: "appSettings.textSize", type: String.self),
-           let textSize = TextSizeOption(rawValue: textSizeRaw) {
-            self.textSize = textSize
-        }
-        
-        if let fontFamilyRaw = persistence.value(for: "appSettings.fontFamily", type: String.self),
-           let fontFamily = FontOption(rawValue: fontFamilyRaw) {
-            self.fontFamily = fontFamily
-        }
-        
-        if let soundFeedbackEnabled = persistence.value(for: "appSettings.soundFeedbackEnabled", type: Bool.self) {
-            self.soundFeedbackEnabled = soundFeedbackEnabled
-        }
-        
-        if let hapticFeedbackEnabled = persistence.value(for: "appSettings.hapticFeedbackEnabled", type: Bool.self) {
-            self.hapticFeedbackEnabled = hapticFeedbackEnabled
-        }
-        
-        // Theme Settings
-        if let isDarkMode = persistence.value(for: "appSettings.isDarkMode", type: Bool.self) {
-            self.isDarkMode = isDarkMode
-        }
-        
-        if let highContrastMode = persistence.value(for: "appSettings.highContrastMode", type: Bool.self) {
-            self.highContrastMode = highContrastMode
-        }
-        
-        // Daily Puzzle State
-        if let lastCompletedDailyPuzzleID = persistence.value(for: "appSettings.lastCompletedDailyPuzzleID", type: Int.self) {
-            self.lastCompletedDailyPuzzleID = lastCompletedDailyPuzzleID
-        }
-        
-        // Migration version
-        if let migratedVersion = persistence.value(for: "appSettings.migratedVersion", type: Int.self) {
-            self.migratedVersion = migratedVersion
-        }
-    }
-    
-    // MARK: - Migration
-    private func performMigrationIfNeeded() {
-        guard migratedVersion < Self.settingsVersion else { return }
-        
-        // Perform migration from @AppStorage
-        MigrationUtility.migrateFromAppStorage(to: self)
-        
-        // Update migration version
-        migratedVersion = Self.settingsVersion
-        
-        // Force synchronization after migration
-        persistence.synchronize()
-    }
-    
-    // MARK: - Reset Methods
-    
-    /// Save current settings as user defaults
-    private func saveCurrentAsUserDefaults() {
-        userDefaults.encodingType = encodingType
-        userDefaults.selectedDifficulties = selectedDifficulties
-        userDefaults.autoSubmitLetter = autoSubmitLetter
-        userDefaults.navigationBarLayout = navigationBarLayout
-        userDefaults.textSize = textSize
-        userDefaults.fontFamily = fontFamily
-        userDefaults.soundFeedbackEnabled = soundFeedbackEnabled
-        userDefaults.hapticFeedbackEnabled = hapticFeedbackEnabled
-        userDefaults.isDarkMode = isDarkMode
-        userDefaults.highContrastMode = highContrastMode
-    }
-    
-    /// Reset all settings to user-defined defaults
+
     func reset() {
-        encodingType = userDefaults.encodingType
-        selectedDifficulties = userDefaults.selectedDifficulties
-        autoSubmitLetter = userDefaults.autoSubmitLetter
-        navigationBarLayout = userDefaults.navigationBarLayout
-        textSize = userDefaults.textSize
-        fontFamily = userDefaults.fontFamily
-        soundFeedbackEnabled = userDefaults.soundFeedbackEnabled
-        hapticFeedbackEnabled = userDefaults.hapticFeedbackEnabled
-        isDarkMode = userDefaults.isDarkMode
-        highContrastMode = userDefaults.highContrastMode
+        encodingType = savedDefaults.encodingType
+        selectedDifficulties = savedDefaults.selectedDifficulties
+        autoSubmitLetter = savedDefaults.autoSubmitLetter
+        navigationBarLayout = savedDefaults.navigationBarLayout
+        textSize = savedDefaults.textSize
+        fontFamily = savedDefaults.fontFamily
+        soundFeedbackEnabled = savedDefaults.soundFeedbackEnabled
+        hapticFeedbackEnabled = savedDefaults.hapticFeedbackEnabled
+        isDarkMode = savedDefaults.isDarkMode
+        highContrastMode = savedDefaults.highContrastMode
     }
-    
-    /// Reset all settings to factory defaults
+
     func resetToFactory() {
         encodingType = "Letters"
         selectedDifficulties = ["easy", "medium", "hard"]
@@ -232,13 +216,10 @@ import Observation
         hapticFeedbackEnabled = true
         isDarkMode = false
         highContrastMode = false
-        
-        // Also update user defaults to factory
-        saveCurrentAsUserDefaults()
+        snapshotCurrentAsDefaults()
     }
-    
-    /// Update user defaults with current settings
+
     func saveAsUserDefaults() {
-        saveCurrentAsUserDefaults()
+        snapshotCurrentAsDefaults()
     }
 }

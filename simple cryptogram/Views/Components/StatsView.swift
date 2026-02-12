@@ -7,13 +7,13 @@ struct TimerView: View {
     let totalPausedTime: TimeInterval
     @State private var displayTime: TimeInterval = 0
     var isPaused: Bool = false
-    var settingsViewModel: SettingsViewModel
+    var appSettings: AppSettings
     @Environment(\.typography) private var typography
-    
+
     var body: some View {
         VStack {
             Text(timeFormatted)
-                .font(.system(size: settingsViewModel.textSize.timerSize, design: .rounded))
+                .font(.system(size: appSettings.textSize.timerSize, design: .rounded))
                 .foregroundColor(CryptogramTheme.Colors.text)
                 .padding(.vertical, 8)
                 .padding(.horizontal, 16)
@@ -139,7 +139,7 @@ struct StatsView: View {
     var onRequestHint: () -> Void = {}
     var isPaused: Bool = false
     var viewModel: PuzzleViewModel // required for UserStatsView
-    var settingsViewModel: SettingsViewModel
+    var appSettings: AppSettings
     @Environment(\.typography) private var typography
     
     var body: some View {
@@ -148,7 +148,7 @@ struct StatsView: View {
             HStack(alignment: .center) {
                 MistakesView(mistakeCount: mistakeCount)
                 Spacer()
-                TimerView(startTime: startTime, endTime: nil, totalPausedTime: viewModel.session.totalPausedTime, isPaused: isPaused, settingsViewModel: settingsViewModel)
+                TimerView(startTime: startTime, endTime: nil, totalPausedTime: viewModel.session.totalPausedTime, isPaused: isPaused, appSettings: appSettings)
                 Spacer()
                 Button(action: { /* settings action here */ }) {
                     Image(systemName: "gearshape")
@@ -186,12 +186,12 @@ struct StatsView: View {
             onRequestHint: {},
             isPaused: false,
             viewModel: PuzzleViewModel(), // required for UserStatsView
-            settingsViewModel: SettingsViewModel()
+            appSettings: AppSettings()
         )
-        
+
         Text("Preview of individual components:").padding(.top, 20)
-        
-        TimerView(startTime: Date(), endTime: nil, totalPausedTime: 0, isPaused: false, settingsViewModel: SettingsViewModel())
+
+        TimerView(startTime: Date(), endTime: nil, totalPausedTime: 0, isPaused: false, appSettings: AppSettings())
             .padding()
         
         MistakesView(mistakeCount: 2)

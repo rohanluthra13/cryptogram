@@ -2,7 +2,7 @@ import SwiftUI
 
 struct TopBarView: View {
     @Environment(PuzzleViewModel.self) private var viewModel
-    @Environment(SettingsViewModel.self) private var settingsViewModel
+    @Environment(AppSettings.self) private var appSettings
     @Environment(NavigationCoordinator.self) private var navigationCoordinator
     var uiState: PuzzleViewState
     @Environment(\.dismiss) private var dismiss
@@ -49,7 +49,7 @@ struct TopBarView: View {
                             endTime: viewModel.endTime,
                             totalPausedTime: viewModel.session.totalPausedTime,
                             isPaused: viewModel.isPaused || viewModel.isFailed,
-                            settingsViewModel: settingsViewModel
+                            appSettings: appSettings
                         )
                         .foregroundColor(CryptogramTheme.Colors.text)
                         .opacity(PuzzleViewConstants.Colors.activeIconOpacity)
@@ -96,6 +96,6 @@ struct TopBarView: View {
 #Preview {
     TopBarView(uiState: PuzzleViewState())
         .environment(PuzzleViewModel())
-        .environment(SettingsViewModel())
+        .environment(AppSettings())
         .environment(NavigationCoordinator())
 }

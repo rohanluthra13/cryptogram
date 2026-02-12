@@ -6,7 +6,6 @@ struct simple_cryptogramApp: App {
     @Environment(\.scenePhase) private var scenePhase
     @State private var viewModel: PuzzleViewModel
     @State private var themeManager = ThemeManager()
-    @State private var settingsViewModel = SettingsViewModel()
 
     init() {
         // Create AppSettings instance on main thread first
@@ -24,7 +23,6 @@ struct simple_cryptogramApp: App {
                 .environment(appSettings)
                 .environment(viewModel)
                 .environment(themeManager)
-                .environment(settingsViewModel)
                 .preferredColorScheme(appSettings.isDarkMode ? .dark : .light)
         }
         .onChange(of: scenePhase) { _, newPhase in

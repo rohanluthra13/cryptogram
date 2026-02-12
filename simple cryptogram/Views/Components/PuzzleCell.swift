@@ -11,7 +11,6 @@ struct PuzzleCell: View {
     @State private var cellHighlightAmount: CGFloat = 0.0
     @State private var animateCompletionBorder: Bool = false  // flash border on group completion
     @Environment(PuzzleViewModel.self) private var viewModel
-    @Environment(SettingsViewModel.self) private var settingsViewModel
     @Environment(AppSettings.self) private var appSettings
     @Environment(\.typography) private var typography
     
@@ -22,7 +21,7 @@ struct PuzzleCell: View {
     
     // Adjust font size based on font family for better readability
     private var adjustedInputSize: CGFloat {
-        let baseSize = settingsViewModel.textSize.inputSize
+        let baseSize = appSettings.textSize.inputSize
         switch typography.fontOption {
         case .serif:
             // Serif fonts tend to be slightly smaller visually
@@ -77,7 +76,7 @@ struct PuzzleCell: View {
                 }
                 // Encoded value (letter or number)
                 Text(cell.encodedChar)
-                    .font(.system(size: settingsViewModel.textSize.encodedSize, weight: .medium, design: .monospaced))
+                    .font(.system(size: appSettings.textSize.encodedSize, weight: .medium, design: .monospaced))
                     .foregroundColor(textColor)
             }
             .padding(.horizontal, 0)

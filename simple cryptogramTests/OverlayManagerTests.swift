@@ -129,25 +129,21 @@ class OverlayManagerTests: XCTestCase {
     
     // MARK: - UnifiedOverlayManager Tests
     
-    func testUnifiedOverlayManagerPresentation() {
+    func testUnifiedOverlayManagerPresentation() async {
         let overlayManager = UnifiedOverlayManager()
-        
+
         // Test initial state
         XCTAssertNil(overlayManager.activeOverlay)
         XCTAssertTrue(overlayManager.overlayQueue.isEmpty)
-        
+
         // Test presentation
         overlayManager.present(.settings)
         XCTAssertEqual(overlayManager.activeOverlay, .settings)
         XCTAssertTrue(overlayManager.isPresenting(.settings))
-        
+
         // Test dismissal
-        let expectation = XCTestExpectation(description: "Overlay dismissed")
-        overlayManager.dismiss {
-            expectation.fulfill()
-        }
+        await overlayManager.dismiss()
         XCTAssertNil(overlayManager.activeOverlay)
-        wait(for: [expectation], timeout: 1.0)
     }
     
     func testOverlayTypeEquality() {
