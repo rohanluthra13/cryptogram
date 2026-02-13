@@ -428,13 +428,11 @@ struct PuzzleCompletionView: View {
     }
     
     func loadNextPuzzle() {
-        // Hide the completion view and immediately load next puzzle
+        // Hide the completion view and load next puzzle
+        // Don't call reset() — startNewPuzzle replaces cells entirely
         withAnimation(.easeOut(duration: 0.3)) {
             showCompletionView = false
         }
-        
-        // Reset and load next puzzle without delay
-        viewModel.reset()
         viewModel.refreshPuzzleWithCurrentSettings()
     }
     

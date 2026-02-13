@@ -25,6 +25,10 @@ struct WordAwarePuzzleGrid: View {
 
     @ViewBuilder
     private func cellView(for index: Int) -> some View {
+        // Guard against stale indices during async puzzle transitions
+        if index >= viewModel.cells.count {
+            EmptyView()
+        } else {
         let cell = viewModel.cells[index]
         if cell.isSymbol && cell.encodedChar == " " {
             Spacer().frame(width: 10, height: 20)
@@ -44,6 +48,7 @@ struct WordAwarePuzzleGrid: View {
             )
             .id("\(viewModel.currentPuzzle?.id ?? UUID())-\(cell.id)")
             .aspectRatio(1, contentMode: .fit)
+        }
         }
     }
 }
