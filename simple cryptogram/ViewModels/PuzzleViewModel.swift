@@ -354,6 +354,8 @@ final class PuzzleViewModel {
                 gen.impactOccurred()
             }
             moveToNextCell()
+            markEngaged()
+            saveDailyProgressIfNeeded()
         } else {
             updateCell(at: index, with: uppercased, isRevealed: false, isError: true)
             Task {
@@ -363,15 +365,14 @@ final class PuzzleViewModel {
             if wasEmpty {
                 incrementMistakes()
             }
+            markEngaged()
             Task { [weak self] in
                 try? await Task.sleep(for: .seconds(0.5))
                 guard !Task.isCancelled else { return }
                 self?.clearCell(at: index)
+                self?.saveDailyProgressIfNeeded()
             }
         }
-
-        markEngaged()
-        saveDailyProgressIfNeeded()
     }
 
     func handleDelete(at index: Int? = nil) {
