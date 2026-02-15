@@ -63,8 +63,6 @@ simple cryptogram/
 │
 ├── ViewModels/
 │   ├── PuzzleViewModel.swift (845 lines)       — THE single orchestrator: game state, input, hints, daily, stats
-│   ├── PuzzleViewState.swift                   — Overlay state management (used by OverlayManager)
-│   ├── PuzzleUIViewModel.swift                 — UI-specific view model
 │   ├── DailyPuzzleProgress.swift               — Codable daily progress struct
 │   └── Navigation/
 │       └── NavigationCoordinator.swift         — NavigationStack path management
@@ -77,21 +75,19 @@ simple cryptogram/
 │   ├── KeyboardView.swift                      — Custom keyboard
 │   ├── UserStatsView.swift                     — User statistics display
 │   ├── Components/
-│   │   ├── OverlayManager.swift                — Overlay presentation system (settings, stats, completion, etc.)
+│   │   ├── FullScreenOverlay.swift             — Reusable full-screen overlay container (background + close button)
+│   │   ├── GameOverOverlay.swift               — Game over overlay with typing animation
 │   │   ├── PuzzleCompletionView.swift          — Post-game completion screen
 │   │   ├── PuzzleCell.swift                    — Individual puzzle cell view
 │   │   ├── WordAwarePuzzleGrid.swift           — Word-aware grid layout
 │   │   ├── NavigationBarView.swift             — Customizable navigation bar
 │   │   ├── TopBarView.swift                    — Top bar with timer
-│   │   ├── BottomBarView.swift                 — Bottom bar (stats/settings buttons)
-│   │   ├── MainContentView.swift               — Main content wrapper
 │   │   ├── ContinuousCalendarView.swift        — Calendar for daily puzzles
 │   │   ├── SettingsContentView.swift           — Settings panel content
 │   │   ├── StatsView.swift                     — Statistics display
 │   │   ├── CompletionStatsView.swift           — Completion statistics
 │   │   ├── InfoOverlayView.swift               — Info/about overlay
 │   │   ├── AuthorInfoView.swift                — Author bio card
-│   │   ├── FloatingInfoButton.swift            — Floating ? button
 │   │   ├── CloseButton.swift                   — Reusable close button
 │   │   ├── MultiCheckboxRow.swift              — Multi-checkbox component
 │   │   ├── ResetAccountSection.swift           — Account reset UI
@@ -151,7 +147,7 @@ simple cryptogram/
 
 ### State Management
 - **AppSettings**: Central source of truth for all app settings, persisted via UserDefaults
-- **PuzzleViewState**: UI overlay state management (completion views, settings, stats overlays)
+- **Overlay state**: Each view manages its own overlay bools (`@State`) + `FullScreenOverlay` container
 - **@Environment**: Used for dependency injection in views (AppSettings, PuzzleViewModel, ThemeManager, NavigationCoordinator)
 
 ### State Access Patterns
@@ -200,14 +196,13 @@ The app uses SQLite with the following main tables:
 - Font selection system (System, Rounded, Serif, Monospaced)
 
 ### Testing
-- **Test Suite**: ~58 tests across 8 test files
+- **Test Suite**: ~46 tests across 7 test files
 - **Test Organization**:
   - `DatabaseServiceTests`: Database operations and error handling
   - `LocalPuzzleProgressStoreTests`: Progress persistence and migration
   - `AppSettingsTests`: Settings persistence and reset
   - `DailySaveBugTests`: Regression tests for daily puzzle save bugs
   - `NavigationCoordinatorTests`: Navigation state management
-  - `OverlayManagerTests`: Overlay state and mutual exclusion
   - `PerformanceBaselineTests`: Performance baselines for critical paths
   - `simple_cryptogramTests`: Basic app tests
 

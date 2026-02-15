@@ -8,24 +8,31 @@ struct PuzzleCompletionView: View {
     @Environment(\.typography) private var typography
     @Binding var showCompletionView: Bool
 
-    // Bottom bar state
-    @State private var uiState = PuzzleViewState()
-    
+    // Overlay state (was PuzzleViewState)
+    @State private var showSettings = false
+    @State private var showStats = false
+    @State private var showCalendar = false
+    @State private var showInfo = false
+
+    // Bottom bar auto-hide
+    @State private var isBottomBarVisible = true
+    @State private var bottomBarHideTask: Task<Void, Never>?
+
     // Animation states
     @State private var showQuote = false
     @State private var showAttribution = false
-    @State private var showStats = false
+    @State private var showStatsAnim = false
     @State private var showNextButton = false
     @State private var displayedQuote = ""
     @State private var authorIsBold = false
     @State private var isAuthorVisible = false
-    
+
     // Typewriter animation properties
     var typingSpeed: Double = 0.09
     @State private var typingTimer: Timer?
     @State private var currentCharacterIndex = 0
     @State private var quoteToType = ""
-    
+
     // MARK: - Author Summary Animated Display
     @State private var showSummaryLine = false
     @State private var showBornLine = false
@@ -34,19 +41,16 @@ struct PuzzleCompletionView: View {
     @State private var bornTyped = ""
     @State private var diedTyped = ""
 
-    // Helper for summary typing speed
     var summaryTypingSpeed: Double { 0.015 }
 
     var hideStats: Bool = false
     var isDailyPuzzle: Bool = false
 
-    // State for managing typing animation
     @State private var summaryTypingTask: Task<Void, Never>?
-    
+
     // MARK: - Helper for line typing animation
     private func typeLine(line: String, setter: @escaping (String) -> Void) async {
         let characters = Array(line)
-
         for currentIndex in 0...characters.count {
             guard !Task.isCancelled else { return }
             setter(String(characters.prefix(currentIndex)))
@@ -57,9 +61,7 @@ struct PuzzleCompletionView: View {
     }
 
     private func skipSummaryTyping() {
-        // Cancel ongoing animation
         summaryTypingTask?.cancel()
-        
         showSummaryLine = true
         showBornLine = true
         showDiedLine = true
@@ -97,7 +99,7 @@ struct PuzzleCompletionView: View {
                 return outputFormatter.string(from: date)
             }
         }
-        return dateString // fallback to raw if parsing fails
+        return dateString
     }
 
     var body: some View {
@@ -122,17 +124,14 @@ struct PuzzleCompletionView: View {
                                 skipTypingAnimation()
                             }
                     }
-                    // Author attribution - removed the redundant attribution with dash
                     Spacer().frame(height: 8).opacity(showAttribution ? 1 : 0)
                     // Source/hint with info button
                     if let source = viewModel.currentPuzzle?.hint, !source.isEmpty {
-                        let processedSource = source.hasPrefix("Author:") ? 
-                            source.replacingOccurrences(of: "Author:", with: "").trimmingCharacters(in: .whitespacesAndNewlines) : 
+                        let processedSource = source.hasPrefix("Author:") ?
+                            source.replacingOccurrences(of: "Author:", with: "").trimmingCharacters(in: .whitespacesAndNewlines) :
                             source
-                        
-                        // Container to keep author centered while adding info button
+
                         ZStack {
-                            // Centered author name
                             Text(processedSource)
                                 .font(typography.caption)
                                 .foregroundColor(CryptogramTheme.Colors.text)
@@ -140,11 +139,10 @@ struct PuzzleCompletionView: View {
                                 .padding(.top, 4)
                                 .opacity(showAttribution ? 1 : 0)
                                 .onTapGesture {
-                                    guard let name = viewModel.currentPuzzle?.authorName else { return }
+                                    guard viewModel.currentPuzzle?.authorName != nil else { return }
                                     withAnimation { isAuthorVisible.toggle() }
                                 }
 
-                            // Info button positioned to the right
                             HStack {
                                 Spacer()
                                 Button(action: {
@@ -156,12 +154,12 @@ struct PuzzleCompletionView: View {
                                         .frame(width: 18, height: 18)
                                 }
                                 .opacity(showAttribution ? 1 : 0)
-                                .padding(.trailing, 60) // Position it more to the right
+                                .padding(.trailing, 60)
                             }
                             .padding(.top, 4)
                         }
                     }
-                    // Author summary area (fixed height to prevent shifting)
+                    // Author summary area
                     ZStack(alignment: .top) {
                         if isAuthorVisible {
                             ScrollView(.vertical, showsIndicators: false) {
@@ -214,9 +212,7 @@ struct PuzzleCompletionView: View {
                                         .onAppear {
                                             showSummaryLine = false; showBornLine = false; showDiedLine = false
                                             summaryTyped = ""; bornTyped = ""; diedTyped = ""
-                                            // Cancel any existing animation
                                             summaryTypingTask?.cancel()
-                                            // Animate all lines sequentially using async/await
                                             summaryTypingTask = Task {
                                                 withAnimation(.easeOut(duration: 0.3)) { showSummaryLine = true }
                                                 await typeLine(line: summaryText, setter: { summaryTyped = $0 })
@@ -239,7 +235,6 @@ struct PuzzleCompletionView: View {
                                             }
                                         }
                                         .onDisappear {
-                                            // Cancel ongoing animation
                                             summaryTypingTask?.cancel()
                                             showSummaryLine = false; showBornLine = false; showDiedLine = false
                                             summaryTyped = ""; bornTyped = ""; diedTyped = ""
@@ -282,25 +277,20 @@ struct PuzzleCompletionView: View {
                     if !hideStats {
                         CompletionStatsView()
                             .environment(viewModel)
-                            .opacity(showStats ? 1 : 0)
-                            .offset(y: showStats ? 0 : 20)
+                            .opacity(showStatsAnim ? 1 : 0)
+                            .offset(y: showStatsAnim ? 0 : 20)
                     }
-                    // Action buttons: Calendar for daily, Next for regular
                     HStack(spacing: 40) {
                         if isDailyPuzzle {
-                            Button(action: {
-                                goToCalendar()
-                            }) {
+                            Button(action: { goToCalendar() }) {
                                 Image(systemName: "calendar")
                                     .font(.system(size: 22))
                                     .foregroundColor(CryptogramTheme.Colors.text)
                                     .frame(width: 44, height: 44)
                             }
                         }
-                        
-                        Button(action: { 
-                            loadNextPuzzle()
-                        }) {
+
+                        Button(action: { loadNextPuzzle() }) {
                             Image(systemName: "arrow.right")
                                 .font(.system(size: 22))
                                 .foregroundColor(CryptogramTheme.Colors.text)
@@ -314,33 +304,78 @@ struct PuzzleCompletionView: View {
             }
             .frame(maxHeight: .infinity)
             .padding(CryptogramTheme.Layout.gridPadding)
-            
-            // Bottom bar with three icons (for all completion views)
-            BottomBarView(uiState: uiState)
-                .environment(navigationCoordinator)
+
+            // Bottom bar
+            completionBottomBar
                 .opacity(showNextButton ? 1 : 0)
                 .animation(.easeInOut(duration: 0.5), value: showNextButton)
-            
-            // Unified overlays handled by commonOverlays modifier below
-            
+
+            // Overlays
+            if showSettings {
+                FullScreenOverlay(isPresented: $showSettings) {
+                    SettingsContentView()
+                        .padding(.horizontal, PuzzleViewConstants.Overlay.overlayHorizontalPadding)
+                        .padding(.vertical, 20)
+                        .background(Color.clear)
+                        .environment(viewModel)
+                        .environment(themeManager)
+                        .environment(appSettings)
+                }
+                .zIndex(150)
+            }
+
+            if showStats {
+                FullScreenOverlay(isPresented: $showStats) {
+                    VStack(spacing: 0) {
+                        Spacer(minLength: 0)
+                        UserStatsView(viewModel: viewModel)
+                            .padding(.top, 24)
+                    }
+                }
+                .zIndex(150)
+            }
+
+            if showCalendar {
+                FullScreenOverlay(isPresented: $showCalendar) {
+                    ContinuousCalendarView(
+                        showCalendar: $showCalendar,
+                        onSelectDate: { date in
+                            viewModel.loadDailyPuzzle(for: date)
+                            if let puzzle = viewModel.currentPuzzle {
+                                navigationCoordinator.navigateToPuzzle(puzzle)
+                            }
+                        }
+                    )
+                    .id(viewModel.dailyCompletionVersion)
+                    .environment(viewModel)
+                    .environment(appSettings)
+                }
+                .zIndex(150)
+            }
+
+            if showInfo {
+                FullScreenOverlay(isPresented: $showInfo) {
+                    VStack {
+                        Spacer(minLength: PuzzleViewConstants.Overlay.infoOverlayTopSpacing)
+                        ScrollView {
+                            InfoOverlayView()
+                        }
+                        .padding(.horizontal, PuzzleViewConstants.Overlay.overlayHorizontalPadding)
+                        Spacer()
+                    }
+                }
+                .zIndex(125)
+            }
         }
         .gesture(
             DragGesture()
                 .onEnded { value in
-                    // Swipe right to go back (natural back navigation)
                     if value.translation.width > 100 && abs(value.translation.height) < 100 {
                         navigationCoordinator.navigateBack()
                     }
                 }
         )
-        .commonOverlays(
-            showSettings: $uiState.showSettings,
-            showStats: $uiState.showStatsOverlay,
-            showCalendar: $uiState.showCalendar,
-            showInfoOverlay: $uiState.showInfoOverlay
-        )
         .onAppear {
-            // Reset author summary state on appear
             isAuthorVisible = false
             summaryTyped = ""
             bornTyped = ""
@@ -349,20 +384,117 @@ struct PuzzleCompletionView: View {
             showBornLine = false
             showDiedLine = false
             startAnimationSequence()
-            
-            // Show bottom bar and start auto-hide timer
-            uiState.showBottomBarTemporarily()
+            showBottomBarTemporarily()
         }
     }
-    
+
+    // MARK: - Bottom Bar
+
+    @ViewBuilder
+    private var completionBottomBar: some View {
+        let shouldShowBar = isBottomBarVisible || showSettings || showStats
+        let shouldShowTapArea = !(isBottomBarVisible || showSettings || showStats)
+
+        ZStack {
+            if shouldShowBar {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Button(action: { toggleStats() }) {
+                            Image(systemName: "chart.bar")
+                                .font(.system(size: PuzzleViewConstants.Sizes.statsIconSize))
+                                .foregroundColor(CryptogramTheme.Colors.text)
+                                .opacity(PuzzleViewConstants.Colors.iconOpacity)
+                                .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
+                                .accessibilityLabel("Stats/Chart")
+                        }
+
+                        Spacer()
+
+                        Button(action: {
+                            navigationCoordinator.navigationPath = NavigationPath()
+                        }) {
+                            Image(systemName: "house")
+                                .font(.title3)
+                                .foregroundColor(CryptogramTheme.Colors.text)
+                                .opacity(PuzzleViewConstants.Colors.iconOpacity)
+                                .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
+                                .accessibilityLabel("Return to Home")
+                        }
+
+                        Spacer()
+
+                        Button(action: { toggleSettings() }) {
+                            Image(systemName: "gearshape")
+                                .font(.system(size: PuzzleViewConstants.Sizes.settingsIconSize))
+                                .foregroundColor(CryptogramTheme.Colors.text)
+                                .opacity(PuzzleViewConstants.Colors.iconOpacity)
+                                .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
+                                .accessibilityLabel("Settings")
+                        }
+                    }
+                    .frame(height: PuzzleViewConstants.Spacing.bottomBarHeight, alignment: .bottom)
+                    .padding(.horizontal, PuzzleViewConstants.Spacing.bottomBarHorizontalPadding)
+                    .frame(maxWidth: .infinity)
+                    .ignoresSafeArea(edges: .bottom)
+                    .contentShape(Rectangle())
+                    .onTapGesture { showBottomBarTemporarily() }
+                }
+                .zIndex(190)
+            }
+
+            if shouldShowTapArea {
+                VStack {
+                    Spacer()
+                    Rectangle()
+                        .fill(Color.clear)
+                        .frame(height: PuzzleViewConstants.Spacing.bottomBarHeight)
+                        .frame(maxWidth: .infinity)
+                        .ignoresSafeArea(edges: .bottom)
+                        .contentShape(Rectangle())
+                        .onTapGesture { showBottomBarTemporarily() }
+                }
+                .zIndex(189)
+            }
+        }
+    }
+
+    // MARK: - Bottom Bar Helpers
+
+    private func showBottomBarTemporarily() {
+        isBottomBarVisible = true
+        bottomBarHideTask?.cancel()
+        bottomBarHideTask = Task {
+            try? await Task.sleep(for: .seconds(PuzzleViewConstants.Animation.bottomBarAutoHideDelay))
+            guard !Task.isCancelled else { return }
+            withAnimation { isBottomBarVisible = false }
+        }
+    }
+
+    private func toggleSettings() {
+        withAnimation {
+            showSettings.toggle()
+            showStats = false
+        }
+        showBottomBarTemporarily()
+    }
+
+    private func toggleStats() {
+        withAnimation {
+            showStats.toggle()
+            showSettings = false
+        }
+        showBottomBarTemporarily()
+    }
+
+    // MARK: - Animation
+
     func startAnimationSequence() {
         withAnimation(.spring(response: 0.6, dampingFraction: 0.8).delay(0.4)) {
             showQuote = true
         }
 
-        // Start typewriter effect after quote container appears
         if let quoteText = viewModel.currentPuzzle?.solution {
-            // Delay the start of typing to ensure container is visible first
             Task {
                 try? await Task.sleep(for: .seconds(0.8))
                 guard !Task.isCancelled else { return }
@@ -375,23 +507,20 @@ struct PuzzleCompletionView: View {
         }
 
         withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(1.8)) {
-            showStats = true
+            showStatsAnim = true
         }
 
         withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(2.3)) {
             showNextButton = true
         }
     }
-    
+
     func startTypewriterAnimation(for text: String) {
         displayedQuote = ""
         quoteToType = text
         currentCharacterIndex = 0
-        
-        // Cancel any existing timer
         typingTimer?.invalidate()
-        
-        // Create a timer that adds one character at a time
+
         typingTimer = Timer.scheduledTimer(withTimeInterval: typingSpeed, repeats: true) { timer in
             if currentCharacterIndex < quoteToType.count {
                 let index = quoteToType.index(quoteToType.startIndex, offsetBy: currentCharacterIndex)
@@ -401,7 +530,6 @@ struct PuzzleCompletionView: View {
                 timer.invalidate()
                 typingTimer = nil
 
-                // Bold the author name after quote is typed
                 Task { @MainActor in
                     try? await Task.sleep(for: .seconds(0.3))
                     guard !Task.isCancelled else { return }
@@ -412,40 +540,29 @@ struct PuzzleCompletionView: View {
             }
         }
     }
-    
+
     func skipTypingAnimation() {
-        // Cancel the typing timer
         typingTimer?.invalidate()
         typingTimer = nil
-        
-        // Complete the quote immediately
         displayedQuote = quoteToType
-        
-        // Bold the author name immediately
         withAnimation {
             authorIsBold = true
         }
     }
-    
+
     func loadNextPuzzle() {
-        // Hide the completion view and load next puzzle
-        // Don't call reset() — startNewPuzzle replaces cells entirely
         withAnimation(.easeOut(duration: 0.3)) {
             showCompletionView = false
         }
         viewModel.refreshPuzzleWithCurrentSettings()
     }
-    
+
     func goHome() {
-        // Navigate directly without hiding the view first
         navigationCoordinator.navigateToHome()
     }
-    
+
     func goToCalendar() {
-        // Set flag to show calendar when we return to home
         appSettings.shouldShowCalendarOnReturn = true
-        
-        // Navigate directly without hiding the view first
         navigationCoordinator.navigateToHome()
     }
 }

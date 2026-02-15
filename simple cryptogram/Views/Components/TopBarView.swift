@@ -4,24 +4,20 @@ struct TopBarView: View {
     @Environment(PuzzleViewModel.self) private var viewModel
     @Environment(AppSettings.self) private var appSettings
     @Environment(NavigationCoordinator.self) private var navigationCoordinator
-    var uiState: PuzzleViewState
-    @Environment(\.dismiss) private var dismiss
+    @Binding var showInfoOverlay: Bool
+    var showControls: Bool
     @Environment(\.typography) private var typography
-    
-    private var shouldShowControls: Bool {
-        viewModel.currentPuzzle != nil && uiState.isMainUIVisible
-    }
-    
+
     private let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "MMM dd yyyy"
         return formatter
     }()
-    
+
     var body: some View {
         HStack(alignment: .top) {
             // Left: mistakes & hints
-            if shouldShowControls {
+            if showControls {
                 VStack(spacing: 2) {
                     HStack {
                         MistakesView(mistakeCount: viewModel.mistakeCount)
@@ -38,10 +34,10 @@ struct TopBarView: View {
                 }
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .leading)
             }
-            
+
             // Center: timer
             ZStack {
-                if shouldShowControls {
+                if showControls {
                     let timerInactive = (viewModel.startTime ?? Date.distantFuture) > Date()
                     if !timerInactive {
                         TimerView(
@@ -57,31 +53,31 @@ struct TopBarView: View {
                 }
             }
             .frame(minWidth: 0, maxWidth: .infinity, alignment: .center)
-            
+
             // Right: info button
-            if shouldShowControls {
+            if showControls {
                 VStack(alignment: .trailing, spacing: 0) {
                     Button(action: {
                         withAnimation {
-                            uiState.showInfoOverlay.toggle()
+                            showInfoOverlay.toggle()
                         }
                     }) {
                         Image(systemName: "questionmark")
                             .font(.system(size: PuzzleViewConstants.Sizes.questionMarkSize, design: typography.fontOption.design))
                             .foregroundColor(CryptogramTheme.Colors.text)
-                            .opacity(uiState.showInfoOverlay ? PuzzleViewConstants.Colors.activeIconOpacity : PuzzleViewConstants.Colors.iconOpacity)
+                            .opacity(showInfoOverlay ? PuzzleViewConstants.Colors.activeIconOpacity : PuzzleViewConstants.Colors.iconOpacity)
                             .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
                             .accessibilityLabel("About / Info")
                     }
-                    
+
                     // Daily puzzle date below info button
                     if viewModel.isDailyPuzzle, let puzzleDate = viewModel.currentDailyPuzzleDate {
                         Text(puzzleDate, formatter: dateFormatter)
                             .font(typography.caption)
                             .foregroundColor(CryptogramTheme.Colors.text)
                             .opacity(0.7)
-                            .padding(.top, 15) // Space between info button and date
-                            .offset(x: -14) // Move text left to better align with icon above
+                            .padding(.top, 15)
+                            .offset(x: -14)
                     }
                 }
                 .frame(minWidth: 0, maxWidth: .infinity, alignment: .trailing)
@@ -94,7 +90,7 @@ struct TopBarView: View {
 }
 
 #Preview {
-    TopBarView(uiState: PuzzleViewState())
+    TopBarView(showInfoOverlay: .constant(false), showControls: true)
         .environment(PuzzleViewModel())
         .environment(AppSettings())
         .environment(NavigationCoordinator())

@@ -30,7 +30,6 @@ struct HomeView: View {
                 .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                // Main content (was HomeMainContent)
                 mainContent
 
                 // Bottom bar
@@ -103,15 +102,66 @@ struct HomeView: View {
                     Spacer()
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .zIndex(OverlayZIndex.floatingInfo)
+                .zIndex(130)
+            }
+
+            // Overlays
+            if showSettings {
+                FullScreenOverlay(isPresented: $showSettings) {
+                    SettingsContentView()
+                        .padding(.horizontal, PuzzleViewConstants.Overlay.overlayHorizontalPadding)
+                        .padding(.vertical, 20)
+                        .background(Color.clear)
+                        .environment(viewModel)
+                        .environment(themeManager)
+                        .environment(appSettings)
+                }
+                .zIndex(150)
+            }
+
+            if showStats {
+                FullScreenOverlay(isPresented: $showStats) {
+                    VStack(spacing: 0) {
+                        Spacer(minLength: 0)
+                        UserStatsView(viewModel: viewModel)
+                            .padding(.top, 24)
+                    }
+                }
+                .zIndex(150)
+            }
+
+            if showCalendar {
+                FullScreenOverlay(isPresented: $showCalendar) {
+                    ContinuousCalendarView(
+                        showCalendar: $showCalendar,
+                        onSelectDate: { date in
+                            viewModel.loadDailyPuzzle(for: date)
+                            if let puzzle = viewModel.currentPuzzle {
+                                navigationCoordinator.navigateToPuzzle(puzzle)
+                            }
+                        }
+                    )
+                    .id(viewModel.dailyCompletionVersion)
+                    .environment(viewModel)
+                    .environment(appSettings)
+                }
+                .zIndex(150)
+            }
+
+            if showInfoOverlay {
+                FullScreenOverlay(isPresented: $showInfoOverlay) {
+                    VStack {
+                        Spacer(minLength: PuzzleViewConstants.Overlay.infoOverlayTopSpacing)
+                        ScrollView {
+                            InfoOverlayView()
+                        }
+                        .padding(.horizontal, PuzzleViewConstants.Overlay.overlayHorizontalPadding)
+                        Spacer()
+                    }
+                }
+                .zIndex(125)
             }
         }
-        .commonOverlays(
-            showSettings: $showSettings,
-            showStats: $showStats,
-            showCalendar: $showCalendar,
-            showInfoOverlay: $showInfoOverlay
-        )
         .onAppear {
             showBottomBarTemporarily()
             showLengthSelection = false

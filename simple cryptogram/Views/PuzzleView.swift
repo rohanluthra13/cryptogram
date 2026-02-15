@@ -1,14 +1,33 @@
 import SwiftUI
 
+/// Represents the different completion view states
+enum CompletionState: Equatable {
+    case none
+    case regular
+    case daily
+}
+
 struct PuzzleView: View {
     @Environment(PuzzleViewModel.self) private var viewModel
     @Environment(ThemeManager.self) private var themeManager
     @Environment(AppSettings.self) private var appSettings
     @Environment(NavigationCoordinator.self) private var navigationCoordinator
-    @State private var uiState = PuzzleViewState()
-    @Environment(\.dismiss) private var dismiss
     @Binding var showPuzzle: Bool
-    
+
+    // Overlay state
+    @State private var showSettings = false
+    @State private var showStats = false
+    @State private var showCalendar = false
+    @State private var showInfo = false
+    @State private var completionState: CompletionState = .none
+
+    // Bottom bar auto-hide
+    @State private var isBottomBarVisible = true
+    @State private var bottomBarHideTask: Task<Void, Never>?
+
+    // Puzzle switch animation
+    @State private var isSwitchingPuzzle = false
+
     // Create a custom binding for the layout
     private var layoutBinding: Binding<NavigationBarLayout> {
         Binding(
@@ -16,18 +35,22 @@ struct PuzzleView: View {
             set: { appSettings.navigationBarLayout = $0 }
         )
     }
-    
+
+    private var showControls: Bool {
+        viewModel.currentPuzzle != nil && !showSettings && !showStats && !showCalendar && completionState == .none
+    }
+
     var body: some View {
         ZStack {
             // Background
             CryptogramTheme.Colors.background
                 .ignoresSafeArea()
-            
+
             // Show puzzle content if completion view is not showing or it's not a completed daily puzzle
-            if uiState.completionState == .none && !viewModel.isCompletedDailyPuzzle {
-                // --- Persistent Top Bar (always visible) ---
+            if completionState == .none && !viewModel.isCompletedDailyPuzzle {
+                // --- Persistent Top Bar ---
                 VStack {
-                    TopBarView(uiState: uiState)
+                    TopBarView(showInfoOverlay: $showInfo, showControls: showControls)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .zIndex(0)
@@ -35,11 +58,8 @@ struct PuzzleView: View {
                 // --- Main Content Block (puzzle, nav bar, keyboard) pushed to bottom ---
                 VStack(spacing: 0) {
                     Spacer(minLength: 0)
-                    MainContentView(
-                        uiState: uiState,
-                        layoutBinding: layoutBinding
-                    )
-                    
+                    mainContent
+
                     // --- Bottom Banner Placeholder (for keyboard spacing) ---
                     Color.clear
                         .frame(height: PuzzleViewConstants.Spacing.bottomBarHeight)
@@ -49,69 +69,350 @@ struct PuzzleView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                 .zIndex(0)
 
-                // --- Persistent Bottom Banner Above All Overlays ---
-                BottomBarView(uiState: uiState)
+                // --- Bottom bar ---
+                bottomBar
+            }
+
+            // Overlays
+            if showSettings {
+                FullScreenOverlay(isPresented: $showSettings, backgroundColor: CryptogramTheme.Colors.surface) {
+                    SettingsContentView()
+                        .padding(.horizontal, PuzzleViewConstants.Overlay.overlayHorizontalPadding)
+                        .padding(.vertical, 20)
+                        .background(Color.clear)
+                        .environment(viewModel)
+                        .environment(themeManager)
+                        .environment(appSettings)
+                }
+                .zIndex(150)
+            }
+
+            if showStats {
+                FullScreenOverlay(isPresented: $showStats, backgroundColor: CryptogramTheme.Colors.surface) {
+                    VStack(spacing: 0) {
+                        Spacer(minLength: 0)
+                        UserStatsView(viewModel: viewModel)
+                            .padding(.top, 24)
+                    }
+                }
+                .zIndex(150)
+            }
+
+            if showCalendar {
+                FullScreenOverlay(isPresented: $showCalendar) {
+                    ContinuousCalendarView(
+                        showCalendar: $showCalendar,
+                        onSelectDate: { date in
+                            viewModel.loadDailyPuzzle(for: date)
+                            if let puzzle = viewModel.currentPuzzle {
+                                navigationCoordinator.navigateToPuzzle(puzzle)
+                            }
+                        }
+                    )
+                    .id(viewModel.dailyCompletionVersion)
+                    .environment(viewModel)
+                    .environment(appSettings)
+                }
+                .zIndex(150)
+            }
+
+            if showInfo {
+                FullScreenOverlay(isPresented: $showInfo) {
+                    VStack {
+                        Spacer(minLength: PuzzleViewConstants.Overlay.infoOverlayTopSpacing)
+                        ScrollView {
+                            InfoOverlayView()
+                        }
+                        .padding(.horizontal, PuzzleViewConstants.Overlay.overlayHorizontalPadding)
+                        Spacer()
+                    }
+                }
+                .zIndex(125)
+            }
+
+            if viewModel.isPaused && completionState == .none && !showSettings && !showStats {
+                pauseOverlay
+                    .zIndex(120)
+            }
+
+            if viewModel.isFailed && completionState == .none && !showSettings && !showStats {
+                GameOverOverlay(
+                    showSettings: $showSettings,
+                    showStats: $showStats,
+                    showInfoOverlay: $showInfo
+                )
+                .zIndex(120)
+            }
+
+            if completionState == .regular {
+                PuzzleCompletionView(showCompletionView: Binding(
+                    get: { completionState == .regular },
+                    set: { if !$0 { completionState = .none } }
+                ))
+                .environment(themeManager)
+                .environment(viewModel)
+                .environment(navigationCoordinator)
+                .environment(appSettings)
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.2), value: completionState)
+                .zIndex(200)
+            }
+
+            if completionState == .daily {
+                PuzzleCompletionView(showCompletionView: Binding(
+                    get: { completionState == .daily },
+                    set: { if !$0 { completionState = .none } }
+                ), isDailyPuzzle: true)
+                .environment(themeManager)
+                .environment(viewModel)
+                .environment(navigationCoordinator)
+                .environment(appSettings)
+                .transition(.opacity)
+                .animation(.easeInOut(duration: 0.2), value: completionState)
+                .zIndex(201)
             }
         }
         .gesture(
             DragGesture()
                 .onEnded { value in
-                    // Swipe right to go back (natural back navigation)
                     if value.translation.width > 100 && abs(value.translation.height) < 100 {
                         navigationCoordinator.navigateBack()
                     }
                 }
         )
         .navigationBarBackButtonHidden(true)
-        .overlayManager(uiState: uiState)
         .onChange(of: viewModel.isComplete) { oldValue, isComplete in
             if isComplete {
-                // Add haptic feedback for completion
                 let generator = UINotificationFeedbackGenerator()
                 generator.notificationOccurred(.success)
-
-                // Explicitly save daily puzzle completion state
                 viewModel.saveCompletionIfDaily()
-
-                // First trigger wiggle animation
                 viewModel.triggerCompletionWiggle()
 
-                // Then transition to completion view with a slight delay
                 withAnimation(.easeOut(duration: PuzzleViewConstants.Animation.puzzleSwitchDuration).delay(PuzzleViewConstants.Animation.completionDelay)) {
-                    // Show different completion view for daily puzzles
-                    uiState.completionState = viewModel.isDailyPuzzle ? .daily : .regular
+                    completionState = viewModel.isDailyPuzzle ? .daily : .regular
                 }
             }
         }
         .onChange(of: viewModel.isFailed) { oldValue, isFailed in
             if isFailed {
-                // Add haptic feedback for failure
                 let generator = UINotificationFeedbackGenerator()
                 generator.notificationOccurred(.error)
-                
-                // Don't show completion view - just keep the game over overlay
             }
         }
         .animation(.easeIn(duration: PuzzleViewConstants.Animation.failedAnimationDuration), value: viewModel.isFailed)
         .animation(.easeIn(duration: PuzzleViewConstants.Animation.pausedAnimationDuration), value: viewModel.isPaused)
         .onAppear {
             if viewModel.isCompletedDailyPuzzle {
-                // Show completion view immediately for completed daily puzzles
-                // But only if we're not already showing it
-                if uiState.completionState == .none {
-                    uiState.completionState = .daily
+                if completionState == .none {
+                    completionState = .daily
                 }
             } else {
-                // Normal puzzle flow
-                uiState.showBottomBarTemporarily()
+                showBottomBarTemporarily()
             }
         }
         .onDisappear {
-            // Clean up completion state when leaving the view
-            uiState.completionState = .none
+            completionState = .none
         }
     }
-    
+
+    // MARK: - Main Content (inlined from MainContentView)
+
+    @ViewBuilder
+    private var mainContent: some View {
+        if viewModel.currentPuzzle != nil {
+            VStack(spacing: 0) {
+                Group {
+                    ScrollView {
+                        WordAwarePuzzleGrid()
+                            .padding(.horizontal, PuzzleViewConstants.Spacing.puzzleGridHorizontalPadding)
+                            .allowsHitTesting(!viewModel.isPaused)
+                    }
+                    .layoutPriority(1)
+                    .frame(maxWidth: .infinity)
+                    .frame(maxHeight: UIScreen.main.bounds.height * PuzzleViewConstants.Sizes.puzzleGridMaxHeightRatio)
+                    .padding(.horizontal, PuzzleViewConstants.Spacing.mainContentHorizontalPadding)
+                    .padding(.top, PuzzleViewConstants.Spacing.puzzleGridTopPadding)
+                    .padding(.bottom, PuzzleViewConstants.Spacing.puzzleGridBottomPadding)
+
+                    Rectangle()
+                        .fill(Color.clear)
+                        .frame(height: PuzzleViewConstants.Spacing.clearSpacerHeight)
+                        .allowsHitTesting(false)
+                }
+                .opacity(isSwitchingPuzzle ? 0 : 1)
+                .animation(.easeInOut(duration: PuzzleViewConstants.Animation.puzzleSwitchDuration), value: isSwitchingPuzzle)
+
+                NavigationBarView(
+                    onMoveLeft: { viewModel.moveToAdjacentCell(direction: -1) },
+                    onMoveRight: { viewModel.moveToAdjacentCell(direction: 1) },
+                    onTogglePause: viewModel.togglePause,
+                    onNextPuzzle: {
+                        Task {
+                            withAnimation(.easeInOut(duration: PuzzleViewConstants.Animation.puzzleSwitchDuration)) {
+                                isSwitchingPuzzle = true
+                            }
+                            try? await Task.sleep(for: .seconds(PuzzleViewConstants.Animation.puzzleSwitchDuration))
+                            viewModel.refreshPuzzleWithCurrentSettings()
+                            withAnimation(.easeInOut(duration: PuzzleViewConstants.Animation.puzzleSwitchDuration)) {
+                                isSwitchingPuzzle = false
+                            }
+                        }
+                    },
+                    isPaused: viewModel.isPaused,
+                    showCenterButtons: true,
+                    isDailyPuzzle: viewModel.isDailyPuzzle,
+                    layout: layoutBinding
+                )
+                .allowsHitTesting(!viewModel.isFailed)
+
+                KeyboardView(
+                    onLetterPress: { letter in
+                        if let index = viewModel.selectedCellIndex {
+                            viewModel.inputLetter(String(letter), at: index)
+                        }
+                    },
+                    onBackspacePress: {
+                        if let index = viewModel.selectedCellIndex {
+                            viewModel.handleDelete(at: index)
+                        }
+                    },
+                    completedLetters: viewModel.completedLetters
+                )
+                .padding(.bottom, 0)
+                .padding(.horizontal, PuzzleViewConstants.Spacing.keyboardHorizontalPadding)
+                .frame(maxWidth: .infinity)
+                .allowsHitTesting(!viewModel.isPaused)
+            }
+            .frame(maxWidth: .infinity)
+        }
+    }
+
+    // MARK: - Bottom Bar (inlined from BottomBarView)
+
+    @ViewBuilder
+    private var bottomBar: some View {
+        let shouldShowBar = !showInfo && (isBottomBarVisible || showSettings || showStats)
+        let shouldShowTapArea = !showInfo && !(isBottomBarVisible || showSettings || showStats)
+
+        ZStack {
+            if shouldShowBar {
+                VStack {
+                    Spacer()
+                    HStack {
+                        Button(action: { toggleStats() }) {
+                            Image(systemName: "chart.bar")
+                                .font(.system(size: PuzzleViewConstants.Sizes.statsIconSize))
+                                .foregroundColor(CryptogramTheme.Colors.text)
+                                .opacity(PuzzleViewConstants.Colors.iconOpacity)
+                                .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
+                                .accessibilityLabel("Stats/Chart")
+                        }
+
+                        Spacer()
+
+                        Button(action: {
+                            navigationCoordinator.navigationPath = NavigationPath()
+                        }) {
+                            Image(systemName: "house")
+                                .font(.title3)
+                                .foregroundColor(CryptogramTheme.Colors.text)
+                                .opacity(PuzzleViewConstants.Colors.iconOpacity)
+                                .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
+                                .accessibilityLabel("Return to Home")
+                        }
+
+                        Spacer()
+
+                        Button(action: { toggleSettings() }) {
+                            Image(systemName: "gearshape")
+                                .font(.system(size: PuzzleViewConstants.Sizes.settingsIconSize))
+                                .foregroundColor(CryptogramTheme.Colors.text)
+                                .opacity(PuzzleViewConstants.Colors.iconOpacity)
+                                .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
+                                .accessibilityLabel("Settings")
+                        }
+                    }
+                    .frame(height: PuzzleViewConstants.Spacing.bottomBarHeight, alignment: .bottom)
+                    .padding(.horizontal, PuzzleViewConstants.Spacing.bottomBarHorizontalPadding)
+                    .frame(maxWidth: .infinity)
+                    .ignoresSafeArea(edges: .bottom)
+                    .contentShape(Rectangle())
+                    .onTapGesture { showBottomBarTemporarily() }
+                }
+                .zIndex(190)
+            }
+
+            if shouldShowTapArea {
+                VStack {
+                    Spacer()
+                    Rectangle()
+                        .fill(Color.clear)
+                        .frame(height: PuzzleViewConstants.Spacing.bottomBarHeight)
+                        .frame(maxWidth: .infinity)
+                        .ignoresSafeArea(edges: .bottom)
+                        .contentShape(Rectangle())
+                        .onTapGesture { showBottomBarTemporarily() }
+                }
+                .zIndex(189)
+            }
+        }
+    }
+
+    // MARK: - Pause Overlay
+
+    @Environment(\.typography) private var typography
+
+    private var pauseOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.5)
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+            VStack {
+                Spacer()
+                Text("paused")
+                    .font(typography.body)
+                    .fontWeight(.bold)
+                    .foregroundColor(CryptogramTheme.Colors.text)
+                    .padding(.horizontal, 32)
+                    .padding(.vertical, 12)
+                    .padding(.bottom, 240)
+                    .onTapGesture {
+                        viewModel.togglePause()
+                    }
+                    .allowsHitTesting(true)
+            }
+        }
+        .transition(.opacity)
+        .animation(.easeInOut(duration: PuzzleViewConstants.Animation.overlayDuration), value: viewModel.isPaused)
+    }
+
+    // MARK: - Bottom Bar Helpers
+
+    private func showBottomBarTemporarily() {
+        isBottomBarVisible = true
+        bottomBarHideTask?.cancel()
+        bottomBarHideTask = Task {
+            try? await Task.sleep(for: .seconds(PuzzleViewConstants.Animation.bottomBarAutoHideDelay))
+            guard !Task.isCancelled else { return }
+            withAnimation { isBottomBarVisible = false }
+        }
+    }
+
+    private func toggleSettings() {
+        withAnimation {
+            showSettings.toggle()
+            showStats = false
+        }
+        showBottomBarTemporarily()
+    }
+
+    private func toggleStats() {
+        withAnimation {
+            showStats.toggle()
+            showSettings = false
+        }
+        showBottomBarTemporarily()
+    }
 }
 
 #Preview {
