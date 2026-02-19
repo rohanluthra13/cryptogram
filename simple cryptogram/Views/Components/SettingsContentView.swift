@@ -129,7 +129,7 @@ struct SettingsContentView: View {
                                 action: {
                                     if isDarkMode.wrappedValue {
                                         isDarkMode.wrappedValue = false
-                                        themeManager.applyTheme()
+
                                     }
                                 },
                                 accessibilityLabel: "Switch to Light mode"
@@ -139,7 +139,6 @@ struct SettingsContentView: View {
                             // Toggle arrow
                             Button(action: {
                                 isDarkMode.wrappedValue.toggle()
-                                themeManager.applyTheme()
                             }) {
                                 Image(systemName: !isDarkMode.wrappedValue ? "arrow.right" : "arrow.left")
                                     .font(.system(size: 13, weight: .medium, design: typography.fontOption.design))
@@ -155,7 +154,7 @@ struct SettingsContentView: View {
                                 action: {
                                     if !isDarkMode.wrappedValue {
                                         isDarkMode.wrappedValue = true
-                                        themeManager.applyTheme()
+
                                     }
                                 },
                                 accessibilityLabel: "Switch to Dark mode"

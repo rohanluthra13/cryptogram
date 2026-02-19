@@ -92,7 +92,8 @@ struct PuzzleCell: View {
                     }
                     animateCompletionBorder = true
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                Task { @MainActor in
+                    try? await Task.sleep(for: .seconds(0.3))
                     withAnimation {
                         if !effectiveCompleted {
                             cellHighlightAmount = 0.0

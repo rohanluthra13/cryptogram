@@ -62,7 +62,7 @@ simple cryptogram/
 │   └── DatabaseError.swift                     — Error types with user-friendly messages
 │
 ├── ViewModels/
-│   ├── PuzzleViewModel.swift (845 lines)       — THE single orchestrator: game state, input, hints, daily, stats
+│   ├── PuzzleViewModel.swift (~846 lines)       — THE single orchestrator: game state, input, hints, daily, stats
 │   ├── DailyPuzzleProgress.swift               — Codable daily progress struct
 │   └── Navigation/
 │       └── NavigationCoordinator.swift         — NavigationStack path management
@@ -116,7 +116,6 @@ simple cryptogram/
 
 1. **PuzzleViewModel** (`ViewModels/PuzzleViewModel.swift`): Single orchestrator for all game logic
    - Contains ALL game state, input handling, hints, daily puzzle management, statistics, and progress tracking
-   - Previously split across 8 separate managers (GameStateManager, InputHandler, HintManager, DailyPuzzleManager, PuzzleProgressManager, StatisticsManager, PuzzleSelectionManager, AuthorService) — now consolidated into one file
    - Manages puzzle cells, session state, completion checking
    - Daily puzzle save is synchronous (no debounce) to prevent data loss bugs
    - Dependencies: DatabaseService, PuzzleProgressStore
@@ -196,7 +195,7 @@ The app uses SQLite with the following main tables:
 - Font selection system (System, Rounded, Serif, Monospaced)
 
 ### Testing
-- **Test Suite**: ~46 tests across 7 test files
+- **Test Suite**: ~45 tests across 7 test files (mix of Swift Testing `@Test` and traditional `func test`)
 - **Test Organization**:
   - `DatabaseServiceTests`: Database operations and error handling
   - `LocalPuzzleProgressStoreTests`: Progress persistence and migration
@@ -222,7 +221,7 @@ When adding new features:
 ### Navigation Flow
 1. **ContentView** → **HomeView** (app entry point)
 2. **HomeView** → **PuzzleView** (via puzzle selection or daily puzzle)
-3. **PuzzleView** → completion/game-over overlays (managed by OverlayManager)
+3. **PuzzleView** → completion/game-over overlays (managed by `@State` bools + `FullScreenOverlay`)
 4. Navigation back to HomeView via NavigationCoordinator
 
 ### Puzzle Length Selection

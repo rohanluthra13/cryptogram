@@ -183,8 +183,6 @@ struct PuzzleView: View {
         .navigationBarBackButtonHidden(true)
         .onChange(of: viewModel.isComplete) { oldValue, isComplete in
             if isComplete {
-                let generator = UINotificationFeedbackGenerator()
-                generator.notificationOccurred(.success)
                 viewModel.saveCompletionIfDaily()
                 viewModel.triggerCompletionWiggle()
 
@@ -193,12 +191,8 @@ struct PuzzleView: View {
                 }
             }
         }
-        .onChange(of: viewModel.isFailed) { oldValue, isFailed in
-            if isFailed {
-                let generator = UINotificationFeedbackGenerator()
-                generator.notificationOccurred(.error)
-            }
-        }
+        .sensoryFeedback(.success, trigger: viewModel.isComplete) { _, isComplete in isComplete }
+        .sensoryFeedback(.error, trigger: viewModel.isFailed) { _, isFailed in isFailed }
         .animation(.easeIn(duration: PuzzleViewConstants.Animation.failedAnimationDuration), value: viewModel.isFailed)
         .animation(.easeIn(duration: PuzzleViewConstants.Animation.pausedAnimationDuration), value: viewModel.isPaused)
         .onAppear {
@@ -221,23 +215,26 @@ struct PuzzleView: View {
     private var mainContent: some View {
         if viewModel.currentPuzzle != nil {
             VStack(spacing: 0) {
-                Group {
-                    ScrollView {
-                        WordAwarePuzzleGrid()
-                            .padding(.horizontal, PuzzleViewConstants.Spacing.puzzleGridHorizontalPadding)
-                            .allowsHitTesting(!viewModel.isPaused)
-                    }
-                    .layoutPriority(1)
-                    .frame(maxWidth: .infinity)
-                    .frame(maxHeight: UIScreen.main.bounds.height * PuzzleViewConstants.Sizes.puzzleGridMaxHeightRatio)
-                    .padding(.horizontal, PuzzleViewConstants.Spacing.mainContentHorizontalPadding)
-                    .padding(.top, PuzzleViewConstants.Spacing.puzzleGridTopPadding)
-                    .padding(.bottom, PuzzleViewConstants.Spacing.puzzleGridBottomPadding)
+                GeometryReader { geometry in
+                    VStack(spacing: 0) {
+                        ScrollView {
+                            WordAwarePuzzleGrid()
+                                .padding(.horizontal, PuzzleViewConstants.Spacing.puzzleGridHorizontalPadding)
+                                .allowsHitTesting(!viewModel.isPaused)
+                        }
+                        .layoutPriority(1)
+                        .frame(maxWidth: .infinity)
+                        .frame(maxHeight: geometry.size.height * PuzzleViewConstants.Sizes.puzzleGridMaxHeightRatio)
+                        .padding(.horizontal, PuzzleViewConstants.Spacing.mainContentHorizontalPadding)
+                        .padding(.top, PuzzleViewConstants.Spacing.puzzleGridTopPadding)
+                        .padding(.bottom, PuzzleViewConstants.Spacing.puzzleGridBottomPadding)
 
-                    Rectangle()
-                        .fill(Color.clear)
-                        .frame(height: PuzzleViewConstants.Spacing.clearSpacerHeight)
-                        .allowsHitTesting(false)
+                        Rectangle()
+                            .fill(Color.clear)
+                            .frame(height: PuzzleViewConstants.Spacing.clearSpacerHeight)
+                            .allowsHitTesting(false)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                 }
                 .opacity(isSwitchingPuzzle ? 0 : 1)
                 .animation(.easeInOut(duration: PuzzleViewConstants.Animation.puzzleSwitchDuration), value: isSwitchingPuzzle)
