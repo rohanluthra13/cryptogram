@@ -6,17 +6,14 @@ enum PuzzleViewConstants {
         static let topBarPadding: CGFloat = 16
         static let mainContentHorizontalPadding: CGFloat = 12
         static let puzzleGridHorizontalPadding: CGFloat = 16
-        static let puzzleGridTopPadding: CGFloat = 60
         static let puzzleGridBottomPadding: CGFloat = 12
         static let keyboardHorizontalPadding: CGFloat = 4
         static let bottomBarHeight: CGFloat = 48
         static let bottomBarHorizontalPadding: CGFloat = 64
-        static let clearSpacerHeight: CGFloat = 20
     }
     
     // MARK: - Sizes
     enum Sizes {
-        static let puzzleGridMaxHeightRatio: CGFloat = 0.45
         static let iconButtonFrame: CGFloat = 44
         static let statsIconSize: CGFloat = 20
         static let settingsIconSize: CGFloat = 24

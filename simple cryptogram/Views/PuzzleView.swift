@@ -48,29 +48,11 @@ struct PuzzleView: View {
 
             // Show puzzle content if completion view is not showing or it's not a completed daily puzzle
             if completionState == .none && !viewModel.isCompletedDailyPuzzle {
-                // --- Persistent Top Bar ---
-                VStack {
-                    TopBarView(showInfoOverlay: $showInfo, showControls: showControls)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .zIndex(0)
-
-                // --- Main Content Block (puzzle, nav bar, keyboard) pushed to bottom ---
                 VStack(spacing: 0) {
-                    Spacer(minLength: 0)
+                    TopBarView(showInfoOverlay: $showInfo, showControls: showControls)
                     mainContent
-
-                    // --- Bottom Banner Placeholder (for keyboard spacing) ---
-                    Color.clear
-                        .frame(height: PuzzleViewConstants.Spacing.bottomBarHeight)
-                        .frame(maxWidth: .infinity)
-                        .ignoresSafeArea(edges: .bottom)
+                    bottomBar
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                .zIndex(0)
-
-                // --- Bottom bar ---
-                bottomBar
             }
 
             // Overlays
@@ -214,73 +196,55 @@ struct PuzzleView: View {
     @ViewBuilder
     private var mainContent: some View {
         if viewModel.currentPuzzle != nil {
-            VStack(spacing: 0) {
-                GeometryReader { geometry in
-                    VStack(spacing: 0) {
-                        ScrollView {
-                            WordAwarePuzzleGrid()
-                                .padding(.horizontal, PuzzleViewConstants.Spacing.puzzleGridHorizontalPadding)
-                                .allowsHitTesting(!viewModel.isPaused)
-                        }
-                        .layoutPriority(1)
-                        .frame(maxWidth: .infinity)
-                        .frame(maxHeight: geometry.size.height * PuzzleViewConstants.Sizes.puzzleGridMaxHeightRatio)
-                        .padding(.horizontal, PuzzleViewConstants.Spacing.mainContentHorizontalPadding)
-                        .padding(.top, PuzzleViewConstants.Spacing.puzzleGridTopPadding)
-                        .padding(.bottom, PuzzleViewConstants.Spacing.puzzleGridBottomPadding)
-
-                        Rectangle()
-                            .fill(Color.clear)
-                            .frame(height: PuzzleViewConstants.Spacing.clearSpacerHeight)
-                            .allowsHitTesting(false)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
-                }
-                .opacity(isSwitchingPuzzle ? 0 : 1)
-                .animation(.easeInOut(duration: PuzzleViewConstants.Animation.puzzleSwitchDuration), value: isSwitchingPuzzle)
-
-                NavigationBarView(
-                    onMoveLeft: { viewModel.moveToAdjacentCell(direction: -1) },
-                    onMoveRight: { viewModel.moveToAdjacentCell(direction: 1) },
-                    onTogglePause: viewModel.togglePause,
-                    onNextPuzzle: {
-                        Task {
-                            withAnimation(.easeInOut(duration: PuzzleViewConstants.Animation.puzzleSwitchDuration)) {
-                                isSwitchingPuzzle = true
-                            }
-                            try? await Task.sleep(for: .seconds(PuzzleViewConstants.Animation.puzzleSwitchDuration))
-                            viewModel.refreshPuzzleWithCurrentSettings()
-                            withAnimation(.easeInOut(duration: PuzzleViewConstants.Animation.puzzleSwitchDuration)) {
-                                isSwitchingPuzzle = false
-                            }
-                        }
-                    },
-                    isPaused: viewModel.isPaused,
-                    showCenterButtons: true,
-                    isDailyPuzzle: viewModel.isDailyPuzzle,
-                    layout: layoutBinding
-                )
-                .allowsHitTesting(!viewModel.isFailed)
-
-                KeyboardView(
-                    onLetterPress: { letter in
-                        if let index = viewModel.selectedCellIndex {
-                            viewModel.inputLetter(String(letter), at: index)
-                        }
-                    },
-                    onBackspacePress: {
-                        if let index = viewModel.selectedCellIndex {
-                            viewModel.handleDelete(at: index)
-                        }
-                    },
-                    completedLetters: viewModel.completedLetters
-                )
-                .padding(.bottom, 0)
-                .padding(.horizontal, PuzzleViewConstants.Spacing.keyboardHorizontalPadding)
-                .frame(maxWidth: .infinity)
-                .allowsHitTesting(!viewModel.isPaused)
+            ScrollView {
+                WordAwarePuzzleGrid()
+                    .padding(.horizontal, PuzzleViewConstants.Spacing.puzzleGridHorizontalPadding)
+                    .allowsHitTesting(!viewModel.isPaused)
             }
+            .padding(.horizontal, PuzzleViewConstants.Spacing.mainContentHorizontalPadding)
+            .padding(.bottom, PuzzleViewConstants.Spacing.puzzleGridBottomPadding)
+            .opacity(isSwitchingPuzzle ? 0 : 1)
+            .animation(.easeInOut(duration: PuzzleViewConstants.Animation.puzzleSwitchDuration), value: isSwitchingPuzzle)
+
+            NavigationBarView(
+                onMoveLeft: { viewModel.moveToAdjacentCell(direction: -1) },
+                onMoveRight: { viewModel.moveToAdjacentCell(direction: 1) },
+                onTogglePause: viewModel.togglePause,
+                onNextPuzzle: {
+                    Task {
+                        withAnimation(.easeInOut(duration: PuzzleViewConstants.Animation.puzzleSwitchDuration)) {
+                            isSwitchingPuzzle = true
+                        }
+                        try? await Task.sleep(for: .seconds(PuzzleViewConstants.Animation.puzzleSwitchDuration))
+                        viewModel.refreshPuzzleWithCurrentSettings()
+                        withAnimation(.easeInOut(duration: PuzzleViewConstants.Animation.puzzleSwitchDuration)) {
+                            isSwitchingPuzzle = false
+                        }
+                    }
+                },
+                isPaused: viewModel.isPaused,
+                showCenterButtons: true,
+                isDailyPuzzle: viewModel.isDailyPuzzle,
+                layout: layoutBinding
+            )
+            .allowsHitTesting(!viewModel.isFailed)
+
+            KeyboardView(
+                onLetterPress: { letter in
+                    if let index = viewModel.selectedCellIndex {
+                        viewModel.inputLetter(String(letter), at: index)
+                    }
+                },
+                onBackspacePress: {
+                    if let index = viewModel.selectedCellIndex {
+                        viewModel.handleDelete(at: index)
+                    }
+                },
+                completedLetters: viewModel.completedLetters
+            )
+            .padding(.horizontal, PuzzleViewConstants.Spacing.keyboardHorizontalPadding)
             .frame(maxWidth: .infinity)
+            .allowsHitTesting(!viewModel.isPaused)
         }
     }
 
@@ -289,70 +253,53 @@ struct PuzzleView: View {
     @ViewBuilder
     private var bottomBar: some View {
         let shouldShowBar = !showInfo && (isBottomBarVisible || showSettings || showStats)
-        let shouldShowTapArea = !showInfo && !(isBottomBarVisible || showSettings || showStats)
 
         ZStack {
+            // Invisible tap target — always present to bring bar back
+            Color.clear
+                .contentShape(Rectangle())
+                .onTapGesture { showBottomBarTemporarily() }
+
             if shouldShowBar {
-                VStack {
-                    Spacer()
-                    HStack {
-                        Button(action: { toggleStats() }) {
-                            Image(systemName: "chart.bar")
-                                .font(.system(size: PuzzleViewConstants.Sizes.statsIconSize))
-                                .foregroundColor(CryptogramTheme.Colors.text)
-                                .opacity(PuzzleViewConstants.Colors.iconOpacity)
-                                .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
-                                .accessibilityLabel("Stats/Chart")
-                        }
-
-                        Spacer()
-
-                        Button(action: {
-                            navigationCoordinator.navigationPath = NavigationPath()
-                        }) {
-                            Image(systemName: "house")
-                                .font(.title3)
-                                .foregroundColor(CryptogramTheme.Colors.text)
-                                .opacity(PuzzleViewConstants.Colors.iconOpacity)
-                                .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
-                                .accessibilityLabel("Return to Home")
-                        }
-
-                        Spacer()
-
-                        Button(action: { toggleSettings() }) {
-                            Image(systemName: "gearshape")
-                                .font(.system(size: PuzzleViewConstants.Sizes.settingsIconSize))
-                                .foregroundColor(CryptogramTheme.Colors.text)
-                                .opacity(PuzzleViewConstants.Colors.iconOpacity)
-                                .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
-                                .accessibilityLabel("Settings")
-                        }
+                HStack {
+                    Button(action: { toggleStats() }) {
+                        Image(systemName: "chart.bar")
+                            .font(.system(size: PuzzleViewConstants.Sizes.statsIconSize))
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                            .opacity(PuzzleViewConstants.Colors.iconOpacity)
+                            .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
+                            .accessibilityLabel("Stats/Chart")
                     }
-                    .frame(height: PuzzleViewConstants.Spacing.bottomBarHeight, alignment: .bottom)
-                    .padding(.horizontal, PuzzleViewConstants.Spacing.bottomBarHorizontalPadding)
-                    .frame(maxWidth: .infinity)
-                    .ignoresSafeArea(edges: .bottom)
-                    .contentShape(Rectangle())
-                    .onTapGesture { showBottomBarTemporarily() }
-                }
-                .zIndex(190)
-            }
 
-            if shouldShowTapArea {
-                VStack {
                     Spacer()
-                    Rectangle()
-                        .fill(Color.clear)
-                        .frame(height: PuzzleViewConstants.Spacing.bottomBarHeight)
-                        .frame(maxWidth: .infinity)
-                        .ignoresSafeArea(edges: .bottom)
-                        .contentShape(Rectangle())
-                        .onTapGesture { showBottomBarTemporarily() }
+
+                    Button(action: {
+                        navigationCoordinator.navigationPath = NavigationPath()
+                    }) {
+                        Image(systemName: "house")
+                            .font(.title3)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                            .opacity(PuzzleViewConstants.Colors.iconOpacity)
+                            .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
+                            .accessibilityLabel("Return to Home")
+                    }
+
+                    Spacer()
+
+                    Button(action: { toggleSettings() }) {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: PuzzleViewConstants.Sizes.settingsIconSize))
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                            .opacity(PuzzleViewConstants.Colors.iconOpacity)
+                            .frame(width: PuzzleViewConstants.Sizes.iconButtonFrame, height: PuzzleViewConstants.Sizes.iconButtonFrame)
+                            .accessibilityLabel("Settings")
+                    }
                 }
-                .zIndex(189)
+                .padding(.horizontal, PuzzleViewConstants.Spacing.bottomBarHorizontalPadding)
             }
         }
+        .frame(height: PuzzleViewConstants.Spacing.bottomBarHeight)
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Pause Overlay
