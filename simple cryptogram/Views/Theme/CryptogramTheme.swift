@@ -1,25 +1,32 @@
 import SwiftUI
 
 struct CryptogramTheme {
-    struct Colors {
+    @MainActor struct Colors {
         // Main colors
         static let primary = Color("PrimaryApp")
         static let secondary = Color("SecondaryApp")
-        
-        // Theme colors
-        static let background = Color("Background")
-        static let text = Color("Text")
-        static let surface = Color("Surface")
-        
-        // System colors for states
+
+        // HSB-derived theme colors
+        private static var activePalette: ColorPalette {
+            let settings = AppSettings.shared
+            return ColorPalette.forHue(
+                settings.themeHue,
+                saturation: settings.themeSaturation,
+                isDark: settings.isDarkMode
+            )
+        }
+
+        static var background: Color { activePalette.background }
+        static var text: Color { activePalette.text }
+        static var surface: Color { activePalette.surface }
+        static var border: Color { activePalette.border }
+        static var selectedBorder: Color { activePalette.selectedBorder }
+
+        // System colors for states — theme-independent
         static let error = Color(.systemRed)
         static let success = Color(hex: "#01780F")
         static let hint = Color(.systemOrange)
         static let preFilledBackground = Color(.systemBlue).opacity(0.15) // Muted blue-grey for pre-filled cells
-        
-        // Border colors
-        static let selectedBorder = Color("SelectedBorder")
-        static let border = Color("Border")
     }
     
     struct Layout {

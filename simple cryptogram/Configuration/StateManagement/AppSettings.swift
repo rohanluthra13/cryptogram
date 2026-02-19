@@ -52,6 +52,14 @@ import Observation
         didSet { defaults.set(highContrastMode, forKey: "appSettings.highContrastMode") }
     }
 
+    var themeHue: Double = 0 {
+        didSet { defaults.set(themeHue, forKey: "appSettings.themeHue") }
+    }
+
+    var themeSaturation: Double = 0 {
+        didSet { defaults.set(themeSaturation, forKey: "appSettings.themeSaturation") }
+    }
+
     // MARK: - Daily Puzzle State
     var lastCompletedDailyPuzzleID: Int = 0 {
         didSet { defaults.set(lastCompletedDailyPuzzleID, forKey: "appSettings.lastCompletedDailyPuzzleID") }
@@ -133,6 +141,8 @@ import Observation
         if defaults.object(forKey: "appSettings.hapticFeedbackEnabled") != nil { hapticFeedbackEnabled = defaults.bool(forKey: "appSettings.hapticFeedbackEnabled") }
         if defaults.object(forKey: "appSettings.isDarkMode") != nil { isDarkMode = defaults.bool(forKey: "appSettings.isDarkMode") }
         if defaults.object(forKey: "appSettings.highContrastMode") != nil { highContrastMode = defaults.bool(forKey: "appSettings.highContrastMode") }
+        if defaults.object(forKey: "appSettings.themeHue") != nil { themeHue = defaults.double(forKey: "appSettings.themeHue") }
+        if defaults.object(forKey: "appSettings.themeSaturation") != nil { themeSaturation = defaults.double(forKey: "appSettings.themeSaturation") }
         if defaults.object(forKey: "appSettings.lastCompletedDailyPuzzleID") != nil { lastCompletedDailyPuzzleID = defaults.integer(forKey: "appSettings.lastCompletedDailyPuzzleID") }
     }
 
@@ -173,6 +183,8 @@ import Observation
         var hapticFeedbackEnabled: Bool = true
         var isDarkMode: Bool = false
         var highContrastMode: Bool = false
+        var themeHue: Double = 0
+        var themeSaturation: Double = 0
     }
 
     private var savedDefaults = SavedDefaults()
@@ -188,7 +200,9 @@ import Observation
             soundFeedbackEnabled: soundFeedbackEnabled,
             hapticFeedbackEnabled: hapticFeedbackEnabled,
             isDarkMode: isDarkMode,
-            highContrastMode: highContrastMode
+            highContrastMode: highContrastMode,
+            themeHue: themeHue,
+            themeSaturation: themeSaturation
         )
     }
 
@@ -203,6 +217,8 @@ import Observation
         hapticFeedbackEnabled = savedDefaults.hapticFeedbackEnabled
         isDarkMode = savedDefaults.isDarkMode
         highContrastMode = savedDefaults.highContrastMode
+        themeHue = savedDefaults.themeHue
+        themeSaturation = savedDefaults.themeSaturation
     }
 
     func resetToFactory() {
@@ -216,6 +232,8 @@ import Observation
         hapticFeedbackEnabled = true
         isDarkMode = false
         highContrastMode = false
+        themeHue = 0
+        themeSaturation = 0
         snapshotCurrentAsDefaults()
     }
 

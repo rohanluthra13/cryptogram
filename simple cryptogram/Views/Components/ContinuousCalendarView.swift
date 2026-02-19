@@ -132,7 +132,7 @@ struct ContinuousCalendarView: View {
                         }
                     }) {
                         Image(systemName: "chevron.left")
-                            .foregroundColor(currentMonthIndex > 0 ? Color("Text") : Color("Text").opacity(0.3))
+                            .foregroundColor(currentMonthIndex > 0 ? CryptogramTheme.Colors.text : CryptogramTheme.Colors.text.opacity(0.3))
                             .frame(width: 44, height: 44)
                             .contentShape(Rectangle())
                     }
@@ -142,7 +142,7 @@ struct ContinuousCalendarView: View {
                     
                     Text(dateFormatter.string(from: monthDate(for: currentMonthIndex)))
                         .font(.system(size: 15, weight: .regular, design: typography.fontOption.design))
-                        .foregroundColor(Color("Text"))
+                        .foregroundColor(CryptogramTheme.Colors.text)
                     
                     Spacer()
                     
@@ -154,7 +154,7 @@ struct ContinuousCalendarView: View {
                         }
                     }) {
                         Image(systemName: "chevron.right")
-                            .foregroundColor(currentMonthIndex < maxMonthIndex ? Color("Text") : Color("Text").opacity(0.3))
+                            .foregroundColor(currentMonthIndex < maxMonthIndex ? CryptogramTheme.Colors.text : CryptogramTheme.Colors.text.opacity(0.3))
                             .frame(width: 44, height: 44)
                             .contentShape(Rectangle())
                     }
@@ -237,14 +237,14 @@ struct CalendarMonthView: View {
                 ForEach(Array(dayLabels.enumerated()), id: \.offset) { _, label in
                     Text(label)
                         .font(.system(size: appSettings.textSize.calendarLabelSize, design: typography.fontOption.design))
-                        .foregroundColor(Color("Text"))
+                        .foregroundColor(CryptogramTheme.Colors.text)
                         .frame(maxWidth: .infinity)
                 }
             }
             .padding(.bottom, 8)
             .overlay(
                 Rectangle()
-                    .fill(Color("Border"))
+                    .fill(CryptogramTheme.Colors.border)
                     .frame(height: 1),
                 alignment: .bottom
             )
@@ -298,18 +298,18 @@ struct DayCell: View {
 
                     if isCompleted {
                         Image(systemName: "checkmark")
-                            .foregroundColor(isAvailable ? Color(hex: "#01780F").opacity(0.5) : Color("Text").opacity(0.3))
+                            .foregroundColor(isAvailable ? Color(hex: "#01780F").opacity(0.5) : CryptogramTheme.Colors.text.opacity(0.3))
                             .font(.system(size: 16))
                     } else {
                         Image(systemName: "square")
-                            .foregroundColor(isAvailable ? Color("Text") : Color("Text").opacity(0.3))
+                            .foregroundColor(isAvailable ? CryptogramTheme.Colors.text : CryptogramTheme.Colors.text.opacity(0.3))
                             .font(.system(size: 18))
                     }
                 }
 
                 Text(dayNumber)
                     .font(.system(size: appSettings.textSize.calendarDaySize, design: typography.fontOption.design))
-                    .foregroundColor(isAvailable ? Color("Text") : Color("Text").opacity(0.3))
+                    .foregroundColor(isAvailable ? CryptogramTheme.Colors.text : CryptogramTheme.Colors.text.opacity(0.3))
             }
             .frame(height: 50)
         }
