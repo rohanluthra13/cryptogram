@@ -69,6 +69,15 @@ import Observation
         didSet { defaults.set(lastCompletedDailyPuzzleID, forKey: "appSettings.lastCompletedDailyPuzzleID") }
     }
 
+    // MARK: - Quotebook (completed quote tracking)
+    var completedQuoteIds: Set<Int> = [] {
+        didSet { defaults.set(Array(completedQuoteIds), forKey: "appSettings.completedQuoteIds") }
+    }
+
+    func markQuoteCompleted(_ quoteId: Int) {
+        completedQuoteIds.insert(quoteId)
+    }
+
     // MARK: - Quote Length Display (absorbed from SettingsViewModel)
 
     var quoteLengthDisplayText: String {
@@ -156,6 +165,7 @@ import Observation
         if defaults.object(forKey: "appSettings.themeSaturation") != nil { themeSaturation = defaults.double(forKey: "appSettings.themeSaturation") }
         if let v = defaults.string(forKey: "appSettings.themePreset") { themePreset = v }
         if defaults.object(forKey: "appSettings.lastCompletedDailyPuzzleID") != nil { lastCompletedDailyPuzzleID = defaults.integer(forKey: "appSettings.lastCompletedDailyPuzzleID") }
+        if let ids = defaults.array(forKey: "appSettings.completedQuoteIds") as? [Int] { completedQuoteIds = Set(ids) }
     }
 
     // MARK: - One-Time Migration from Legacy @AppStorage Keys

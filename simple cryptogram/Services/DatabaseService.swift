@@ -1,6 +1,14 @@
 import Foundation
 import SQLite
 
+struct QuoteMetadata {
+    let id: Int
+    let quoteText: String
+    let author: String
+    let difficulty: String
+    let length: Int
+}
+
 class DatabaseService {
     static let shared = DatabaseService()
     private var _db: Connection?
@@ -237,5 +245,36 @@ class DatabaseService {
             throw DatabaseError.queryFailed("Failed to fetch daily puzzle: \(error.localizedDescription)")
         }
         return nil
+    }
+
+    func fetchAllQuotes() throws -> [QuoteMetadata] {
+        guard let db = _db else {
+            if let error = initializationError { throw error }
+            throw DatabaseError.connectionFailed
+        }
+        do {
+            let quotesTable = Table("quotes")
+            let id = Expression<Int>("id")
+            let quoteText = Expression<String>("quote_text")
+            let author = Expression<String>("author")
+            let difficulty = Expression<String>("difficulty")
+            let length = Expression<Int>("length")
+
+            let query = quotesTable
+                .select(id, quoteText, author, difficulty, length)
+                .order(author, id)
+
+            return try db.prepare(query).map { row in
+                QuoteMetadata(
+                    id: row[id],
+                    quoteText: row[quoteText],
+                    author: row[author],
+                    difficulty: row[difficulty],
+                    length: row[length]
+                )
+            }
+        } catch {
+            throw DatabaseError.queryFailed("Failed to fetch all quotes: \(error.localizedDescription)")
+        }
     }
 }

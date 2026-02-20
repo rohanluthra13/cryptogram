@@ -13,6 +13,7 @@ struct HomeView: View {
     @State private var isBottomBarVisible = true
     @State private var bottomBarHideTask: Task<Void, Never>?
     @State private var showCalendar = false
+    @State private var showQuotebook = false
     @State private var showInfoOverlay = false
 
     enum PuzzleMode {
@@ -79,7 +80,7 @@ struct HomeView: View {
             }
 
             // Floating info button
-            if !showInfoOverlay && !showSettings && !showStats && !showCalendar {
+            if !showInfoOverlay && !showSettings && !showStats && !showCalendar && !showQuotebook {
                 VStack {
                     HStack {
                         Spacer()
@@ -144,6 +145,14 @@ struct HomeView: View {
                     .id(viewModel.dailyCompletionVersion)
                     .environment(viewModel)
                     .environment(appSettings)
+                }
+                .zIndex(150)
+            }
+
+            if showQuotebook {
+                FullScreenOverlay(isPresented: $showQuotebook) {
+                    QuotebookView()
+                        .environment(appSettings)
                 }
                 .zIndex(150)
             }
@@ -252,14 +261,25 @@ struct HomeView: View {
             }
             .buttonStyle(PlainButtonStyle())
 
-            Button(action: {
-                showCalendar = true
-            }) {
-                Image(systemName: "calendar")
-                    .font(.system(size: 24))
-                    .foregroundColor(CryptogramTheme.Colors.text.opacity(0.8))
+            HStack(spacing: 32) {
+                Button(action: {
+                    showCalendar = true
+                }) {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 24))
+                        .foregroundColor(CryptogramTheme.Colors.text.opacity(0.8))
+                }
+                .buttonStyle(PlainButtonStyle())
+
+                Button(action: {
+                    showQuotebook = true
+                }) {
+                    Image(systemName: "book.closed")
+                        .font(.system(size: 24))
+                        .foregroundColor(CryptogramTheme.Colors.text.opacity(0.8))
+                }
+                .buttonStyle(PlainButtonStyle())
             }
-            .buttonStyle(PlainButtonStyle())
         }
     }
 

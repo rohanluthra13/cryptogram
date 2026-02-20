@@ -597,6 +597,7 @@ final class PuzzleViewModel {
 
     func resetAllProgress() {
         try? progressStore.clearAllProgress()
+        AppSettings.shared.completedQuoteIds = []
         invalidateStatsCache()
     }
 
@@ -655,6 +656,9 @@ final class PuzzleViewModel {
         let total = nonSymbolCells.count
         if correct == total && !session.isComplete {
             session.markComplete()
+            if let puzzle = currentPuzzle {
+                AppSettings.shared.markQuoteCompleted(puzzle.quoteId)
+            }
         }
     }
 
