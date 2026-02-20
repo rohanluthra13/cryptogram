@@ -16,18 +16,9 @@ struct QuotebookView: View {
             }
     }
 
-    private var remainingCount: Int {
-        quotes.count - completedQuotes.count
-    }
-
     var body: some View {
         VStack(spacing: 0) {
             Spacer(minLength: 60)
-
-            Text("quotebook")
-                .font(typography.title)
-                .foregroundColor(CryptogramTheme.Colors.text)
-                .padding(.bottom, 8)
 
             if completedQuotes.isEmpty {
                 emptyState
@@ -38,7 +29,7 @@ struct QuotebookView: View {
             Spacer()
 
             if quotes.count > 0 {
-                Text("\(remainingCount) to go")
+                Text("\(completedQuotes.count) completed")
                     .font(typography.caption)
                     .foregroundColor(CryptogramTheme.Colors.text.opacity(0.3))
                     .padding(.bottom, 40)
