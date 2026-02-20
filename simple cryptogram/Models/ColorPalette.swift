@@ -27,22 +27,73 @@ struct ColorPalette {
 
         if isDark {
             return ColorPalette(
-                background:     Color(hue: hue, saturation: saturation * 0.08, brightness: 0.14),
-                text:           Color(hue: hue, saturation: saturation * 0.04, brightness: 0.83),
-                surface:        Color(hue: hue, saturation: saturation * 0.06, brightness: 0.22),
-                border:         Color(hue: hue, saturation: saturation * 0.05, brightness: 0.35),
+                background:     Color(hue: hue, saturation: saturation * 0.18, brightness: 0.14),
+                text:           Color(hue: hue, saturation: saturation * 0.08, brightness: 0.83),
+                surface:        Color(hue: hue, saturation: saturation * 0.14, brightness: 0.22),
+                border:         Color(hue: hue, saturation: saturation * 0.10, brightness: 0.35),
                 selectedBorder: Color(hue: sbHue, saturation: sbSat, brightness: 0.75),
                 isDark: true
             )
         } else {
             return ColorPalette(
-                background:     Color(hue: hue, saturation: saturation * 0.04, brightness: 0.97),
-                text:           Color(hue: hue, saturation: saturation * 0.10, brightness: 0.33),
-                surface:        Color(hue: hue, saturation: saturation * 0.02, brightness: 1.0),
-                border:         Color(hue: hue, saturation: saturation * 0.04, brightness: 0.90),
+                background:     Color(hue: hue, saturation: saturation * 0.14, brightness: 0.97),
+                text:           Color(hue: hue, saturation: saturation * 0.15, brightness: 0.33),
+                surface:        Color(hue: hue, saturation: saturation * 0.08, brightness: 1.0),
+                border:         Color(hue: hue, saturation: saturation * 0.10, brightness: 0.90),
                 selectedBorder: Color(hue: sbHue, saturation: sbSat, brightness: 0.49),
                 isDark: false
             )
+        }
+    }
+}
+
+enum ThemePreset: String, CaseIterable, Identifiable {
+    case light, dark, cream, ocean, sage, rose, lavender, slate
+
+    var id: String { rawValue }
+
+    var hue: Double {
+        switch self {
+        case .light:    return 0
+        case .dark:     return 0
+        case .cream:    return 0.08
+        case .ocean:    return 0.58
+        case .sage:     return 0.35
+        case .rose:     return 0.95
+        case .lavender: return 0.75
+        case .slate:    return 0.60
+        }
+    }
+
+    var saturation: Double {
+        switch self {
+        case .light:    return 0
+        case .dark:     return 0
+        case .slate:    return 0.5
+        default:        return 0.8
+        }
+    }
+
+    var isDark: Bool {
+        self == .dark
+    }
+
+    var displayName: String { rawValue }
+
+    /// Whether this is a color preset (not plain light/dark)
+    var isColor: Bool { self != .light && self != .dark }
+
+    /// All color presets (excludes light and dark)
+    static var colorPresets: [ThemePreset] {
+        allCases.filter { $0.isColor }
+    }
+
+    /// Swatch color for the picker dot
+    var previewColor: Color {
+        switch self {
+        case .light:    return Color(hue: 0, saturation: 0, brightness: 0.95)
+        case .dark:     return Color(hue: 0, saturation: 0, brightness: 0.2)
+        default:        return Color(hue: hue, saturation: saturation * 0.6, brightness: 0.7)
         }
     }
 }

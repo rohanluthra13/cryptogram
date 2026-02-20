@@ -2,13 +2,20 @@ import SwiftUI
 
 struct FullScreenOverlay<Content: View>: View {
     @Binding var isPresented: Bool
-    var backgroundColor: Color = CryptogramTheme.Colors.background
+    var overrideBackgroundColor: Color? = nil
     var backgroundOpacity: Double = 0.98
     @ViewBuilder let content: () -> Content
 
+    init(isPresented: Binding<Bool>, backgroundColor: Color? = nil, backgroundOpacity: Double = 0.98, @ViewBuilder content: @escaping () -> Content) {
+        self._isPresented = isPresented
+        self.overrideBackgroundColor = backgroundColor
+        self.backgroundOpacity = backgroundOpacity
+        self.content = content
+    }
+
     var body: some View {
         ZStack {
-            backgroundColor
+            (overrideBackgroundColor ?? CryptogramTheme.Colors.background)
                 .opacity(backgroundOpacity)
                 .ignoresSafeArea()
                 .contentShape(Rectangle())

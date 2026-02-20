@@ -10,19 +10,12 @@ struct SettingsContentView: View {
     @State private var showLengthSelector = false
     @State private var showTextSizeSelector = false
     @State private var showFontSelector = false
-    
+    @State private var showPresetPicker = false
     // Computed bindings for AppSettings
     private var selectedEncodingType: Binding<String> {
         Binding(
             get: { appSettings.encodingType },
             set: { appSettings.encodingType = $0 }
-        )
-    }
-    
-    private var isDarkMode: Binding<Bool> {
-        Binding(
-            get: { appSettings.isDarkMode },
-            set: { appSettings.isDarkMode = $0 }
         )
     }
     
@@ -118,52 +111,81 @@ struct SettingsContentView: View {
             if !showLengthSelector {
                 SettingsSection(title: "theme & layout") {
                     VStack(spacing: 15) {
-                        // Dark mode toggle with icons
-                        HStack {
-                            Spacer()
-                            
-                            // Light mode
-                            IconToggleButton(
-                                iconName: "sun.max",
-                                isSelected: !isDarkMode.wrappedValue,
-                                action: {
-                                    if isDarkMode.wrappedValue {
-                                        isDarkMode.wrappedValue = false
+                        // Theme selector: sun / moon / color-or-ellipsis
+                        VStack(spacing: 0) {
+                            HStack {
+                                Spacer()
 
+                                // Light mode
+                                IconToggleButton(
+                                    iconName: "sun.max",
+                                    isSelected: appSettings.themePreset == ThemePreset.light.rawValue,
+                                    action: {
+                                        appSettings.applyPreset(.light)
+                                    },
+                                    accessibilityLabel: "Light theme"
+                                )
+                                .padding(.trailing, 6)
+
+                                // Dark mode
+                                IconToggleButton(
+                                    iconName: "moon.stars",
+                                    isSelected: appSettings.themePreset == ThemePreset.dark.rawValue,
+                                    action: {
+                                        appSettings.applyPreset(.dark)
+                                    },
+                                    accessibilityLabel: "Dark theme"
+                                )
+                                .padding(.trailing, 6)
+
+                                // Color theme toggle — shows active color dot or ellipsis
+                                Button {
+                                    withAnimation(.easeInOut(duration: 0.3)) {
+                                        showPresetPicker.toggle()
                                     }
-                                },
-                                accessibilityLabel: "Switch to Light mode"
-                            )
-                            .padding(.trailing, 6)
-                            
-                            // Toggle arrow
-                            Button(action: {
-                                isDarkMode.wrappedValue.toggle()
-                            }) {
-                                Image(systemName: !isDarkMode.wrappedValue ? "arrow.right" : "arrow.left")
-                                    .font(.system(size: 13, weight: .medium, design: typography.fontOption.design))
-                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                } label: {
+                                    if let activeColor = ThemePreset(rawValue: appSettings.themePreset), activeColor.isColor {
+                                        Circle()
+                                            .fill(activeColor.previewColor)
+                                            .frame(width: 18, height: 18)
+                                            .overlay(
+                                                Circle().strokeBorder(CryptogramTheme.Colors.text, lineWidth: 1.5)
+                                            )
+                                    } else {
+                                        Image(systemName: "ellipsis.circle")
+                                            .font(.system(size: 15, weight: .medium))
+                                            .foregroundColor(CryptogramTheme.Colors.text.opacity(showPresetPicker ? 1 : 0.4))
+                                    }
+                                }
+                                .buttonStyle(PlainButtonStyle())
+                                .accessibilityLabel("Color themes")
+
+                                Spacer()
                             }
-                            .accessibilityLabel("Toggle dark mode")
-                            .padding(.horizontal, 6)
-                            
-                            // Dark mode
-                            IconToggleButton(
-                                iconName: "moon.stars",
-                                isSelected: isDarkMode.wrappedValue,
-                                action: {
-                                    if !isDarkMode.wrappedValue {
-                                        isDarkMode.wrappedValue = true
+                            .padding(.vertical, 15)
 
+                            // Expandable color dot picker
+                            if showPresetPicker {
+                                HStack(spacing: 12) {
+                                    ForEach(ThemePreset.colorPresets) { preset in
+                                        Button {
+                                            appSettings.applyPreset(preset)
+                                        } label: {
+                                            Circle()
+                                                .fill(preset.previewColor)
+                                                .frame(width: 18, height: 18)
+                                                .overlay(
+                                                    Circle().strokeBorder(CryptogramTheme.Colors.text, lineWidth: appSettings.themePreset == preset.rawValue ? 1.5 : 0)
+                                                )
+                                        }
+                                        .buttonStyle(PlainButtonStyle())
+                                        .accessibilityLabel(preset.displayName)
                                     }
-                                },
-                                accessibilityLabel: "Switch to Dark mode"
-                            )
-                            .padding(.leading, 6)
-                            
-                            Spacer()
+                                }
+                                .padding(.vertical, 8)
+                                .transition(.move(edge: .top).combined(with: .opacity))
+                            }
                         }
-                        .padding(.vertical, 15)
                         
                         // Text Size Dropdown
                         VStack(spacing: 8) {
@@ -293,6 +315,7 @@ struct SettingsContentView: View {
         .animation(.easeInOut(duration: 0.3), value: showLengthSelector)
         .animation(.easeInOut(duration: 0.3), value: showTextSizeSelector)
         .animation(.easeInOut(duration: 0.3), value: showFontSelector)
+        .animation(.easeInOut(duration: 0.3), value: showPresetPicker)
     }
 }
 

@@ -60,6 +60,10 @@ import Observation
         didSet { defaults.set(themeSaturation, forKey: "appSettings.themeSaturation") }
     }
 
+    var themePreset: String = ThemePreset.light.rawValue {
+        didSet { defaults.set(themePreset, forKey: "appSettings.themePreset") }
+    }
+
     // MARK: - Daily Puzzle State
     var lastCompletedDailyPuzzleID: Int = 0 {
         didSet { defaults.set(lastCompletedDailyPuzzleID, forKey: "appSettings.lastCompletedDailyPuzzleID") }
@@ -93,6 +97,13 @@ import Observation
         } else {
             selectedDifficulties.append(length)
         }
+    }
+
+    func applyPreset(_ preset: ThemePreset) {
+        themeHue = preset.hue
+        themeSaturation = preset.saturation
+        isDarkMode = preset.isDark
+        themePreset = preset.rawValue
     }
 
     // MARK: - Singleton
@@ -143,6 +154,7 @@ import Observation
         if defaults.object(forKey: "appSettings.highContrastMode") != nil { highContrastMode = defaults.bool(forKey: "appSettings.highContrastMode") }
         if defaults.object(forKey: "appSettings.themeHue") != nil { themeHue = defaults.double(forKey: "appSettings.themeHue") }
         if defaults.object(forKey: "appSettings.themeSaturation") != nil { themeSaturation = defaults.double(forKey: "appSettings.themeSaturation") }
+        if let v = defaults.string(forKey: "appSettings.themePreset") { themePreset = v }
         if defaults.object(forKey: "appSettings.lastCompletedDailyPuzzleID") != nil { lastCompletedDailyPuzzleID = defaults.integer(forKey: "appSettings.lastCompletedDailyPuzzleID") }
     }
 
@@ -185,6 +197,7 @@ import Observation
         var highContrastMode: Bool = false
         var themeHue: Double = 0
         var themeSaturation: Double = 0
+        var themePreset: String = ThemePreset.light.rawValue
     }
 
     private var savedDefaults = SavedDefaults()
@@ -202,7 +215,8 @@ import Observation
             isDarkMode: isDarkMode,
             highContrastMode: highContrastMode,
             themeHue: themeHue,
-            themeSaturation: themeSaturation
+            themeSaturation: themeSaturation,
+            themePreset: themePreset
         )
     }
 
@@ -219,6 +233,7 @@ import Observation
         highContrastMode = savedDefaults.highContrastMode
         themeHue = savedDefaults.themeHue
         themeSaturation = savedDefaults.themeSaturation
+        themePreset = savedDefaults.themePreset
     }
 
     func resetToFactory() {
@@ -234,6 +249,7 @@ import Observation
         highContrastMode = false
         themeHue = 0
         themeSaturation = 0
+        themePreset = ThemePreset.light.rawValue
         snapshotCurrentAsDefaults()
     }
 
