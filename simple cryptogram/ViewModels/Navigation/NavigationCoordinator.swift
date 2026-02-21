@@ -26,6 +26,9 @@ final class NavigationCoordinator {
     
     /// Navigate back to home
     func navigateToHome() {
+        if AppSettings.shared.isRandomThemeEnabled {
+            AppSettings.shared.applyRandomTheme()
+        }
         // Clear the entire navigation path to return to root
         navigationPath = NavigationPath()
     }

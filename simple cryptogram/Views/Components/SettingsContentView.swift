@@ -119,7 +119,7 @@ struct SettingsContentView: View {
                                 // Light mode
                                 IconToggleButton(
                                     iconName: "sun.max",
-                                    isSelected: appSettings.themePreset == ThemePreset.light.rawValue,
+                                    isSelected: !appSettings.isRandomThemeEnabled && appSettings.themePreset == ThemePreset.light.rawValue,
                                     action: {
                                         appSettings.applyPreset(.light)
                                     },
@@ -130,11 +130,25 @@ struct SettingsContentView: View {
                                 // Dark mode
                                 IconToggleButton(
                                     iconName: "moon.stars",
-                                    isSelected: appSettings.themePreset == ThemePreset.dark.rawValue,
+                                    isSelected: !appSettings.isRandomThemeEnabled && appSettings.themePreset == ThemePreset.dark.rawValue,
                                     action: {
                                         appSettings.applyPreset(.dark)
                                     },
                                     accessibilityLabel: "Dark theme"
+                                )
+                                .padding(.trailing, 6)
+
+                                // Random theme
+                                IconToggleButton(
+                                    iconName: "die.face.3",
+                                    isSelected: appSettings.isRandomThemeEnabled,
+                                    action: {
+                                        appSettings.isRandomThemeEnabled.toggle()
+                                        if appSettings.isRandomThemeEnabled {
+                                            appSettings.applyRandomTheme()
+                                        }
+                                    },
+                                    accessibilityLabel: "Random theme"
                                 )
                                 .padding(.trailing, 6)
 
@@ -144,7 +158,7 @@ struct SettingsContentView: View {
                                         showPresetPicker.toggle()
                                     }
                                 } label: {
-                                    if let activeColor = ThemePreset(rawValue: appSettings.themePreset), activeColor.isColor {
+                                    if !appSettings.isRandomThemeEnabled, let activeColor = ThemePreset(rawValue: appSettings.themePreset), activeColor.isColor {
                                         Circle()
                                             .fill(activeColor.previewColor)
                                             .frame(width: 18, height: 18)

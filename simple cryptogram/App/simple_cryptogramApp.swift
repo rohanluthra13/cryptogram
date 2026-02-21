@@ -13,6 +13,11 @@ struct simple_cryptogramApp: App {
         AppSettings.shared = settings
         _appSettings = State(wrappedValue: settings)
 
+        // Randomize theme on cold launch if enabled
+        if settings.isRandomThemeEnabled {
+            settings.applyRandomTheme()
+        }
+
         // Now create ViewModels that depend on AppSettings
         _viewModel = State(wrappedValue: PuzzleViewModel())
     }

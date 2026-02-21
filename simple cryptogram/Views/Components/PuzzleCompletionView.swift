@@ -412,7 +412,7 @@ struct PuzzleCompletionView: View {
                         Spacer()
 
                         Button(action: {
-                            navigationCoordinator.navigationPath = NavigationPath()
+                            navigationCoordinator.navigateToHome()
                         }) {
                             Image(systemName: "house")
                                 .font(.title3)
@@ -551,6 +551,9 @@ struct PuzzleCompletionView: View {
     }
 
     func loadNextPuzzle() {
+        if appSettings.isRandomThemeEnabled {
+            appSettings.applyRandomTheme()
+        }
         withAnimation(.easeOut(duration: 0.3)) {
             showCompletionView = false
         }

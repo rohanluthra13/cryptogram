@@ -64,6 +64,10 @@ import Observation
         didSet { defaults.set(themePreset, forKey: "appSettings.themePreset") }
     }
 
+    var isRandomThemeEnabled: Bool = false {
+        didSet { defaults.set(isRandomThemeEnabled, forKey: "appSettings.isRandomThemeEnabled") }
+    }
+
     // MARK: - Daily Puzzle State
     var lastCompletedDailyPuzzleID: Int = 0 {
         didSet { defaults.set(lastCompletedDailyPuzzleID, forKey: "appSettings.lastCompletedDailyPuzzleID") }
@@ -108,11 +112,21 @@ import Observation
         }
     }
 
-    func applyPreset(_ preset: ThemePreset) {
+    private func applyThemeValues(_ preset: ThemePreset) {
         themeHue = preset.hue
         themeSaturation = preset.saturation
         isDarkMode = preset.isDark
         themePreset = preset.rawValue
+    }
+
+    func applyPreset(_ preset: ThemePreset) {
+        applyThemeValues(preset)
+        isRandomThemeEnabled = false
+    }
+
+    func applyRandomTheme() {
+        guard let preset = ThemePreset.allCases.randomElement() else { return }
+        applyThemeValues(preset)
     }
 
     // MARK: - Singleton
@@ -165,6 +179,7 @@ import Observation
         if defaults.object(forKey: "appSettings.themeHue") != nil { themeHue = defaults.double(forKey: "appSettings.themeHue") }
         if defaults.object(forKey: "appSettings.themeSaturation") != nil { themeSaturation = defaults.double(forKey: "appSettings.themeSaturation") }
         if let v = defaults.string(forKey: "appSettings.themePreset") { themePreset = v }
+        if defaults.object(forKey: "appSettings.isRandomThemeEnabled") != nil { isRandomThemeEnabled = defaults.bool(forKey: "appSettings.isRandomThemeEnabled") }
         if defaults.object(forKey: "appSettings.lastCompletedDailyPuzzleID") != nil { lastCompletedDailyPuzzleID = defaults.integer(forKey: "appSettings.lastCompletedDailyPuzzleID") }
         if let ids = defaults.array(forKey: "appSettings.completedQuoteIds") as? [Int] { completedQuoteIds = Set(ids) }
     }
@@ -221,6 +236,7 @@ import Observation
         var themeHue: Double = 0
         var themeSaturation: Double = 0
         var themePreset: String = ThemePreset.light.rawValue
+        var isRandomThemeEnabled: Bool = false
     }
 
     private var savedDefaults = SavedDefaults()
@@ -239,7 +255,8 @@ import Observation
             highContrastMode: highContrastMode,
             themeHue: themeHue,
             themeSaturation: themeSaturation,
-            themePreset: themePreset
+            themePreset: themePreset,
+            isRandomThemeEnabled: isRandomThemeEnabled
         )
     }
 
@@ -257,6 +274,7 @@ import Observation
         themeHue = savedDefaults.themeHue
         themeSaturation = savedDefaults.themeSaturation
         themePreset = savedDefaults.themePreset
+        isRandomThemeEnabled = savedDefaults.isRandomThemeEnabled
     }
 
     func resetToFactory() {
@@ -273,6 +291,7 @@ import Observation
         themeHue = 0
         themeSaturation = 0
         themePreset = ThemePreset.light.rawValue
+        isRandomThemeEnabled = false
         snapshotCurrentAsDefaults()
     }
 

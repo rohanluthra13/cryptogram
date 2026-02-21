@@ -274,7 +274,7 @@ struct PuzzleView: View {
                     Spacer()
 
                     Button(action: {
-                        navigationCoordinator.navigationPath = NavigationPath()
+                        navigationCoordinator.navigateToHome()
                     }) {
                         Image(systemName: "house")
                             .font(.title3)
