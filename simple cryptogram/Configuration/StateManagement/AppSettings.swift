@@ -140,6 +140,7 @@ import Observation
         self.defaults = defaults
         loadSettings()
         migrateFromAppStorageIfNeeded()
+        backfillCompletedDailyPuzzles()
         savedDefaults = SavedDefaults()
         snapshotCurrentAsDefaults()
     }
@@ -190,6 +191,18 @@ import Observation
         if defaults.object(forKey: "lastCompletedDailyPuzzleID") != nil { lastCompletedDailyPuzzleID = defaults.integer(forKey: "lastCompletedDailyPuzzleID") }
 
         defaults.set(Self.settingsVersion, forKey: "appSettings.migratedVersion")
+    }
+
+    // MARK: - Backfill Completed Daily Puzzles
+
+    private func backfillCompletedDailyPuzzles() {
+        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix("dailyPuzzleProgress-") {
+            if let data = defaults.data(forKey: key),
+               let progress = try? JSONDecoder().decode(DailyPuzzleProgress.self, from: data),
+               progress.isCompleted {
+                completedQuoteIds.insert(progress.quoteId)
+            }
+        }
     }
 
     // MARK: - Reset
