@@ -83,7 +83,7 @@ struct PuzzleCell: View {
         }
         .buttonStyle(PlainButtonStyle())
         .disabled(cell.isRevealed || cell.isPreFilled || (!cell.userInput.isEmpty && cell.isCorrect))
-        .onChange(of: shouldAnimate) { _, animate in
+        .onChange(of: shouldAnimate) { animate in
             if animate {
                 // Only animate border/text color, no background highlight
                 withAnimation(.easeInOut(duration: 0.3)) {

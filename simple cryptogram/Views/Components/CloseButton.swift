@@ -35,25 +35,13 @@ struct CloseButton: View {
     }
 }
 
-/// A variant close button for inline toolbar use
-struct ToolbarCloseButton: View {
-    let action: () -> Void
-    
-    var body: some View {
-        Button("Done", action: action)
-            .font(.body.weight(.medium))
-    }
-}
-
 #if DEBUG
 struct CloseButton_Previews: PreviewProvider {
     static var previews: some View {
         VStack(spacing: 20) {
             CloseButton(action: {})
-            
+
             CloseButton(action: {}, size: 40)
-            
-            ToolbarCloseButton(action: {})
         }
         .padding()
         .previewLayout(.sizeThatFits)

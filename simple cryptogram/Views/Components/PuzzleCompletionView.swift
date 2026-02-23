@@ -51,7 +51,7 @@ struct PuzzleCompletionView: View {
     // MARK: - Helper for line typing animation
     private func typeLine(line: String, setter: @escaping (String) -> Void) async {
         let characters = Array(line)
-        for currentIndex in 0...characters.count {
+        for currentIndex in 0..<characters.count {
             guard !Task.isCancelled else { return }
             setter(String(characters.prefix(currentIndex)))
             if currentIndex < characters.count {
@@ -68,12 +68,12 @@ struct PuzzleCompletionView: View {
         if let author = viewModel.currentAuthor {
             summaryTyped = (author.summary ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             if let birthDate = formattedDate(author.birthDate) {
-                bornTyped = (author.placeOfBirth?.isEmpty == false) ? " \(birthDate) (\(author.placeOfBirth!))" : " \(birthDate)"
+                bornTyped = author.placeOfBirth.flatMap({ $0.isEmpty ? nil : $0 }).map { " \(birthDate) (\($0))" } ?? " \(birthDate)"
             } else {
                 bornTyped = ""
             }
             if let deathDate = formattedDate(author.deathDate) {
-                diedTyped = (author.placeOfDeath?.isEmpty == false) ? " \(deathDate) (\(author.placeOfDeath!))" : " \(deathDate)"
+                diedTyped = author.placeOfDeath.flatMap({ $0.isEmpty ? nil : $0 }).map { " \(deathDate) (\($0))" } ?? " \(deathDate)"
             } else {
                 diedTyped = ""
             }
@@ -168,8 +168,8 @@ struct PuzzleCompletionView: View {
                                         let summaryText = (author.summary ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
                                         let bornDate = formattedDate(author.birthDate)
                                         let diedDate = formattedDate(author.deathDate)
-                                        let bornLine = (bornDate != nil) ? "Born: \(bornDate!)" + (author.placeOfBirth?.isEmpty == false ? " (\(author.placeOfBirth!))" : "") : nil
-                                        let diedLine = (diedDate != nil) ? "Died: \(diedDate!)" + (author.placeOfDeath?.isEmpty == false ? " (\(author.placeOfDeath!))" : "") : nil
+                                        let bornLine = bornDate.map { "Born: \($0)" + (author.placeOfBirth.flatMap({ $0.isEmpty ? nil : $0 }).map { " (\($0))" } ?? "") }
+                                        let diedLine = diedDate.map { "Died: \($0)" + (author.placeOfDeath.flatMap({ $0.isEmpty ? nil : $0 }).map { " (\($0))" } ?? "") }
                                         VStack(alignment: .leading, spacing: 8) {
                                             if showSummaryLine {
                                                 Text(summaryTyped)
@@ -218,19 +218,19 @@ struct PuzzleCompletionView: View {
                                                 await typeLine(line: summaryText, setter: { summaryTyped = $0 })
                                                 guard !Task.isCancelled else { return }
 
-                                                if bornLine != nil {
+                                                if let born = bornLine {
                                                     withAnimation(.easeOut(duration: 0.3)) { showBornLine = true }
-                                                    await typeLine(line: " " + String(bornLine!.dropFirst(5)), setter: { bornTyped = $0 })
+                                                    await typeLine(line: " " + String(born.dropFirst(5)), setter: { bornTyped = $0 })
                                                     guard !Task.isCancelled else { return }
                                                 }
 
-                                                if diedLine != nil {
+                                                if let died = diedLine {
                                                     if bornLine != nil {
                                                         try? await Task.sleep(for: .seconds(0.2))
                                                         guard !Task.isCancelled else { return }
                                                     }
                                                     withAnimation(.easeOut(duration: 0.3)) { showDiedLine = true }
-                                                    await typeLine(line: " " + String(diedLine!.dropFirst(5)), setter: { diedTyped = $0 })
+                                                    await typeLine(line: " " + String(died.dropFirst(5)), setter: { diedTyped = $0 })
                                                 }
                                             }
                                         }

@@ -132,9 +132,12 @@ class LocalPuzzleProgressStore: PuzzleProgressStore {
         if let error = initializationError {
             throw error
         }
-        let query = encodingType == nil ?
-            attemptsTable.filter(self.puzzleID == puzzleID.uuidString) :
-            attemptsTable.filter(self.puzzleID == puzzleID.uuidString && self.encodingType == encodingType!)
+        let query: Table
+        if let encoding = encodingType {
+            query = attemptsTable.filter(self.puzzleID == puzzleID.uuidString && self.encodingType == encoding)
+        } else {
+            query = attemptsTable.filter(self.puzzleID == puzzleID.uuidString)
+        }
         let formatter = ISO8601DateFormatter()
         do {
             return try db.prepare(query).compactMap { row in
