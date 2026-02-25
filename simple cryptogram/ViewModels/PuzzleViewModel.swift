@@ -162,6 +162,62 @@ final class PuzzleViewModel {
         return times.reduce(0, +) / Double(times.count)
     }
 
+    // MARK: - Daily Streak Properties
+
+    var currentDailyStreak: Int {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let minDate = DateComponents(calendar: .current, year: 2025, month: 4, day: 23).date!
+
+        var checkDate = today
+        if !wasCompletedSameDay(checkDate) {
+            guard let yesterday = cal.date(byAdding: .day, value: -1, to: checkDate) else { return 0 }
+            checkDate = yesterday
+        }
+
+        var streak = 0
+        while checkDate >= minDate {
+            if wasCompletedSameDay(checkDate) {
+                streak += 1
+                guard let prev = cal.date(byAdding: .day, value: -1, to: checkDate) else { break }
+                checkDate = prev
+            } else {
+                break
+            }
+        }
+        return streak
+    }
+
+    var bestDailyStreak: Int {
+        let cal = Calendar.current
+        let minDate = DateComponents(calendar: .current, year: 2025, month: 4, day: 23).date!
+        let today = cal.startOfDay(for: Date())
+
+        var best = 0
+        var current = 0
+        var checkDate = minDate
+
+        while checkDate <= today {
+            if wasCompletedSameDay(checkDate) {
+                current += 1
+                best = max(best, current)
+            } else {
+                current = 0
+            }
+            guard let next = cal.date(byAdding: .day, value: 1, to: checkDate) else { break }
+            checkDate = next
+        }
+        return best
+    }
+
+    private func wasCompletedSameDay(_ date: Date) -> Bool {
+        let dateStr = Self.dateString(from: date)
+        guard let progress = readDailyProgress(for: dateStr),
+              progress.isCompleted,
+              let endTime = progress.endTime else { return false }
+        return Self.dateString(from: endTime) == dateStr
+    }
+
     // MARK: - Initialization
 
     init(initialPuzzle: Puzzle? = nil, progressStore: PuzzleProgressStore? = nil) {

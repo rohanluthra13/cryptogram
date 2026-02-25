@@ -225,6 +225,29 @@ struct ContinuousCalendarView: View {
                         }
                     }
             )
+
+            if viewModel.bestDailyStreak > 0 {
+                VStack(spacing: 4) {
+                    HStack(spacing: 4) {
+                        Text("Current streak:")
+                            .font(typography.footnote)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                        Text("\(viewModel.currentDailyStreak) days")
+                            .font(typography.footnote)
+                            .fontWeight(.bold)
+                            .foregroundColor(Color(hex: "#01780F").opacity(0.5))
+                    }
+                    HStack(spacing: 4) {
+                        Text("Best streak:")
+                            .font(typography.footnote)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                        Text("\(viewModel.bestDailyStreak) days")
+                            .font(typography.footnote)
+                            .fontWeight(.bold)
+                            .foregroundColor(Color(hex: "#01780F").opacity(0.5))
+                    }
+                }
+            }
         }
         .padding(.vertical)
         .frame(width: monthWidth)

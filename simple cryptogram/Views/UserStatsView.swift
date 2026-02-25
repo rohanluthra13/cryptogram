@@ -54,6 +54,28 @@ struct UserStatsView: View {
                         Spacer()
                     }
                     .padding(.leading, 80)
+                    HStack {
+                        Text("current streak:")
+                            .font(typography.footnote)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                        Text("\(viewModel.currentDailyStreak) days")
+                            .font(typography.footnote)
+                            .fontWeight(.bold)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                        Spacer()
+                    }
+                    .padding(.leading, 80)
+                    HStack {
+                        Text("best streak:")
+                            .font(typography.footnote)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                        Text("\(viewModel.bestDailyStreak) days")
+                            .font(typography.footnote)
+                            .fontWeight(.bold)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                        Spacer()
+                    }
+                    .padding(.leading, 80)
                 }
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
