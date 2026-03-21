@@ -2,6 +2,7 @@ import Foundation
 import Observation
 import SwiftUI
 import UIKit
+import WidgetKit
 
 // MARK: - Supporting Types
 
@@ -585,13 +586,16 @@ final class PuzzleViewModel {
             endTime: session.endTime,
             isCompleted: session.isComplete,
             isPreFilled: cells.map { $0.isPreFilled },
-            isRevealed: cells.map { $0.isRevealed }
+            isRevealed: cells.map { $0.isRevealed },
+            solutionText: puzzle.solution,
+            author: puzzle.author
         )
 
         if let data = try? JSONEncoder().encode(progress) {
-            UserDefaults.standard.set(data, forKey: dailyProgressKey(for: dateStr))
+            Self.sharedDefaults.set(data, forKey: dailyProgressKey(for: dateStr))
             if session.isComplete {
                 completionVersion += 1
+                WidgetCenter.shared.reloadAllTimelines()
             }
         }
     }
@@ -837,9 +841,11 @@ final class PuzzleViewModel {
     }
 
     private func readDailyProgress(for dateStr: String) -> DailyPuzzleProgress? {
-        guard let data = UserDefaults.standard.data(forKey: dailyProgressKey(for: dateStr)) else { return nil }
+        guard let data = Self.sharedDefaults.data(forKey: dailyProgressKey(for: dateStr)) else { return nil }
         return try? JSONDecoder().decode(DailyPuzzleProgress.self, from: data)
     }
+
+    static let sharedDefaults = UserDefaults(suiteName: "group.twRL.simple-cryptogram")!
 
     private func dailyProgressKey(for dateStr: String) -> String {
         "dailyPuzzleProgress-\(dateStr)"

@@ -11,6 +11,8 @@ struct DailyPuzzleProgress: Codable {
     var isCompleted: Bool
     var isPreFilled: [Bool]?     // Persist pre-filled state (blue shading)
     var isRevealed: [Bool]?      // Persist revealed-by-hint state (green shading)
+    var solutionText: String?    // Solution quote for widget display
+    var author: String?          // Author name for widget display
 
     var elapsedTime: TimeInterval? {
         guard let start = startTime else { return nil }

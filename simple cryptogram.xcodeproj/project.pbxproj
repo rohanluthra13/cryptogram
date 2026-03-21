@@ -8,6 +8,9 @@
 
 /* Begin PBXBuildFile section */
 		1CBF72F22DAA4E1200AEE415 /* SQLite in Frameworks */ = {isa = PBXBuildFile; productRef = 1CBF72F12DAA4E1200AEE415 /* SQLite */; };
+		1CF18BAE2F6E10C60006C2A0 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1CF18BAD2F6E10C60006C2A0 /* WidgetKit.framework */; };
+		1CF18BB02F6E10C60006C2A0 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 1CF18BAF2F6E10C60006C2A0 /* SwiftUI.framework */; };
+		1CF18BBD2F6E10C70006C2A0 /* DailyPuzzleWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 1CF18BAB2F6E10C60006C2A0 /* DailyPuzzleWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -25,13 +28,48 @@
 			remoteGlobalIDString = 1CBF72A72DAA492C00AEE415;
 			remoteInfo = "simple cryptogram";
 		};
+		1CF18BBB2F6E10C70006C2A0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 1CBF72A02DAA492C00AEE415 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1CF18BAA2F6E10C60006C2A0;
+			remoteInfo = DailyPuzzleWidgetExtension;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		1CF18BC22F6E10C70006C2A0 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				1CF18BBD2F6E10C70006C2A0 /* DailyPuzzleWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		1CBF72A82DAA492C00AEE415 /* simple cryptogram.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "simple cryptogram.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1CBF72BA2DAA492E00AEE415 /* simple cryptogramTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "simple cryptogramTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
 		1CBF72C42DAA492E00AEE415 /* simple cryptogramUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "simple cryptogramUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		1CF18BAB2F6E10C60006C2A0 /* DailyPuzzleWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DailyPuzzleWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		1CF18BAD2F6E10C60006C2A0 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		1CF18BAF2F6E10C60006C2A0 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		1CF18BC32F6E10D60006C2A0 /* DailyPuzzleWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = DailyPuzzleWidgetExtension.entitlements; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		1CF18BBE2F6E10C70006C2A0 /* Exceptions for "DailyPuzzleWidget" folder in "DailyPuzzleWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 1CF18BAA2F6E10C60006C2A0 /* DailyPuzzleWidgetExtension */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		1CBF72AA2DAA492C00AEE415 /* simple cryptogram */ = {
@@ -47,6 +85,14 @@
 		1CBF72C72DAA492E00AEE415 /* simple cryptogramUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = "simple cryptogramUITests";
+			sourceTree = "<group>";
+		};
+		1CF18BB12F6E10C60006C2A0 /* DailyPuzzleWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				1CF18BBE2F6E10C70006C2A0 /* Exceptions for "DailyPuzzleWidget" folder in "DailyPuzzleWidgetExtension" target */,
+			);
+			path = DailyPuzzleWidget;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -74,15 +120,27 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		1CF18BA82F6E10C60006C2A0 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1CF18BB02F6E10C60006C2A0 /* SwiftUI.framework in Frameworks */,
+				1CF18BAE2F6E10C60006C2A0 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		1CBF729F2DAA492C00AEE415 = {
 			isa = PBXGroup;
 			children = (
+				1CF18BC32F6E10D60006C2A0 /* DailyPuzzleWidgetExtension.entitlements */,
 				1CBF72AA2DAA492C00AEE415 /* simple cryptogram */,
 				1CBF72BD2DAA492E00AEE415 /* simple cryptogramTests */,
 				1CBF72C72DAA492E00AEE415 /* simple cryptogramUITests */,
+				1CF18BB12F6E10C60006C2A0 /* DailyPuzzleWidget */,
+				1CF18BAC2F6E10C60006C2A0 /* Frameworks */,
 				1CBF72A92DAA492C00AEE415 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -93,8 +151,18 @@
 				1CBF72A82DAA492C00AEE415 /* simple cryptogram.app */,
 				1CBF72BA2DAA492E00AEE415 /* simple cryptogramTests.xctest */,
 				1CBF72C42DAA492E00AEE415 /* simple cryptogramUITests.xctest */,
+				1CF18BAB2F6E10C60006C2A0 /* DailyPuzzleWidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		1CF18BAC2F6E10C60006C2A0 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				1CF18BAD2F6E10C60006C2A0 /* WidgetKit.framework */,
+				1CF18BAF2F6E10C60006C2A0 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -107,10 +175,12 @@
 				1CBF72A42DAA492C00AEE415 /* Sources */,
 				1CBF72A52DAA492C00AEE415 /* Frameworks */,
 				1CBF72A62DAA492C00AEE415 /* Resources */,
+				1CF18BC22F6E10C70006C2A0 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				1CF18BBC2F6E10C70006C2A0 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				1CBF72AA2DAA492C00AEE415 /* simple cryptogram */,
@@ -169,6 +239,28 @@
 			productReference = 1CBF72C42DAA492E00AEE415 /* simple cryptogramUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		1CF18BAA2F6E10C60006C2A0 /* DailyPuzzleWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1CF18BBF2F6E10C70006C2A0 /* Build configuration list for PBXNativeTarget "DailyPuzzleWidgetExtension" */;
+			buildPhases = (
+				1CF18BA72F6E10C60006C2A0 /* Sources */,
+				1CF18BA82F6E10C60006C2A0 /* Frameworks */,
+				1CF18BA92F6E10C60006C2A0 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				1CF18BB12F6E10C60006C2A0 /* DailyPuzzleWidget */,
+			);
+			name = DailyPuzzleWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = DailyPuzzleWidgetExtension;
+			productReference = 1CF18BAB2F6E10C60006C2A0 /* DailyPuzzleWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -176,7 +268,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1630;
+				LastSwiftUpdateCheck = 2600;
 				LastUpgradeCheck = 1630;
 				TargetAttributes = {
 					1CBF72A72DAA492C00AEE415 = {
@@ -189,6 +281,9 @@
 					1CBF72C32DAA492E00AEE415 = {
 						CreatedOnToolsVersion = 16.3;
 						TestTargetID = 1CBF72A72DAA492C00AEE415;
+					};
+					1CF18BAA2F6E10C60006C2A0 = {
+						CreatedOnToolsVersion = 26.0;
 					};
 				};
 			};
@@ -212,6 +307,7 @@
 				1CBF72A72DAA492C00AEE415 /* simple cryptogram */,
 				1CBF72B92DAA492E00AEE415 /* simple cryptogramTests */,
 				1CBF72C32DAA492E00AEE415 /* simple cryptogramUITests */,
+				1CF18BAA2F6E10C60006C2A0 /* DailyPuzzleWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -232,6 +328,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		1CBF72C22DAA492E00AEE415 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		1CF18BA92F6E10C60006C2A0 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -262,6 +365,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		1CF18BA72F6E10C60006C2A0 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -274,6 +384,11 @@
 			isa = PBXTargetDependency;
 			target = 1CBF72A72DAA492C00AEE415 /* simple cryptogram */;
 			targetProxy = 1CBF72C52DAA492E00AEE415 /* PBXContainerItemProxy */;
+		};
+		1CF18BBC2F6E10C70006C2A0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 1CF18BAA2F6E10C60006C2A0 /* DailyPuzzleWidgetExtension */;
+			targetProxy = 1CF18BBB2F6E10C70006C2A0 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -404,9 +519,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "simple cryptogram/simple cryptogram.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = F4D37ARCG2;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -439,9 +555,10 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = "simple cryptogram/simple cryptogram.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = F4D37ARCG2;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -541,6 +658,72 @@
 			};
 			name = Release;
 		};
+		1CF18BC02F6E10C70006C2A0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = DailyPuzzleWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = F4D37ARCG2;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DailyPuzzleWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DailyPuzzleWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "twRL.simple-cryptogram.DailyPuzzleWidget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		1CF18BC12F6E10C70006C2A0 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = DailyPuzzleWidgetExtension.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = F4D37ARCG2;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DailyPuzzleWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DailyPuzzleWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "twRL.simple-cryptogram.DailyPuzzleWidget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -576,6 +759,15 @@
 			buildConfigurations = (
 				1CBF72D52DAA492E00AEE415 /* Debug */,
 				1CBF72D62DAA492E00AEE415 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1CF18BBF2F6E10C70006C2A0 /* Build configuration list for PBXNativeTarget "DailyPuzzleWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1CF18BC02F6E10C70006C2A0 /* Debug */,
+				1CF18BC12F6E10C70006C2A0 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

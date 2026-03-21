@@ -100,7 +100,7 @@ struct ContinuousCalendarView: View {
     
     private func isPuzzleCompleted(_ date: Date) -> Bool {
         let dateString = formatDateForKey(date)
-        if let data = UserDefaults.standard.data(forKey: "dailyPuzzleProgress-\(dateString)"),
+        if let data = PuzzleViewModel.sharedDefaults.data(forKey: "dailyPuzzleProgress-\(dateString)"),
            let progress = try? JSONDecoder().decode(DailyPuzzleProgress.self, from: data) {
             return progress.isCompleted
         }
@@ -109,7 +109,7 @@ struct ContinuousCalendarView: View {
 
     private func wasCompletedOnDay(_ date: Date) -> Bool {
         let dateString = formatDateForKey(date)
-        if let data = UserDefaults.standard.data(forKey: "dailyPuzzleProgress-\(dateString)"),
+        if let data = PuzzleViewModel.sharedDefaults.data(forKey: "dailyPuzzleProgress-\(dateString)"),
            let progress = try? JSONDecoder().decode(DailyPuzzleProgress.self, from: data),
            progress.isCompleted,
            let endTime = progress.endTime {

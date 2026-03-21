@@ -154,6 +154,7 @@ import Observation
         self.defaults = defaults
         loadSettings()
         migrateFromAppStorageIfNeeded()
+        migrateDailyProgressToAppGroup()
         backfillCompletedDailyPuzzles()
         savedDefaults = SavedDefaults()
         snapshotCurrentAsDefaults()
@@ -211,13 +212,27 @@ import Observation
     // MARK: - Backfill Completed Daily Puzzles
 
     private func backfillCompletedDailyPuzzles() {
-        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix("dailyPuzzleProgress-") {
-            if let data = defaults.data(forKey: key),
+        let shared = UserDefaults(suiteName: "group.twRL.simple-cryptogram")!
+        for key in shared.dictionaryRepresentation().keys where key.hasPrefix("dailyPuzzleProgress-") {
+            if let data = shared.data(forKey: key),
                let progress = try? JSONDecoder().decode(DailyPuzzleProgress.self, from: data),
                progress.isCompleted {
                 completedQuoteIds.insert(progress.quoteId)
             }
         }
+    }
+
+    // MARK: - Migrate Daily Progress to Shared App Group
+
+    private func migrateDailyProgressToAppGroup() {
+        let shared = UserDefaults(suiteName: "group.twRL.simple-cryptogram")!
+        guard !shared.bool(forKey: "dailyProgressMigrated") else { return }
+        for key in defaults.dictionaryRepresentation().keys where key.hasPrefix("dailyPuzzleProgress-") {
+            if let data = defaults.data(forKey: key) {
+                shared.set(data, forKey: key)
+            }
+        }
+        shared.set(true, forKey: "dailyProgressMigrated")
     }
 
     // MARK: - Reset
