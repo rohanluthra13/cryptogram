@@ -287,24 +287,32 @@ final class PuzzleViewModel {
         loadDailyPuzzle(for: Date())
     }
 
+    // @flow load-daily: Load daily puzzle for a given date
     func loadDailyPuzzle(for date: Date) {
+        // @step set-daily: Set daily mode, store target date
         isLoadingPuzzle = true
         isDailyPuzzle = true
         currentDailyDate = date
         let dateStr = Self.dateString(from: date)
 
         do {
-            // Check for saved progress first
+            // @step check-saved: Check UserDefaults for saved progress
+            // @branch check-saved: Found saved progress -> restore
+            // @branch check-saved: No saved progress -> fetch-fresh
             if let progress = readDailyProgress(for: dateStr),
                let puzzle = try db.fetchPuzzleById(progress.quoteId, encodingType: encodingType) {
                 startNewPuzzle(puzzle: puzzle, skipAnimationInit: true)
+                // @step restore: Restore cells, session, hints, mistakes from saved state
                 restoreDailyProgress(from: progress)
                 isLoadingPuzzle = false
                 return
             }
 
-            // No saved progress — load fresh
+            // @step fetch-fresh: Query database for this date's daily puzzle
+            // @branch fetch-fresh: Puzzle found in DB -> start-fresh
+            // @branch fetch-fresh: No puzzle for this date -> fallback
             guard let puzzle = try db.fetchDailyPuzzle(for: date, encodingType: encodingType) else {
+                // @step fallback: Clear daily state, fall back to random puzzle
                 isDailyPuzzle = false
                 currentDailyDate = nil
                 isLoadingPuzzle = false
@@ -313,6 +321,7 @@ final class PuzzleViewModel {
                 return
             }
 
+            // @step start-fresh: Initialize puzzle with prefills
             startNewPuzzle(puzzle: puzzle, skipAnimationInit: false)
             isLoadingPuzzle = false
         } catch {
@@ -323,6 +332,7 @@ final class PuzzleViewModel {
             loadNewPuzzle()
         }
     }
+    // @end load-daily
 
     private func loadInitialPuzzle() {
         Task { await loadPuzzleWithDifficulty() }
@@ -389,12 +399,15 @@ final class PuzzleViewModel {
         }
     }
 
+    // @flow input-letter: User types a letter on the keyboard
     func inputLetter(_ letter: String, at index: Int) {
+        // @step validate: Guard: valid index, not symbol, single letter
         guard index >= 0 && index < cells.count,
               !cells[index].isSymbol,
               letter.count == 1,
               let firstChar = letter.first, firstChar.isLetter else { return }
 
+        // @step start-timer: Start timer if first input
         startTimerIfNeeded()
         let uppercased = letter.uppercased()
         let cell = cells[index]
@@ -402,9 +415,13 @@ final class PuzzleViewModel {
 
         resetAllWasJustFilled()
 
+        // @step check-correct: Compare input to solution character
+        // @branch check-correct: Correct letter -> fill-cell
+        // @branch check-correct: Wrong letter -> show-error
         let isCorrect = String(cell.solutionChar ?? " ") == uppercased
 
         if isCorrect {
+            // @step fill-cell: Fill cell, haptic, advance to next empty cell
             updateCell(at: index, with: uppercased, isRevealed: false, isError: false)
             Task {
                 let gen = UIImpactFeedbackGenerator(style: .light)
@@ -414,6 +431,7 @@ final class PuzzleViewModel {
             markEngaged()
             saveDailyProgressIfNeeded()
         } else {
+            // @step show-error: Mark cell red, increment mistakes if first attempt
             updateCell(at: index, with: uppercased, isRevealed: false, isError: true)
             Task {
                 let gen = UIImpactFeedbackGenerator(style: .medium)
@@ -423,6 +441,7 @@ final class PuzzleViewModel {
                 incrementMistakes()
             }
             markEngaged()
+            // @step clear-delay: Clear error cell after 0.5s, save daily progress
             Task { [weak self] in
                 try? await Task.sleep(for: .seconds(0.5))
                 guard !Task.isCancelled else { return }
@@ -431,6 +450,7 @@ final class PuzzleViewModel {
             }
         }
     }
+    // @end input-letter
 
     func handleDelete(at index: Int? = nil) {
         let targetIndex = index ?? selectedCellIndex ?? -1
@@ -444,7 +464,9 @@ final class PuzzleViewModel {
 
     // MARK: - Hints (was HintManager)
 
+    // @flow reveal-hint: User requests a hint to reveal a cell
     func revealCell(at index: Int? = nil) {
+        // @step find-target: Find cell to reveal (given index, selected, or first empty)
         let targetIndex: Int
 
         if let idx = index,
@@ -467,6 +489,7 @@ final class PuzzleViewModel {
 
         startTimerIfNeeded()
 
+        // @step reveal: Fill cell with solution, mark as revealed (green)
         guard let sol = cells[targetIndex].solutionChar else { return }
         let solStr = String(sol)
 
@@ -480,10 +503,13 @@ final class PuzzleViewModel {
             gen.selectionChanged()
         }
 
+        // @step advance: Move selection to next unrevealed empty cell
         selectNextUnrevealedCell(after: targetIndex)
         markEngaged()
+        // @step save-hint: Save daily progress if applicable
         saveDailyProgressIfNeeded()
     }
+    // @end reveal-hint
 
     // MARK: - Game State
 
@@ -711,20 +737,32 @@ final class PuzzleViewModel {
         completedLetters = Set(letterHasEmpty.filter { !$0.value }.keys)
     }
 
+    // @flow completion: Puzzle completion detection
     private func checkPuzzleCompletion() {
+        // @step count: Count correct cells vs total non-symbol cells
         let correct = nonSymbolCells.filter { $0.isCorrect }.count
         let total = nonSymbolCells.count
+        // @step check-all: All cells correct and not already complete?
+        // @branch check-all: Yes -> mark-done
         if correct == total && !session.isComplete {
+            // @step mark-done: Mark session complete, record quote as completed
             session.markComplete()
             if let puzzle = currentPuzzle {
                 AppSettings.shared.markQuoteCompleted(puzzle.quoteId)
+                Self.appendCompletedQuote(solution: puzzle.solution, author: puzzle.author)
             }
         }
     }
+    // @end completion
 
+    // @flow game-over: Mistake tracking and game-over trigger
     private func incrementMistakes() {
+        // @step increment: Add 1 to mistake counter
         session.incrementMistakes()
+        // @step check-limit: 3+ mistakes and not already failed?
+        // @branch check-limit: Yes, limit reached -> trigger-fail
         if session.mistakeCount >= 3 && !session.isFailed && !session.hasContinuedAfterFailure {
+            // @step trigger-fail: Show game over overlay after 0.6s delay
             Task { [weak self] in
                 try? await Task.sleep(for: .seconds(0.6))
                 guard !Task.isCancelled else { return }
@@ -732,6 +770,7 @@ final class PuzzleViewModel {
             }
         }
     }
+    // @end game-over
 
     private func startTimerIfNeeded() {
         if session.startTime == nil {
@@ -846,6 +885,24 @@ final class PuzzleViewModel {
     }
 
     static let sharedDefaults = UserDefaults(suiteName: "group.twRL.simple-cryptogram")!
+
+    private static let completedQuotesKey = "completedQuotes"
+
+    static func appendCompletedQuote(solution: String, author: String) {
+        var quotes = loadCompletedQuotes()
+        // Avoid duplicates
+        guard !quotes.contains(where: { $0.solution == solution && $0.author == author }) else { return }
+        quotes.append(CompletedQuote(id: UUID().uuidString, solution: solution, author: author))
+        if let data = try? JSONEncoder().encode(quotes) {
+            sharedDefaults.set(data, forKey: completedQuotesKey)
+        }
+        WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    static func loadCompletedQuotes() -> [CompletedQuote] {
+        guard let data = sharedDefaults.data(forKey: completedQuotesKey) else { return [] }
+        return (try? JSONDecoder().decode([CompletedQuote].self, from: data)) ?? []
+    }
 
     private func dailyProgressKey(for dateStr: String) -> String {
         "dailyPuzzleProgress-\(dateStr)"

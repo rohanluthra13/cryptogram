@@ -12,5 +12,6 @@ import SwiftUI
 struct DailyPuzzleWidgetBundle: WidgetBundle {
     var body: some Widget {
         DailyPuzzleWidget()
+        QuotebookWidget()
     }
 }
