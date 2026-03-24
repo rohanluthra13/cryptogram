@@ -114,6 +114,18 @@ struct DailyPuzzleWidgetIntent: WidgetConfigurationIntent {
 
 // MARK: - Timeline
 
+private let incompleteMessages = [
+    "you haven't done your daily puzzle yet!",
+    "do the daily puzzle!",
+    "daily puzzle?",
+    "what's the quote?",
+    "get it done mate.",
+    "today's puzzle. go.",
+    "still waiting...",
+    "we're waiting...",
+    "... ... ...",
+]
+
 struct DailyPuzzleEntry: TimelineEntry {
     let date: Date
     let isCompleted: Bool
@@ -122,13 +134,14 @@ struct DailyPuzzleEntry: TimelineEntry {
     let theme: WidgetTheme
     let font: WidgetFont
     let showAuthor: Bool
+    let incompleteMessage: String
 }
 
 struct Provider: AppIntentTimelineProvider {
     private let sharedDefaults = UserDefaults(suiteName: "group.twRL.simple-cryptogram")!
 
     func placeholder(in context: Context) -> DailyPuzzleEntry {
-        DailyPuzzleEntry(date: .now, isCompleted: false, solutionText: nil, author: nil, theme: .light, font: .system, showAuthor: true)
+        DailyPuzzleEntry(date: .now, isCompleted: false, solutionText: nil, author: nil, theme: .light, font: .system, showAuthor: true, incompleteMessage: incompleteMessages[0])
     }
 
     func snapshot(for configuration: DailyPuzzleWidgetIntent, in context: Context) async -> DailyPuzzleEntry {
@@ -138,7 +151,24 @@ struct Provider: AppIntentTimelineProvider {
     func timeline(for configuration: DailyPuzzleWidgetIntent, in context: Context) async -> Timeline<DailyPuzzleEntry> {
         let entry = todayEntry(configuration: configuration)
         let midnight = Calendar.current.startOfDay(for: Calendar.current.date(byAdding: .day, value: 1, to: .now)!)
-        return Timeline(entries: [entry], policy: .after(midnight))
+
+        if entry.isCompleted {
+            return Timeline(entries: [entry], policy: .after(midnight))
+        }
+
+        // Rotate incomplete messages every 2 hours
+        var entries: [DailyPuzzleEntry] = []
+        var shuffled = incompleteMessages.shuffled()
+        for i in 0..<12 {
+            if shuffled.isEmpty { shuffled = incompleteMessages.shuffled() }
+            let entryDate = Calendar.current.date(byAdding: .hour, value: i * 2, to: .now)!
+            entries.append(DailyPuzzleEntry(
+                date: entryDate, isCompleted: false, solutionText: nil, author: nil,
+                theme: configuration.theme, font: configuration.font,
+                showAuthor: configuration.showAuthor, incompleteMessage: shuffled.removeFirst()
+            ))
+        }
+        return Timeline(entries: entries, policy: .after(midnight))
     }
 
     private func todayEntry(configuration: DailyPuzzleWidgetIntent) -> DailyPuzzleEntry {
@@ -147,10 +177,12 @@ struct Provider: AppIntentTimelineProvider {
         formatter.timeZone = .current
         let key = "dailyPuzzleProgress-\(formatter.string(from: .now))"
 
+        let message = incompleteMessages.randomElement()!
+
         guard let data = sharedDefaults.data(forKey: key),
               let progress = try? JSONDecoder().decode(DailyPuzzleProgress.self, from: data) else {
             return DailyPuzzleEntry(date: .now, isCompleted: false, solutionText: nil, author: nil,
-                                    theme: configuration.theme, font: configuration.font, showAuthor: configuration.showAuthor)
+                                    theme: configuration.theme, font: configuration.font, showAuthor: configuration.showAuthor, incompleteMessage: message)
         }
 
         return DailyPuzzleEntry(
@@ -160,7 +192,8 @@ struct Provider: AppIntentTimelineProvider {
             author: progress.author,
             theme: configuration.theme,
             font: configuration.font,
-            showAuthor: configuration.showAuthor
+            showAuthor: configuration.showAuthor,
+            incompleteMessage: message
         )
     }
 }
@@ -226,7 +259,7 @@ struct DailyPuzzleWidgetEntryView: View {
     }
 
     private var incompleteText: some View {
-        Text("you haven't done your daily puzzle yet!")
+        Text(entry.incompleteMessage)
             .font(.system(.caption, design: fontDesign))
             .foregroundStyle(theme.textColor)
     }
@@ -252,6 +285,6 @@ struct DailyPuzzleWidget: Widget {
 #Preview(as: .systemSmall) {
     DailyPuzzleWidget()
 } timeline: {
-    DailyPuzzleEntry(date: .now, isCompleted: false, solutionText: nil, author: nil, theme: .ocean, font: .serif, showAuthor: true)
-    DailyPuzzleEntry(date: .now, isCompleted: true, solutionText: "The only way to do great work is to love what you do.", author: "Steve Jobs", theme: .ocean, font: .serif, showAuthor: true)
+    DailyPuzzleEntry(date: .now, isCompleted: false, solutionText: nil, author: nil, theme: .ocean, font: .serif, showAuthor: true, incompleteMessage: "you haven't done your daily puzzle yet!")
+    DailyPuzzleEntry(date: .now, isCompleted: true, solutionText: "The only way to do great work is to love what you do.", author: "Steve Jobs", theme: .ocean, font: .serif, showAuthor: true, incompleteMessage: "")
 }
