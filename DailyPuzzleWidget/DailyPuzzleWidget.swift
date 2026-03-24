@@ -107,6 +107,9 @@ struct DailyPuzzleWidgetIntent: WidgetConfigurationIntent {
 
     @Parameter(title: "Font", default: .system)
     var font: WidgetFont
+
+    @Parameter(title: "Show Author", default: true)
+    var showAuthor: Bool
 }
 
 // MARK: - Timeline
@@ -118,13 +121,14 @@ struct DailyPuzzleEntry: TimelineEntry {
     let author: String?
     let theme: WidgetTheme
     let font: WidgetFont
+    let showAuthor: Bool
 }
 
 struct Provider: AppIntentTimelineProvider {
     private let sharedDefaults = UserDefaults(suiteName: "group.twRL.simple-cryptogram")!
 
     func placeholder(in context: Context) -> DailyPuzzleEntry {
-        DailyPuzzleEntry(date: .now, isCompleted: false, solutionText: nil, author: nil, theme: .light, font: .system)
+        DailyPuzzleEntry(date: .now, isCompleted: false, solutionText: nil, author: nil, theme: .light, font: .system, showAuthor: true)
     }
 
     func snapshot(for configuration: DailyPuzzleWidgetIntent, in context: Context) async -> DailyPuzzleEntry {
@@ -146,7 +150,7 @@ struct Provider: AppIntentTimelineProvider {
         guard let data = sharedDefaults.data(forKey: key),
               let progress = try? JSONDecoder().decode(DailyPuzzleProgress.self, from: data) else {
             return DailyPuzzleEntry(date: .now, isCompleted: false, solutionText: nil, author: nil,
-                                    theme: configuration.theme, font: configuration.font)
+                                    theme: configuration.theme, font: configuration.font, showAuthor: configuration.showAuthor)
         }
 
         return DailyPuzzleEntry(
@@ -155,7 +159,8 @@ struct Provider: AppIntentTimelineProvider {
             solutionText: progress.solutionText,
             author: progress.author,
             theme: configuration.theme,
-            font: configuration.font
+            font: configuration.font,
+            showAuthor: configuration.showAuthor
         )
     }
 }
@@ -185,7 +190,7 @@ struct DailyPuzzleWidgetEntryView: View {
                 .font(.system(.caption, design: fontDesign))
                 .foregroundStyle(theme.textColor)
                 .minimumScaleFactor(0.5)
-            if let author {
+            if entry.showAuthor, let author {
                 Text("— \(author)")
                     .font(.system(.caption2, design: fontDesign))
                     .foregroundStyle(theme.secondaryTextColor)
@@ -194,19 +199,36 @@ struct DailyPuzzleWidgetEntryView: View {
         .padding()
     }
 
+    @Environment(\.widgetFamily) private var widgetFamily
+
     private var incompleteView: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "lock.fill")
-                .font(.title2)
-                .foregroundStyle(theme.secondaryTextColor)
-            Text("Daily Puzzle")
-                .font(.system(.caption, design: fontDesign))
-                .fontWeight(.medium)
-                .foregroundStyle(theme.textColor)
-            Text("Incomplete")
-                .font(.system(.caption2, design: fontDesign))
-                .foregroundStyle(theme.secondaryTextColor)
+        Group {
+            if widgetFamily == .systemSmall {
+                VStack(alignment: .leading, spacing: 8) {
+                    lockIcon
+                    incompleteText
+                }
+            } else {
+                HStack(spacing: 10) {
+                    lockIcon
+                    incompleteText
+                }
+            }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding()
+    }
+
+    private var lockIcon: some View {
+        Image(systemName: "lock.fill")
+            .font(.title2)
+            .foregroundStyle(theme.secondaryTextColor)
+    }
+
+    private var incompleteText: some View {
+        Text("you haven't done your daily puzzle yet!")
+            .font(.system(.caption, design: fontDesign))
+            .foregroundStyle(theme.textColor)
     }
 }
 
@@ -230,6 +252,6 @@ struct DailyPuzzleWidget: Widget {
 #Preview(as: .systemSmall) {
     DailyPuzzleWidget()
 } timeline: {
-    DailyPuzzleEntry(date: .now, isCompleted: false, solutionText: nil, author: nil, theme: .ocean, font: .serif)
-    DailyPuzzleEntry(date: .now, isCompleted: true, solutionText: "The only way to do great work is to love what you do.", author: "Steve Jobs", theme: .ocean, font: .serif)
+    DailyPuzzleEntry(date: .now, isCompleted: false, solutionText: nil, author: nil, theme: .ocean, font: .serif, showAuthor: true)
+    DailyPuzzleEntry(date: .now, isCompleted: true, solutionText: "The only way to do great work is to love what you do.", author: "Steve Jobs", theme: .ocean, font: .serif, showAuthor: true)
 }
