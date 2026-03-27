@@ -1,17 +1,48 @@
 import SwiftUI
 
+// A segment of a word that fits on one line. Long words get split into multiple segments.
+private struct WordSegment: Identifiable {
+    let id = UUID()
+    let indices: [Int]
+    let includesSpace: Bool
+    let continuesOnNextLine: Bool
+}
+
 struct WordAwarePuzzleGrid: View {
     @Environment(PuzzleViewModel.self) private var viewModel
-    
+
+    // Cell sizing constants (must match PuzzleCell frame widths)
+    private static let letterCellWidth: CGFloat = 28
+    private static let continuationMarkerWidth: CGFloat = 10
+
+    /// Available width for the grid, accounting for all layers of padding
+    private var gridAvailableWidth: CGFloat {
+        UIScreen.main.bounds.width
+        - PuzzleViewConstants.Spacing.mainContentHorizontalPadding * 2
+        - PuzzleViewConstants.Spacing.puzzleGridHorizontalPadding * 2
+        - CryptogramTheme.Layout.gridPadding * 2
+    }
+
+    /// Maximum number of cells that fit on one line
+    private var maxCellsPerLine: Int {
+        max(1, Int(floor(gridAvailableWidth / Self.letterCellWidth)))
+    }
+
     var body: some View {
         ScrollView {
             FlowLayout(spacing: 8, alignment: .center) {
-                ForEach(viewModel.wordGroups) { wordGroup in
+                ForEach(wordSegments) { segment in
                     HStack(spacing: 0) {
-                        ForEach(wordGroup.indices, id: \.self) { index in
+                        ForEach(segment.indices, id: \.self) { index in
                             cellView(for: index)
                         }
-                        if wordGroup.includesSpace {
+                        if segment.continuesOnNextLine {
+                            Text("-")
+                                .font(.system(size: 16, weight: .medium, design: .monospaced))
+                                .foregroundColor(CryptogramTheme.Colors.text.opacity(0.4))
+                                .frame(width: Self.continuationMarkerWidth, height: 20)
+                        }
+                        if segment.includesSpace {
                             Spacer()
                                 .frame(width: 10, height: 20)
                         }
@@ -21,6 +52,39 @@ struct WordAwarePuzzleGrid: View {
             .padding(CryptogramTheme.Layout.gridPadding)
             .frame(maxWidth: .infinity, alignment: .center)
         }
+    }
+
+    /// Split word groups into segments that fit within the available width.
+    /// Short words pass through unchanged; long words get broken across lines with hyphens.
+    private var wordSegments: [WordSegment] {
+        var segments: [WordSegment] = []
+
+        for wordGroup in viewModel.wordGroups {
+            if wordGroup.indices.count <= maxCellsPerLine {
+                segments.append(WordSegment(
+                    indices: wordGroup.indices,
+                    includesSpace: wordGroup.includesSpace,
+                    continuesOnNextLine: false
+                ))
+            } else {
+                // Split into chunks that fit on one line
+                let indices = wordGroup.indices
+                var offset = 0
+                while offset < indices.count {
+                    let isLastChunk = offset + maxCellsPerLine >= indices.count
+                    let end = min(offset + maxCellsPerLine, indices.count)
+                    let chunk = Array(indices[offset..<end])
+
+                    segments.append(WordSegment(
+                        indices: chunk,
+                        includesSpace: isLastChunk ? wordGroup.includesSpace : false,
+                        continuesOnNextLine: !isLastChunk
+                    ))
+                    offset = end
+                }
+            }
+        }
+        return segments
     }
 
     @ViewBuilder
@@ -57,70 +121,70 @@ struct WordAwarePuzzleGrid: View {
 struct FlowLayout: Layout {
     var spacing: CGFloat = 4
     var alignment: HorizontalAlignment = .center
-    
+
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let layout = arrangeSubviews(proposal: proposal, subviews: subviews)
-        
+
         if subviews.isEmpty {
             return .zero
         }
-        
+
         return CGSize(
             width: proposal.width ?? .infinity,
             height: layout.maxY
         )
     }
-    
+
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
         let layout = arrangeSubviews(proposal: proposal, subviews: subviews)
-        
+
         for (index, layoutItem) in layout.items.enumerated() {
             let position = CGPoint(
                 x: bounds.minX + layoutItem.x,
                 y: bounds.minY + layoutItem.y
             )
-            
+
             subviews[index].place(
                 at: position,
                 proposal: ProposedViewSize(layoutItem.size)
             )
         }
     }
-    
+
     private func arrangeSubviews(proposal: ProposedViewSize, subviews: Subviews) -> FlowLayoutResult {
         var layoutItems: [(index: Int, item: FlowLayoutItem)] = []
         var currentY: CGFloat = 0
         let availableWidth = proposal.width ?? .infinity
-        
+
         // First pass: determine which items are on which row
         var rowItems: [[Int]] = [[]]
         var currentRowWidth: CGFloat = 0
         var currentRowIndex = 0
-        
+
         for (index, subview) in subviews.enumerated() {
             let size = subview.sizeThatFits(
                 ProposedViewSize(width: availableWidth, height: nil)
             )
-            
+
             if currentRowWidth + size.width > availableWidth && currentRowWidth > 0 {
                 // Start a new row
                 currentRowIndex += 1
                 rowItems.append([])
                 currentRowWidth = 0
             }
-            
+
             rowItems[currentRowIndex].append(index)
             currentRowWidth += size.width + spacing
         }
-        
+
         // Second pass: position items with proper centering
         currentY = 0
-        
+
         for row in rowItems {
             var rowWidth: CGFloat = 0
             var rowHeight: CGFloat = 0
             var sizes: [CGSize] = []
-            
+
             // Calculate total row width and determine row height
             for index in row {
                 let size = subviews[index].sizeThatFits(
@@ -130,18 +194,18 @@ struct FlowLayout: Layout {
                 rowWidth += size.width
                 rowHeight = max(rowHeight, size.height)
             }
-            
+
             // Add spacing between items
             if row.count > 1 {
                 rowWidth += spacing * CGFloat(row.count - 1)
             }
-            
+
             // Calculate starting X position for centering
             var startX: CGFloat = 0
             if alignment == .center {
                 startX = (availableWidth - rowWidth) / 2
             }
-            
+
             // Position each item in the row
             var currentX = startX
             for (itemIndex, index) in row.enumerated() {
@@ -154,25 +218,25 @@ struct FlowLayout: Layout {
                 layoutItems.append((index: index, item: layoutItem))
                 currentX += size.width + spacing
             }
-            
+
             currentY += rowHeight + spacing
         }
-        
+
         // Sort layout items by their original indices and extract just the items
         let sortedItems = layoutItems.sorted(by: { $0.index < $1.index }).map(\.item)
-        
+
         return FlowLayoutResult(
             items: sortedItems,
             maxY: currentY - spacing
         )
     }
-    
+
     struct FlowLayoutItem {
         var x: CGFloat
         var y: CGFloat
         var size: CGSize
     }
-    
+
     struct FlowLayoutResult {
         var items: [FlowLayoutItem]
         var maxY: CGFloat
@@ -185,4 +249,4 @@ struct FlowLayout: Layout {
         .frame(height: 300)
         .environment(PuzzleViewModel())
         .environment(AppSettings())
-} 
+}
