@@ -336,7 +336,7 @@ struct DayCell: View {
 
                     if isCompleted {
                         Image(systemName: "checkmark")
-                            .foregroundColor(isAvailable ? (isCompletedOnDay ? Color(hex: "#DAA520") : Color(hex: "#01780F").opacity(0.5)) : CryptogramTheme.Colors.text.opacity(0.3))
+                            .foregroundColor(isAvailable ? (isCompletedOnDay ? Color(hex: "#01780F") : Color.gray) : CryptogramTheme.Colors.text.opacity(0.3))
                             .font(.system(size: 16))
                     } else {
                         Image(systemName: "square")
