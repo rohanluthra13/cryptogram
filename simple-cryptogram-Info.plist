@@ -13,6 +13,12 @@
 			<string>com.yourcompany.simple-cryptogram</string>
 		</dict>
 	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>chatgpt</string>
+		<string>claude</string>
+		<string>googlegemini</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

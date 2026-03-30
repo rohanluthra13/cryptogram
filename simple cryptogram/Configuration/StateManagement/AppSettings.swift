@@ -68,6 +68,16 @@ import Observation
         didSet { defaults.set(isRandomThemeEnabled, forKey: "appSettings.isRandomThemeEnabled") }
     }
 
+    // MARK: - AI Assistant
+    var preferredLLMApp: String = LLMApp.claude.rawValue {
+        didSet { defaults.set(preferredLLMApp, forKey: "appSettings.preferredLLMApp") }
+    }
+
+    var selectedLLMApp: LLMApp {
+        get { LLMApp(rawValue: preferredLLMApp) ?? .claude }
+        set { preferredLLMApp = newValue.rawValue }
+    }
+
     // MARK: - Daily Puzzle State
     var lastCompletedDailyPuzzleID: Int = 0 {
         didSet { defaults.set(lastCompletedDailyPuzzleID, forKey: "appSettings.lastCompletedDailyPuzzleID") }
@@ -183,6 +193,7 @@ import Observation
         if defaults.object(forKey: "appSettings.isRandomThemeEnabled") != nil { isRandomThemeEnabled = defaults.bool(forKey: "appSettings.isRandomThemeEnabled") }
         if defaults.object(forKey: "appSettings.lastCompletedDailyPuzzleID") != nil { lastCompletedDailyPuzzleID = defaults.integer(forKey: "appSettings.lastCompletedDailyPuzzleID") }
         if let ids = defaults.array(forKey: "appSettings.completedQuoteIds") as? [Int] { completedQuoteIds = Set(ids) }
+        if let v = defaults.string(forKey: "appSettings.preferredLLMApp") { preferredLLMApp = v }
     }
 
     // MARK: - One-Time Migration from Legacy @AppStorage Keys

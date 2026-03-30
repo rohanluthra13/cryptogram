@@ -18,6 +18,9 @@ struct PuzzleCompletionView: View {
     @State private var isBottomBarVisible = true
     @State private var bottomBarHideTask: Task<Void, Never>?
 
+    // LLM prompt toast
+    @State private var showCopiedToast = false
+
     // Animation states
     @State private var showQuote = false
     @State private var showAttribution = false
@@ -266,6 +269,14 @@ struct PuzzleCompletionView: View {
                         }
                     }
                     .frame(height: 150)
+
+                    // Discuss with AI buttons
+                    if let quote = viewModel.currentPuzzle?.solution,
+                       let author = viewModel.currentPuzzle?.authorName {
+                        discussButtons(quote: quote, author: author)
+                            .opacity(showNextButton ? 1 : 0)
+                            .offset(y: showNextButton ? 0 : 10)
+                    }
                 }
                 .padding(.top, 120)
                 .frame(maxWidth: .infinity, alignment: .top)
@@ -366,6 +377,24 @@ struct PuzzleCompletionView: View {
                 }
                 .zIndex(125)
             }
+
+            // "Prompt copied" toast
+            if showCopiedToast {
+                VStack {
+                    Spacer()
+                    Text("prompt copied — paste in \(appSettings.selectedLLMApp.rawValue)")
+                        .font(typography.caption)
+                        .foregroundColor(CryptogramTheme.Colors.background)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(CryptogramTheme.Colors.text.opacity(0.85))
+                        .clipShape(Capsule())
+                        .padding(.bottom, 80)
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .animation(.easeInOut(duration: 0.3), value: showCopiedToast)
+                .zIndex(200)
+            }
         }
         .gesture(
             DragGesture()
@@ -385,6 +414,44 @@ struct PuzzleCompletionView: View {
             showDiedLine = false
             startAnimationSequence()
             showBottomBarTemporarily()
+        }
+    }
+
+    // MARK: - Discuss with AI
+
+    @ViewBuilder
+    private func discussButtons(quote: String, author: String) -> some View {
+        HStack(spacing: 16) {
+            Button {
+                let prompt = "Explain this quote: \"\(quote)\" — \(author)"
+                let copied = appSettings.selectedLLMApp.open(with: prompt)
+                if copied { showCopiedToastBriefly() }
+            } label: {
+                Label("explain quote", systemImage: "text.quote")
+                    .font(typography.caption)
+                    .foregroundColor(CryptogramTheme.Colors.text.opacity(0.7))
+            }
+            .buttonStyle(PlainButtonStyle())
+
+            Button {
+                let prompt = "Tell me about \(author) — who were they, why are they notable, and what was the historical context of their time?"
+                let copied = appSettings.selectedLLMApp.open(with: prompt)
+                if copied { showCopiedToastBriefly() }
+            } label: {
+                Label("about author", systemImage: "person.text.rectangle")
+                    .font(typography.caption)
+                    .foregroundColor(CryptogramTheme.Colors.text.opacity(0.7))
+            }
+            .buttonStyle(PlainButtonStyle())
+        }
+        .padding(.top, 8)
+    }
+
+    private func showCopiedToastBriefly() {
+        showCopiedToast = true
+        Task {
+            try? await Task.sleep(for: .seconds(2.5))
+            withAnimation { showCopiedToast = false }
         }
     }
 

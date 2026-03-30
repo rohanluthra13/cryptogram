@@ -321,8 +321,30 @@ struct SettingsContentView: View {
                 .transition(.opacity)
             }
             
+            // AI Assistant Section
+            if !showLengthSelector {
+                SettingsSection(title: "ai assistant") {
+                    HStack(spacing: 12) {
+                        ForEach(LLMApp.allCases) { app in
+                            Button {
+                                appSettings.selectedLLMApp = app
+                            } label: {
+                                Text(app.rawValue.lowercased())
+                                    .font(typography.footnote)
+                                    .fontWeight(appSettings.selectedLLMApp == app ? .bold : .regular)
+                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(appSettings.selectedLLMApp == app ? 1 : 0.4))
+                            }
+                            .buttonStyle(PlainButtonStyle())
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                }
+                .transition(.opacity)
+            }
+
             Spacer() // Fill remaining space
-            
+
             // Reset account section at the bottom, no header
             ResetAccountSection(viewModel: puzzleViewModel)
         }
