@@ -37,10 +37,11 @@ struct WordAwarePuzzleGrid: View {
                             cellView(for: index)
                         }
                         if segment.continuesOnNextLine {
-                            Text("-")
-                                .font(.system(size: 16, weight: .medium, design: .monospaced))
-                                .foregroundColor(CryptogramTheme.Colors.text.opacity(0.4))
-                                .frame(width: Self.continuationMarkerWidth, height: 20)
+                            Rectangle()
+                                .fill(CryptogramTheme.Colors.text.opacity(0.4))
+                                .frame(width: 8, height: 2)
+                                .frame(width: Self.continuationMarkerWidth, height: 28)
+                                .offset(y: -5)
                         }
                         if segment.includesSpace {
                             Spacer()
@@ -96,11 +97,17 @@ struct WordAwarePuzzleGrid: View {
         let cell = viewModel.cells[index]
         if cell.isSymbol && cell.encodedChar == " " {
             Spacer().frame(width: 10, height: 20)
+        } else if cell.isSymbol && (cell.encodedChar == "-" || cell.encodedChar == "–" || cell.encodedChar == "—") {
+            Rectangle()
+                .fill(CryptogramTheme.Colors.text)
+                .frame(width: 8, height: 2)
+                .frame(width: 10, height: 28)
+                .offset(y: -5)
         } else if cell.isSymbol {
             Text(cell.encodedChar)
                 .font(.system(size: 16, weight: .medium, design: .monospaced))
                 .foregroundColor(CryptogramTheme.Colors.text)
-                .frame(width: 10, height: 20)
+                .frame(width: 10, height: 28, alignment: .center)
         } else {
             PuzzleCell(
                 cell: cell,
