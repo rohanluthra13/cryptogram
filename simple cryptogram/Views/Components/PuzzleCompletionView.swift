@@ -42,6 +42,7 @@ struct PuzzleCompletionView: View {
     @State private var showSummaryLine = false
     @State private var showBornLine = false
     @State private var showDiedLine = false
+    @State private var showLearnMore = false
     @State private var summaryTyped = ""
     @State private var bornTyped = ""
     @State private var diedTyped = ""
@@ -70,6 +71,7 @@ struct PuzzleCompletionView: View {
         showSummaryLine = true
         showBornLine = true
         showDiedLine = true
+        showLearnMore = true
         if let author = viewModel.currentAuthor {
             summaryTyped = (author.summary ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
             if let birthDate = formattedDate(author.birthDate) {
@@ -209,13 +211,27 @@ struct PuzzleCompletionView: View {
                                                 .frame(maxWidth: .infinity, alignment: .leading)
                                                 .transition(.opacity)
                                             }
+
+                                            // LLM app icons
+                                            if !appSettings.enabledLLMAppsList.isEmpty, showLearnMore {
+                                                VStack(alignment: .leading, spacing: 10) {
+                                                    Text("Learn more:")
+                                                        .bold()
+                                                        .font(typography.caption)
+                                                        .foregroundColor(CryptogramTheme.Colors.text)
+                                                    llmAppIcons
+                                                }
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                                .padding(.top, 8)
+                                                .transition(.opacity)
+                                            }
                                         }
                                         .padding(.horizontal, 10)
                                         .onTapGesture {
                                             skipSummaryTyping()
                                         }
                                         .onAppear {
-                                            showSummaryLine = false; showBornLine = false; showDiedLine = false
+                                            showSummaryLine = false; showBornLine = false; showDiedLine = false; showLearnMore = false
                                             summaryTyped = ""; bornTyped = ""; diedTyped = ""
                                             summaryTypingTask?.cancel()
                                             summaryTypingTask = Task {
@@ -236,12 +252,17 @@ struct PuzzleCompletionView: View {
                                                     }
                                                     withAnimation(.easeOut(duration: 0.3)) { showDiedLine = true }
                                                     await typeLine(line: " " + String(died.dropFirst(5)), setter: { diedTyped = $0 })
+                                                    guard !Task.isCancelled else { return }
                                                 }
+
+                                                try? await Task.sleep(for: .seconds(0.3))
+                                                guard !Task.isCancelled else { return }
+                                                withAnimation(.easeOut(duration: 0.3)) { showLearnMore = true }
                                             }
                                         }
                                         .onDisappear {
                                             summaryTypingTask?.cancel()
-                                            showSummaryLine = false; showBornLine = false; showDiedLine = false
+                                            showSummaryLine = false; showBornLine = false; showDiedLine = false; showLearnMore = false
                                             summaryTyped = ""; bornTyped = ""; diedTyped = ""
                                         }
                                         .animation(.easeOut(duration: 0.13), value: showSummaryLine)
@@ -270,14 +291,7 @@ struct PuzzleCompletionView: View {
                             Spacer()
                         }
                     }
-                    .frame(height: 150)
-
-                    // LLM app icons
-                    if !appSettings.enabledLLMAppsList.isEmpty {
-                        llmAppBar
-                            .opacity(showNextButton ? 1 : 0)
-                            .offset(y: showNextButton ? 0 : 10)
-                    }
+                    .frame(minHeight: 150)
                 }
                 .padding(.top, 120)
                 .frame(maxWidth: .infinity, alignment: .top)
@@ -286,7 +300,7 @@ struct PuzzleCompletionView: View {
 
                 // Stats and button container
                 VStack(spacing: 8) {
-                    if !hideStats {
+                    if !hideStats && !isAuthorVisible {
                         CompletionStatsView()
                             .environment(viewModel)
                             .opacity(showStatsAnim ? 1 : 0)
@@ -413,39 +427,45 @@ struct PuzzleCompletionView: View {
             showSummaryLine = false
             showBornLine = false
             showDiedLine = false
+            showLearnMore = false
             startAnimationSequence()
             showBottomBarTemporarily()
         }
     }
 
-    // MARK: - LLM App Bar
+    // MARK: - LLM App Icons
 
     @ViewBuilder
-    private var llmAppBar: some View {
-        VStack(spacing: 8) {
+    private var llmAppIcons: some View {
+        VStack(spacing: 6) {
             // App icons row
-            HStack(spacing: 20) {
+            HStack(spacing: 16) {
                 ForEach(appSettings.enabledLLMAppsList) { app in
                     Button {
                         withAnimation(.easeInOut(duration: 0.2)) {
                             expandedLLMApp = expandedLLMApp == app ? nil : app
                         }
                     } label: {
-                        Text(app.rawValue.lowercased())
-                            .font(typography.caption)
-                            .foregroundColor(CryptogramTheme.Colors.text.opacity(expandedLLMApp == app ? 1 : 0.5))
-                            .fontWeight(expandedLLMApp == app ? .bold : .regular)
+                        Image(app.iconName)
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 16, height: 16)
+                            .padding(5)
+                            .background(
+                                Circle()
+                                    .fill(CryptogramTheme.Colors.text.opacity(expandedLLMApp == app ? 0.12 : 0.06))
+                            )
+                            .opacity(expandedLLMApp == nil || expandedLLMApp == app ? 1 : 0.3)
                     }
                     .buttonStyle(PlainButtonStyle())
                 }
             }
-            .padding(.top, 8)
 
             // Prompt menu (expands below selected app)
             if let app = expandedLLMApp,
                let quote = viewModel.currentPuzzle?.solution,
                let author = viewModel.currentPuzzle?.authorName {
-                VStack(spacing: 6) {
+                VStack(spacing: 4) {
                     ForEach(LLMPrompt.builtIn) { prompt in
                         Button {
                             let text = prompt.buildPrompt(quote, author)
@@ -457,7 +477,7 @@ struct PuzzleCompletionView: View {
                                 .font(typography.caption)
                                 .foregroundColor(CryptogramTheme.Colors.text.opacity(0.7))
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 6)
+                                .padding(.vertical, 4)
                         }
                         .buttonStyle(PlainButtonStyle())
                     }

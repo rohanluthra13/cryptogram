@@ -39,6 +39,15 @@ enum LLMApp: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// Asset catalog image name
+    var iconName: String {
+        switch self {
+        case .claude: "claude"
+        case .chatgpt: "chatgpt"
+        case .gemini: "gemini"
+        }
+    }
+
     /// Opens the app with a prompt if supported, otherwise copies prompt and opens app.
     /// Returns true if the prompt was copied to clipboard (so caller can show a toast).
     @MainActor
