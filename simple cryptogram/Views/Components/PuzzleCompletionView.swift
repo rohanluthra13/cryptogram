@@ -393,6 +393,9 @@ struct PuzzleCompletionView: View {
                 .zIndex(125)
             }
 
+            // LLM prompt popup
+            llmPromptPopup
+
             // "Prompt copied" toast
             if showCopiedToast {
                 VStack {
@@ -437,53 +440,103 @@ struct PuzzleCompletionView: View {
 
     @ViewBuilder
     private var llmAppIcons: some View {
-        VStack(spacing: 6) {
-            // App icons row
-            HStack(spacing: 16) {
-                ForEach(appSettings.enabledLLMAppsList) { app in
-                    Button {
-                        withAnimation(.easeInOut(duration: 0.2)) {
-                            expandedLLMApp = expandedLLMApp == app ? nil : app
-                        }
-                    } label: {
+        HStack(spacing: 16) {
+            ForEach(appSettings.enabledLLMAppsList) { app in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        expandedLLMApp = app
+                    }
+                } label: {
+                    Image(app.iconName)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: 16, height: 16)
+                        .padding(5)
+                        .background(
+                            Circle()
+                                .fill(CryptogramTheme.Colors.text.opacity(0.06))
+                        )
+                }
+                .buttonStyle(PlainButtonStyle())
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var llmPromptPopup: some View {
+        if let app = expandedLLMApp,
+           let quote = viewModel.currentPuzzle?.solution,
+           let author = viewModel.currentPuzzle?.authorName {
+            ZStack {
+                // Dimmed backdrop
+                Color.black.opacity(0.3)
+                    .ignoresSafeArea()
+                    .onTapGesture {
+                        withAnimation(.easeInOut(duration: 0.2)) { expandedLLMApp = nil }
+                    }
+
+                // Popup card
+                VStack(spacing: 16) {
+                    // Header with app icon and name
+                    HStack(spacing: 8) {
                         Image(app.iconName)
                             .resizable()
                             .aspectRatio(contentMode: .fit)
-                            .frame(width: 16, height: 16)
-                            .padding(5)
-                            .background(
-                                Circle()
-                                    .fill(CryptogramTheme.Colors.text.opacity(expandedLLMApp == app ? 0.12 : 0.06))
-                            )
-                            .opacity(expandedLLMApp == nil || expandedLLMApp == app ? 1 : 0.3)
+                            .frame(width: 20, height: 20)
+                        Text("Open in \(app.rawValue)")
+                            .font(typography.caption)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                            .fontWeight(.bold)
                     }
-                    .buttonStyle(PlainButtonStyle())
-                }
-            }
 
-            // Prompt menu (expands below selected app)
-            if let app = expandedLLMApp,
-               let quote = viewModel.currentPuzzle?.solution,
-               let author = viewModel.currentPuzzle?.authorName {
-                VStack(spacing: 4) {
-                    ForEach(LLMPrompt.builtIn) { prompt in
-                        Button {
-                            let text = prompt.buildPrompt(quote, author)
-                            let copied = app.open(with: text)
-                            if copied { showCopiedToastBriefly(app: app) }
-                            withAnimation { expandedLLMApp = nil }
-                        } label: {
-                            Label(prompt.label, systemImage: prompt.icon)
-                                .font(typography.caption)
-                                .foregroundColor(CryptogramTheme.Colors.text.opacity(0.7))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 4)
+                    // Prompt options
+                    VStack(spacing: 0) {
+                        ForEach(Array(LLMPrompt.builtIn.enumerated()), id: \.element.id) { index, prompt in
+                            if index > 0 {
+                                Divider()
+                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(0.1))
+                            }
+                            Button {
+                                let text = prompt.buildPrompt(quote, author)
+                                let copied = app.open(with: text)
+                                if copied { showCopiedToastBriefly(app: app) }
+                                withAnimation(.easeInOut(duration: 0.2)) { expandedLLMApp = nil }
+                            } label: {
+                                HStack {
+                                    Image(systemName: prompt.icon)
+                                        .font(.system(size: 14))
+                                        .foregroundColor(CryptogramTheme.Colors.text.opacity(0.5))
+                                        .frame(width: 20)
+                                    Text(prompt.label)
+                                        .font(typography.caption)
+                                        .foregroundColor(CryptogramTheme.Colors.text)
+                                    Spacer()
+                                    Image(systemName: "arrow.up.right")
+                                        .font(.system(size: 10))
+                                        .foregroundColor(CryptogramTheme.Colors.text.opacity(0.3))
+                                }
+                                .padding(.vertical, 12)
+                                .padding(.horizontal, 4)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(PlainButtonStyle())
                         }
-                        .buttonStyle(PlainButtonStyle())
                     }
                 }
-                .transition(.opacity.combined(with: .move(edge: .top)))
+                .padding(20)
+                .background(
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(CryptogramTheme.Colors.background)
+                        .shadow(color: .black.opacity(0.15), radius: 20, y: 8)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14)
+                        .strokeBorder(CryptogramTheme.Colors.text.opacity(0.08), lineWidth: 1)
+                )
+                .padding(.horizontal, 50)
             }
+            .transition(.opacity)
+            .zIndex(175)
         }
     }
 
