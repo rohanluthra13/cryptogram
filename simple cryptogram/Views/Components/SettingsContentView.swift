@@ -11,6 +11,7 @@ struct SettingsContentView: View {
     @State private var showTextSizeSelector = false
     @State private var showFontSelector = false
     @State private var showPresetPicker = false
+    @State private var showPromptPreview = false
     // Computed bindings for AppSettings
     private var selectedEncodingType: Binding<String> {
         Binding(
@@ -324,20 +325,56 @@ struct SettingsContentView: View {
             // AI Assistant Section
             if !showLengthSelector {
                 SettingsSection(title: "ai assistant") {
-                    HStack(spacing: 12) {
-                        ForEach(LLMApp.allCases) { app in
-                            Button {
-                                appSettings.selectedLLMApp = app
-                            } label: {
-                                Text(app.rawValue.lowercased())
-                                    .font(typography.footnote)
-                                    .fontWeight(appSettings.selectedLLMApp == app ? .bold : .regular)
-                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(appSettings.selectedLLMApp == app ? 1 : 0.4))
+                    VStack(spacing: 12) {
+                        // App toggles
+                        HStack(spacing: 4) {
+                            ForEach(LLMApp.allCases) { app in
+                                MultiCheckboxRow(
+                                    title: app.rawValue.lowercased(),
+                                    isSelected: appSettings.isLLMAppEnabled(app),
+                                    action: { appSettings.toggleLLMApp(app) }
+                                )
                             }
-                            .buttonStyle(PlainButtonStyle())
                         }
+                        .frame(maxWidth: .infinity)
+
+                        // Prompt previews
+                        if showPromptPreview {
+                            VStack(alignment: .leading, spacing: 8) {
+                                ForEach(LLMPrompt.builtIn) { prompt in
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Label(prompt.label, systemImage: prompt.icon)
+                                            .font(typography.caption)
+                                            .foregroundColor(CryptogramTheme.Colors.text)
+                                        Text(prompt.buildPrompt("\"The unexamined life...\"", "Socrates"))
+                                            .font(typography.caption)
+                                            .foregroundColor(CryptogramTheme.Colors.text.opacity(0.5))
+                                            .lineLimit(2)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 10)
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                        }
+
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showPromptPreview.toggle()
+                            }
+                        } label: {
+                            HStack {
+                                Spacer()
+                                Text(showPromptPreview ? "hide prompts" : "view prompts")
+                                    .font(typography.caption)
+                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(0.5))
+                                Image(systemName: showPromptPreview ? "chevron.up" : "chevron.down")
+                                    .font(.system(size: 10))
+                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(0.5))
+                                Spacer()
+                            }
+                        }
+                        .buttonStyle(PlainButtonStyle())
                     }
-                    .frame(maxWidth: .infinity)
                     .padding(.vertical, 8)
                 }
                 .transition(.opacity)

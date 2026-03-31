@@ -1,6 +1,37 @@
 import Foundation
 import UIKit
 
+// MARK: - Prompt Templates
+
+struct LLMPrompt: Identifiable {
+    let id: String
+    let label: String
+    let icon: String
+    let buildPrompt: (String, String) -> String  // (quote, author) -> prompt
+
+    static let explainQuote = LLMPrompt(
+        id: "explain",
+        label: "explain quote",
+        icon: "text.quote",
+        buildPrompt: { quote, author in
+            "Explain this quote: \"\(quote)\" — \(author)"
+        }
+    )
+
+    static let aboutAuthor = LLMPrompt(
+        id: "author",
+        label: "about author",
+        icon: "person.text.rectangle",
+        buildPrompt: { _, author in
+            "Tell me about \(author) — who were they, why are they notable, and what was the historical context of their time?"
+        }
+    )
+
+    static let builtIn: [LLMPrompt] = [.explainQuote, .aboutAuthor]
+}
+
+// MARK: - LLM App
+
 enum LLMApp: String, CaseIterable, Identifiable {
     case claude = "Claude"
     case chatgpt = "ChatGPT"
@@ -51,10 +82,5 @@ enum LLMApp: String, CaseIterable, Identifiable {
             }
             return true
         }
-    }
-
-    /// URL schemes that need to be declared in Info.plist LSApplicationQueriesSchemes
-    static var urlSchemes: [String] {
-        ["chatgpt", "claude", "googlegemini"]
     }
 }

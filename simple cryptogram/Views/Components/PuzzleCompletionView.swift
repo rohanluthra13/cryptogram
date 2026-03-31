@@ -18,8 +18,10 @@ struct PuzzleCompletionView: View {
     @State private var isBottomBarVisible = true
     @State private var bottomBarHideTask: Task<Void, Never>?
 
-    // LLM prompt toast
+    // LLM prompt state
     @State private var showCopiedToast = false
+    @State private var copiedToastAppName = ""
+    @State private var expandedLLMApp: LLMApp?
 
     // Animation states
     @State private var showQuote = false
@@ -270,10 +272,9 @@ struct PuzzleCompletionView: View {
                     }
                     .frame(height: 150)
 
-                    // Discuss with AI buttons
-                    if let quote = viewModel.currentPuzzle?.solution,
-                       let author = viewModel.currentPuzzle?.authorName {
-                        discussButtons(quote: quote, author: author)
+                    // LLM app icons
+                    if !appSettings.enabledLLMAppsList.isEmpty {
+                        llmAppBar
                             .opacity(showNextButton ? 1 : 0)
                             .offset(y: showNextButton ? 0 : 10)
                     }
@@ -382,7 +383,7 @@ struct PuzzleCompletionView: View {
             if showCopiedToast {
                 VStack {
                     Spacer()
-                    Text("prompt copied — paste in \(appSettings.selectedLLMApp.rawValue)")
+                    Text("prompt copied — paste in \(copiedToastAppName)")
                         .font(typography.caption)
                         .foregroundColor(CryptogramTheme.Colors.background)
                         .padding(.horizontal, 16)
@@ -417,37 +418,57 @@ struct PuzzleCompletionView: View {
         }
     }
 
-    // MARK: - Discuss with AI
+    // MARK: - LLM App Bar
 
     @ViewBuilder
-    private func discussButtons(quote: String, author: String) -> some View {
-        HStack(spacing: 16) {
-            Button {
-                let prompt = "Explain this quote: \"\(quote)\" — \(author)"
-                let copied = appSettings.selectedLLMApp.open(with: prompt)
-                if copied { showCopiedToastBriefly() }
-            } label: {
-                Label("explain quote", systemImage: "text.quote")
-                    .font(typography.caption)
-                    .foregroundColor(CryptogramTheme.Colors.text.opacity(0.7))
+    private var llmAppBar: some View {
+        VStack(spacing: 8) {
+            // App icons row
+            HStack(spacing: 20) {
+                ForEach(appSettings.enabledLLMAppsList) { app in
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            expandedLLMApp = expandedLLMApp == app ? nil : app
+                        }
+                    } label: {
+                        Text(app.rawValue.lowercased())
+                            .font(typography.caption)
+                            .foregroundColor(CryptogramTheme.Colors.text.opacity(expandedLLMApp == app ? 1 : 0.5))
+                            .fontWeight(expandedLLMApp == app ? .bold : .regular)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
             }
-            .buttonStyle(PlainButtonStyle())
+            .padding(.top, 8)
 
-            Button {
-                let prompt = "Tell me about \(author) — who were they, why are they notable, and what was the historical context of their time?"
-                let copied = appSettings.selectedLLMApp.open(with: prompt)
-                if copied { showCopiedToastBriefly() }
-            } label: {
-                Label("about author", systemImage: "person.text.rectangle")
-                    .font(typography.caption)
-                    .foregroundColor(CryptogramTheme.Colors.text.opacity(0.7))
+            // Prompt menu (expands below selected app)
+            if let app = expandedLLMApp,
+               let quote = viewModel.currentPuzzle?.solution,
+               let author = viewModel.currentPuzzle?.authorName {
+                VStack(spacing: 6) {
+                    ForEach(LLMPrompt.builtIn) { prompt in
+                        Button {
+                            let text = prompt.buildPrompt(quote, author)
+                            let copied = app.open(with: text)
+                            if copied { showCopiedToastBriefly(app: app) }
+                            withAnimation { expandedLLMApp = nil }
+                        } label: {
+                            Label(prompt.label, systemImage: prompt.icon)
+                                .font(typography.caption)
+                                .foregroundColor(CryptogramTheme.Colors.text.opacity(0.7))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 6)
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                    }
+                }
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
-            .buttonStyle(PlainButtonStyle())
         }
-        .padding(.top, 8)
     }
 
-    private func showCopiedToastBriefly() {
+    private func showCopiedToastBriefly(app: LLMApp) {
+        copiedToastAppName = app.rawValue
         showCopiedToast = true
         Task {
             try? await Task.sleep(for: .seconds(2.5))

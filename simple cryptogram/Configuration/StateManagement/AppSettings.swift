@@ -69,13 +69,24 @@ import Observation
     }
 
     // MARK: - AI Assistant
-    var preferredLLMApp: String = LLMApp.claude.rawValue {
-        didSet { defaults.set(preferredLLMApp, forKey: "appSettings.preferredLLMApp") }
+    var enabledLLMApps: [String] = LLMApp.allCases.map(\.rawValue) {
+        didSet { defaults.set(enabledLLMApps, forKey: "appSettings.enabledLLMApps") }
     }
 
-    var selectedLLMApp: LLMApp {
-        get { LLMApp(rawValue: preferredLLMApp) ?? .claude }
-        set { preferredLLMApp = newValue.rawValue }
+    func isLLMAppEnabled(_ app: LLMApp) -> Bool {
+        enabledLLMApps.contains(app.rawValue)
+    }
+
+    func toggleLLMApp(_ app: LLMApp) {
+        if isLLMAppEnabled(app) {
+            enabledLLMApps.removeAll { $0 == app.rawValue }
+        } else {
+            enabledLLMApps.append(app.rawValue)
+        }
+    }
+
+    var enabledLLMAppsList: [LLMApp] {
+        LLMApp.allCases.filter { enabledLLMApps.contains($0.rawValue) }
     }
 
     // MARK: - Daily Puzzle State
@@ -193,7 +204,7 @@ import Observation
         if defaults.object(forKey: "appSettings.isRandomThemeEnabled") != nil { isRandomThemeEnabled = defaults.bool(forKey: "appSettings.isRandomThemeEnabled") }
         if defaults.object(forKey: "appSettings.lastCompletedDailyPuzzleID") != nil { lastCompletedDailyPuzzleID = defaults.integer(forKey: "appSettings.lastCompletedDailyPuzzleID") }
         if let ids = defaults.array(forKey: "appSettings.completedQuoteIds") as? [Int] { completedQuoteIds = Set(ids) }
-        if let v = defaults.string(forKey: "appSettings.preferredLLMApp") { preferredLLMApp = v }
+        if let v = defaults.stringArray(forKey: "appSettings.enabledLLMApps") { enabledLLMApps = v }
     }
 
     // MARK: - One-Time Migration from Legacy @AppStorage Keys
