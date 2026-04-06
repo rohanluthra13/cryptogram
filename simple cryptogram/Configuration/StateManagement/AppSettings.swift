@@ -89,6 +89,70 @@ import Observation
         LLMApp.allCases.filter { enabledLLMApps.contains($0.rawValue) }
     }
 
+    // MARK: - LLM Prompts (editable)
+
+    /// User-customized prompts, keyed by prompt id. Only stores prompts that
+    /// have been edited or added by the user.
+    private var customPromptsById: [String: LLMPrompt] = [:] {
+        didSet { savePromptsToDefaults() }
+    }
+
+    /// The prompts currently in use: built-in defaults merged with user overrides,
+    /// plus any user-added custom prompts. Order: defaults first (in default order),
+    /// then any extra user-added prompts.
+    var activePrompts: [LLMPrompt] {
+        var result: [LLMPrompt] = LLMPrompt.defaults.map { customPromptsById[$0.id] ?? $0 }
+        let defaultIds = Set(LLMPrompt.defaults.map(\.id))
+        let extras = customPromptsById.values.filter { !defaultIds.contains($0.id) }
+        result.append(contentsOf: extras.sorted { $0.id < $1.id })
+        return result
+    }
+
+    /// Save or update a single prompt.
+    func updatePrompt(_ prompt: LLMPrompt) {
+        customPromptsById[prompt.id] = prompt
+    }
+
+    /// Revert a single prompt to its original default (if it has one).
+    /// Returns true if reverted, false if there was no default (user-added prompt).
+    @discardableResult
+    func revertPrompt(id: String) -> Bool {
+        if LLMPrompt.defaultPrompt(id: id) != nil {
+            customPromptsById.removeValue(forKey: id)
+            return true
+        }
+        return false
+    }
+
+    /// Delete a prompt. Only user-added prompts can be deleted; built-ins can only be reverted.
+    func deletePrompt(id: String) {
+        guard LLMPrompt.defaultPrompt(id: id) == nil else { return }
+        customPromptsById.removeValue(forKey: id)
+    }
+
+    /// Revert all prompts to their original defaults and remove any user-added prompts.
+    func revertAllPrompts() {
+        customPromptsById.removeAll()
+    }
+
+    /// True if any prompt has been edited or added.
+    var hasCustomPrompts: Bool {
+        !customPromptsById.isEmpty
+    }
+
+    private func savePromptsToDefaults() {
+        let array = Array(customPromptsById.values)
+        if let data = try? JSONEncoder().encode(array) {
+            defaults.set(data, forKey: "appSettings.customPrompts")
+        }
+    }
+
+    private func loadPromptsFromDefaults() {
+        guard let data = defaults.data(forKey: "appSettings.customPrompts"),
+              let array = try? JSONDecoder().decode([LLMPrompt].self, from: data) else { return }
+        customPromptsById = Dictionary(uniqueKeysWithValues: array.map { ($0.id, $0) })
+    }
+
     // MARK: - Daily Puzzle State
     var lastCompletedDailyPuzzleID: Int = 0 {
         didSet { defaults.set(lastCompletedDailyPuzzleID, forKey: "appSettings.lastCompletedDailyPuzzleID") }
@@ -205,6 +269,7 @@ import Observation
         if defaults.object(forKey: "appSettings.lastCompletedDailyPuzzleID") != nil { lastCompletedDailyPuzzleID = defaults.integer(forKey: "appSettings.lastCompletedDailyPuzzleID") }
         if let ids = defaults.array(forKey: "appSettings.completedQuoteIds") as? [Int] { completedQuoteIds = Set(ids) }
         if let v = defaults.stringArray(forKey: "appSettings.enabledLLMApps") { enabledLLMApps = v }
+        loadPromptsFromDefaults()
     }
 
     // MARK: - One-Time Migration from Legacy @AppStorage Keys

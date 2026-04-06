@@ -3,31 +3,41 @@ import UIKit
 
 // MARK: - Prompt Templates
 
-struct LLMPrompt: Identifiable {
+struct LLMPrompt: Identifiable, Codable, Equatable {
     let id: String
-    let label: String
-    let icon: String
-    let buildPrompt: (String, String) -> String  // (quote, author) -> prompt
+    var label: String
+    var icon: String
+    /// Template string with `[quote]` and `[author]` placeholders.
+    var template: String
+
+    /// Fills the template by replacing placeholders with actual values.
+    func buildPrompt(quote: String, author: String) -> String {
+        template
+            .replacingOccurrences(of: "[quote]", with: "\"\(quote)\"")
+            .replacingOccurrences(of: "[author]", with: author)
+    }
 
     static let explainQuote = LLMPrompt(
         id: "explain",
         label: "explain quote",
         icon: "text.quote",
-        buildPrompt: { quote, author in
-            "Explain this quote: \"\(quote)\" — \(author)"
-        }
+        template: "Explain this quote: [quote] — [author]"
     )
 
     static let aboutAuthor = LLMPrompt(
         id: "author",
         label: "about author",
         icon: "person.text.rectangle",
-        buildPrompt: { _, author in
-            "Tell me about \(author) — who were they, why are they notable, and what was the historical context of their time?"
-        }
+        template: "Tell me about [author] — who were they, why are they notable, and what was the historical context of their time?"
     )
 
-    static let builtIn: [LLMPrompt] = [.explainQuote, .aboutAuthor]
+    /// The original built-in prompts. Used as defaults and for revert-to-original.
+    static let defaults: [LLMPrompt] = [.explainQuote, .aboutAuthor]
+
+    /// Look up the default version of a prompt by id.
+    static func defaultPrompt(id: String) -> LLMPrompt? {
+        defaults.first { $0.id == id }
+    }
 }
 
 // MARK: - LLM App

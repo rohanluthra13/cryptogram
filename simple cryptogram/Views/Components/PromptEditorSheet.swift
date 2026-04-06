@@ -11,46 +11,6 @@ struct PromptEditorSheet: View {
     private let exampleQuote = "Know thyself"
     private let exampleAuthor = "Socrates"
 
-    private struct PromptTemplate: Identifiable {
-        let id: String
-        let label: String
-        let icon: String
-        let segments: [Segment]
-
-        enum Segment {
-            case text(String)
-            case placeholder(PlaceholderType)
-        }
-
-        enum PlaceholderType {
-            case quote, author
-        }
-    }
-
-    private let prompts: [PromptTemplate] = [
-        PromptTemplate(
-            id: "explain",
-            label: "explain quote",
-            icon: "text.quote",
-            segments: [
-                .text("Explain this quote: "),
-                .placeholder(.quote),
-                .text(" — "),
-                .placeholder(.author),
-            ]
-        ),
-        PromptTemplate(
-            id: "author",
-            label: "about author",
-            icon: "person.text.rectangle",
-            segments: [
-                .text("Tell me about "),
-                .placeholder(.author),
-                .text(" — who were they, why are they notable, and what was the historical context of their time?"),
-            ]
-        ),
-    ]
-
     var body: some View {
         ZStack(alignment: .bottomTrailing) {
             CryptogramTheme.Colors.background
@@ -91,14 +51,14 @@ struct PromptEditorSheet: View {
                         }
                     }
 
-                    ForEach(prompts) { prompt in
+                    ForEach(appSettings.activePrompts) { prompt in
                         VStack(alignment: .leading, spacing: 12) {
                             Label(prompt.label, systemImage: prompt.icon)
                                 .font(typography.footnote)
                                 .fontWeight(.bold)
                                 .foregroundColor(CryptogramTheme.Colors.text)
 
-                            promptTextView(for: prompt)
+                            promptTextView(template: prompt.template)
                                 .padding(10)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .overlay(
@@ -135,16 +95,25 @@ struct PromptEditorSheet: View {
         .presentationDragIndicator(.visible)
     }
 
-    private func promptTextView(for prompt: PromptTemplate) -> Text {
+    /// Render a template string, highlighting `[quote]` and `[author]` placeholders
+    /// in bold. When `showPreview` is true, placeholders swap to example values.
+    private func promptTextView(template: String) -> Text {
         let textColor = CryptogramTheme.Colors.text
-        return prompt.segments.reduce(Text("")) { combined, segment in
+        let segments = parseTemplate(template)
+        return segments.reduce(Text("")) { combined, segment in
             switch segment {
             case .text(let str):
                 return combined + Text(str)
                     .font(typography.caption)
                     .foregroundColor(textColor.opacity(0.7))
-            case .placeholder(let type):
-                let value = pillText(for: type)
+            case .quotePlaceholder:
+                let value = showPreview ? "\"\(exampleQuote)\"" : "[quote]"
+                return combined + Text(value)
+                    .font(typography.caption)
+                    .bold()
+                    .foregroundColor(textColor)
+            case .authorPlaceholder:
+                let value = showPreview ? exampleAuthor : "[author]"
                 return combined + Text(value)
                     .font(typography.caption)
                     .bold()
@@ -153,12 +122,49 @@ struct PromptEditorSheet: View {
         }
     }
 
-    private func pillText(for type: PromptTemplate.PlaceholderType) -> String {
-        switch type {
-        case .quote:
-            return showPreview ? "\"\(exampleQuote)\"" : "[quote]"
-        case .author:
-            return showPreview ? exampleAuthor : "[author]"
+    private enum TemplateSegment {
+        case text(String)
+        case quotePlaceholder
+        case authorPlaceholder
+    }
+
+    /// Walks the template, splitting it into literal text and placeholder segments.
+    private func parseTemplate(_ template: String) -> [TemplateSegment] {
+        var segments: [TemplateSegment] = []
+        var remainder = template[...]
+
+        while !remainder.isEmpty {
+            if let quoteRange = remainder.range(of: "[quote]"),
+               let authorRange = remainder.range(of: "[author]") {
+                // Pick whichever comes first
+                if quoteRange.lowerBound < authorRange.lowerBound {
+                    appendSlice(&segments, slice: remainder[..<quoteRange.lowerBound])
+                    segments.append(.quotePlaceholder)
+                    remainder = remainder[quoteRange.upperBound...]
+                } else {
+                    appendSlice(&segments, slice: remainder[..<authorRange.lowerBound])
+                    segments.append(.authorPlaceholder)
+                    remainder = remainder[authorRange.upperBound...]
+                }
+            } else if let quoteRange = remainder.range(of: "[quote]") {
+                appendSlice(&segments, slice: remainder[..<quoteRange.lowerBound])
+                segments.append(.quotePlaceholder)
+                remainder = remainder[quoteRange.upperBound...]
+            } else if let authorRange = remainder.range(of: "[author]") {
+                appendSlice(&segments, slice: remainder[..<authorRange.lowerBound])
+                segments.append(.authorPlaceholder)
+                remainder = remainder[authorRange.upperBound...]
+            } else {
+                appendSlice(&segments, slice: remainder)
+                break
+            }
+        }
+        return segments
+    }
+
+    private func appendSlice(_ segments: inout [TemplateSegment], slice: Substring) {
+        if !slice.isEmpty {
+            segments.append(.text(String(slice)))
         }
     }
 }

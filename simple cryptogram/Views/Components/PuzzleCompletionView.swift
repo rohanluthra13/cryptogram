@@ -491,13 +491,13 @@ struct PuzzleCompletionView: View {
 
                     // Prompt options
                     VStack(spacing: 0) {
-                        ForEach(Array(LLMPrompt.builtIn.enumerated()), id: \.element.id) { index, prompt in
+                        ForEach(Array(appSettings.activePrompts.enumerated()), id: \.element.id) { index, prompt in
                             if index > 0 {
                                 Divider()
                                     .foregroundColor(CryptogramTheme.Colors.text.opacity(0.1))
                             }
                             Button {
-                                let text = prompt.buildPrompt(quote, author)
+                                let text = prompt.buildPrompt(quote: quote, author: author)
                                 let copied = app.open(with: text)
                                 if copied { showCopiedToastBriefly(app: app) }
                                 withAnimation(.easeInOut(duration: 0.2)) { expandedLLMApp = nil }
