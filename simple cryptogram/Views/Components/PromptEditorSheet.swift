@@ -6,6 +6,7 @@ struct PromptEditorSheet: View {
     @Environment(\.dismiss) private var dismiss
 
     @State private var showPreview = false
+    @State private var showInfo = false
 
     private let exampleQuote = "Know thyself"
     private let exampleAuthor = "Socrates"
@@ -32,9 +33,9 @@ struct PromptEditorSheet: View {
             label: "explain quote",
             icon: "text.quote",
             segments: [
-                .text("Explain this quote: \""),
+                .text("Explain this quote: "),
                 .placeholder(.quote),
-                .text("\" — "),
+                .text(" — "),
                 .placeholder(.author),
             ]
         ),
@@ -57,11 +58,35 @@ struct PromptEditorSheet: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 30) {
-                    Text("prompts")
-                        .font(typography.footnote)
-                        .fontWeight(.bold)
-                        .foregroundColor(CryptogramTheme.Colors.text)
-                        .frame(maxWidth: .infinity)
+                    // Title + info toggle
+                    HStack {
+                        Spacer()
+                        Text("prompts")
+                            .font(typography.footnote)
+                            .fontWeight(.bold)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                showInfo.toggle()
+                            }
+                        } label: {
+                            Image(systemName: "info.circle")
+                                .font(.system(size: 12, weight: .medium))
+                                .foregroundColor(CryptogramTheme.Colors.text.opacity(showInfo ? 1 : 0.4))
+                        }
+                        .buttonStyle(PlainButtonStyle())
+                        .padding(.leading, 6)
+                        Spacer()
+                    }
+
+                    if showInfo {
+                        Text("These prompts are sent to your AI app when you tap its icon after completing a puzzle. You can edit them, add new ones, or revert to the originals.")
+                            .font(typography.caption)
+                            .foregroundColor(CryptogramTheme.Colors.text.opacity(0.5))
+                            .frame(maxWidth: .infinity)
+                            .multilineTextAlignment(.center)
+                            .transition(.opacity)
+                    }
 
                     ForEach(prompts) { prompt in
                         VStack(alignment: .leading, spacing: 12) {
@@ -128,7 +153,7 @@ struct PromptEditorSheet: View {
     private func pillText(for type: PromptTemplate.PlaceholderType) -> String {
         switch type {
         case .quote:
-            return showPreview ? exampleQuote : "[quote]"
+            return showPreview ? "\"\(exampleQuote)\"" : "[quote]"
         case .author:
             return showPreview ? exampleAuthor : "[author]"
         }
