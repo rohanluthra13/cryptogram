@@ -7,6 +7,9 @@ struct PromptEditorSheet: View {
 
     @State private var showPreview = false
     @State private var showInfo = false
+    @State private var editingPromptId: String?
+    @State private var editBuffer: String = ""
+    @FocusState private var isEditFocused: Bool
 
     private let exampleQuote = "Know thyself"
     private let exampleAuthor = "Socrates"
@@ -52,25 +55,7 @@ struct PromptEditorSheet: View {
                     }
 
                     ForEach(appSettings.activePrompts) { prompt in
-                        VStack(alignment: .leading, spacing: 12) {
-                            Label(prompt.label, systemImage: prompt.icon)
-                                .font(typography.footnote)
-                                .fontWeight(.bold)
-                                .foregroundColor(CryptogramTheme.Colors.text)
-
-                            promptTextView(template: prompt.template)
-                                .padding(10)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .strokeBorder(CryptogramTheme.Colors.border, lineWidth: 1)
-                                )
-                                .onTapGesture {
-                                    withAnimation(.easeInOut(duration: 0.2)) {
-                                        showPreview.toggle()
-                                    }
-                                }
-                        }
+                        promptRow(prompt: prompt)
                     }
                 }
                 .padding(.horizontal, 20)
@@ -93,6 +78,112 @@ struct PromptEditorSheet: View {
             .padding(.bottom, 20)
         }
         .presentationDragIndicator(.visible)
+    }
+
+    // MARK: - Prompt Row
+
+    @ViewBuilder
+    private func promptRow(prompt: LLMPrompt) -> some View {
+        let isEditing = editingPromptId == prompt.id
+
+        VStack(alignment: .leading, spacing: 12) {
+            // Title row: label + action buttons
+            HStack {
+                Label(prompt.label, systemImage: prompt.icon)
+                    .font(typography.footnote)
+                    .fontWeight(.bold)
+                    .foregroundColor(CryptogramTheme.Colors.text)
+
+                Spacer()
+
+                if isEditing {
+                    // Save
+                    Button {
+                        savePrompt(original: prompt)
+                    } label: {
+                        Text("save")
+                            .font(typography.caption)
+                            .fontWeight(.bold)
+                            .foregroundColor(CryptogramTheme.Colors.text)
+                    }
+                    .buttonStyle(PlainButtonStyle())
+
+                    // Revert
+                    Button {
+                        revertPrompt(id: prompt.id)
+                    } label: {
+                        Text("revert")
+                            .font(typography.caption)
+                            .foregroundColor(CryptogramTheme.Colors.text.opacity(0.5))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                    .padding(.leading, 10)
+                } else {
+                    // Edit
+                    Button {
+                        beginEditing(prompt: prompt)
+                    } label: {
+                        Text("edit")
+                            .font(typography.caption)
+                            .foregroundColor(CryptogramTheme.Colors.text.opacity(0.5))
+                    }
+                    .buttonStyle(PlainButtonStyle())
+                }
+            }
+
+            // Text box — editable when isEditing
+            if isEditing {
+                TextEditor(text: $editBuffer)
+                    .font(typography.caption)
+                    .foregroundColor(CryptogramTheme.Colors.text)
+                    .scrollContentBackground(.hidden)
+                    .padding(6)
+                    .frame(minHeight: 80)
+                    .background(Color(white: 0.97))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .strokeBorder(CryptogramTheme.Colors.border, lineWidth: 1)
+                    )
+                    .focused($isEditFocused)
+            } else {
+                promptTextView(template: prompt.template)
+                    .padding(10)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .strokeBorder(CryptogramTheme.Colors.border, lineWidth: 1)
+                    )
+                    .onTapGesture {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showPreview.toggle()
+                        }
+                    }
+            }
+        }
+    }
+
+    // MARK: - Edit Actions
+
+    private func beginEditing(prompt: LLMPrompt) {
+        editBuffer = prompt.template
+        editingPromptId = prompt.id
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            isEditFocused = true
+        }
+    }
+
+    private func savePrompt(original: LLMPrompt) {
+        var updated = original
+        updated.template = editBuffer
+        appSettings.updatePrompt(updated)
+        editingPromptId = nil
+        isEditFocused = false
+    }
+
+    private func revertPrompt(id: String) {
+        appSettings.revertPrompt(id: id)
+        editingPromptId = nil
+        isEditFocused = false
     }
 
     /// Render a template string, highlighting `[quote]` and `[author]` placeholders
