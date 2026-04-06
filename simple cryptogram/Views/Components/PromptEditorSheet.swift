@@ -58,34 +58,37 @@ struct PromptEditorSheet: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 30) {
-                    // Title + info toggle
-                    HStack {
-                        Spacer()
-                        Text("prompts")
-                            .font(typography.footnote)
-                            .fontWeight(.bold)
-                            .foregroundColor(CryptogramTheme.Colors.text)
+                    // Title
+                    Text("prompts")
+                        .font(typography.footnote)
+                        .fontWeight(.bold)
+                        .foregroundColor(CryptogramTheme.Colors.text)
+                        .frame(maxWidth: .infinity)
+
+                    // Info dropdown
+                    VStack(alignment: .leading, spacing: 8) {
                         Button {
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 showInfo.toggle()
                             }
                         } label: {
-                            Image(systemName: "info.circle")
-                                .font(.system(size: 12, weight: .medium))
-                                .foregroundColor(CryptogramTheme.Colors.text.opacity(showInfo ? 1 : 0.4))
+                            HStack(spacing: 4) {
+                                Text("what are these for")
+                                    .font(typography.caption)
+                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(0.5))
+                                Image(systemName: showInfo ? "chevron.up" : "chevron.down")
+                                    .font(.system(size: 10, weight: .medium))
+                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(0.5))
+                            }
                         }
                         .buttonStyle(PlainButtonStyle())
-                        .padding(.leading, 6)
-                        Spacer()
-                    }
 
-                    if showInfo {
-                        Text("These prompts are sent to your AI app when you tap its icon after completing a puzzle. You can edit them, add new ones, or revert to the originals.")
-                            .font(typography.caption)
-                            .foregroundColor(CryptogramTheme.Colors.text.opacity(0.5))
-                            .frame(maxWidth: .infinity)
-                            .multilineTextAlignment(.center)
-                            .transition(.opacity)
+                        if showInfo {
+                            Text("These prompts are copied to your clipboard when you tap an AI app icon after completing a puzzle. Paste them into the app to start a conversation about the quote or author. You can edit existing prompts, add new ones, or revert to the originals.")
+                                .font(typography.caption)
+                                .foregroundColor(CryptogramTheme.Colors.text.opacity(0.5))
+                                .transition(.opacity)
+                        }
                     }
 
                     ForEach(prompts) { prompt in
