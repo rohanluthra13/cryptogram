@@ -5,13 +5,34 @@ struct SettingsContentView: View {
     @Environment(ThemeManager.self) private var themeManager
     @Environment(AppSettings.self) private var appSettings
     @Environment(\.typography) private var typography
-    
-    // State properties for info panels
-    @State private var showLengthSelector = false
-    @State private var showTextSizeSelector = false
-    @State private var showFontSelector = false
-    @State private var showPresetPicker = false
-    @State private var showPromptPreview = false
+
+    // Dropdown state — only one can be open at a time
+    @State private var expandedDropdown: SettingsDropdown?
+
+    private enum SettingsDropdown: Equatable {
+        case quoteLength
+        case textSize
+        case font
+        case colorTheme
+        case buttonLayout
+        case prompts
+
+        static let themeDropdowns: Set<SettingsDropdown> = [.textSize, .font, .colorTheme, .buttonLayout]
+    }
+
+    private var isDropdownOpen: Bool { expandedDropdown != nil }
+
+    /// True when this content should be invisible (faded to background)
+    private func isDimmed(keepVisible dropdown: SettingsDropdown? = nil) -> Bool {
+        isDropdownOpen && expandedDropdown != dropdown
+    }
+
+    /// True when content should be dimmed unless one of several dropdowns is active
+    private func isDimmed(keepVisibleAny dropdowns: Set<SettingsDropdown>) -> Bool {
+        guard let expanded = expandedDropdown else { return false }
+        return !dropdowns.contains(expanded)
+    }
+
     // Computed bindings for AppSettings
     private var selectedEncodingType: Binding<String> {
         Binding(
@@ -19,127 +40,88 @@ struct SettingsContentView: View {
             set: { appSettings.encodingType = $0 }
         )
     }
-    
-    // Info text for length
-    private let lengthInfoText = "short: quotes under 50 characters\nmedium: quotes 50-99 characters\nlong: quotes 100+ characters"
-    
+
+    private func toggleDropdown(_ dropdown: SettingsDropdown) {
+        withAnimation(.easeInOut(duration: 0.3)) {
+            expandedDropdown = expandedDropdown == dropdown ? nil : dropdown
+        }
+    }
+
     var body: some View {
         @Bindable var settings = appSettings
 
-        VStack(spacing: 20) {
-            // Top spacing to position content as needed
-            Spacer()
-                .frame(height: 60)
-            
-            // Gameplay Section
-            SettingsSection(title: "gameplay") {
-                VStack(spacing: 15) {
-                    // Encoding toggle and length dropdown
+        ScrollView(.vertical, showsIndicators: false) {
+            VStack(spacing: 20) {
+                Spacer().frame(height: 60)
+
+                // MARK: - Gameplay
+                SettingsSection(title: "gameplay") {
                     VStack(spacing: 15) {
-                                // Encoding toggle
-                                ToggleOptionRow(
-                                    leftOption: ("Letters", "abc"),
-                                    rightOption: ("Numbers", "123"),
-                                    selection: selectedEncodingType
+                        // Encoding toggle
+                        ToggleOptionRow(
+                            leftOption: ("Letters", "abc"),
+                            rightOption: ("Numbers", "123"),
+                            selection: selectedEncodingType
+                        )
+                        .dim(isDimmed())
+
+                        // Quote Length
+                        dropdownTrigger(
+                            label: "quote length",
+                            value: appSettings.quoteLengthDisplayText,
+                            dropdown: .quoteLength
+                        )
+                        .dim(isDimmed(keepVisible: .quoteLength))
+
+                        if expandedDropdown == .quoteLength {
+                            HStack(spacing: 4) {
+                                MultiCheckboxRow(
+                                    title: "short",
+                                    isSelected: appSettings.isLengthSelected("easy"),
+                                    action: { appSettings.toggleLength("easy") }
                                 )
-                                .transition(.opacity)
-                                
-                                // Quote Length Dropdown Toggle
-                                Button(action: {
-                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                        showLengthSelector.toggle()
-                                    }
-                                }) {
-                                    HStack {
-                                        Spacer()
-                                        
-                                        Text("quote length: ")
-                                            .font(typography.footnote)
-                                            .foregroundColor(CryptogramTheme.Colors.text) +
-                                        Text(appSettings.quoteLengthDisplayText)
-                                            .font(typography.footnote)
-                                            .fontWeight(.bold)
-                                            .foregroundColor(CryptogramTheme.Colors.text)
-                                        
-                                        Image(systemName: showLengthSelector ? "chevron.up" : "chevron.down")
-                                            .font(.system(size: 12, weight: .medium, design: typography.fontOption.design))
-                                            .foregroundColor(CryptogramTheme.Colors.text)
-                                            .padding(.leading, 4)
-                                        
-                                        Spacer()
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 10)
-                                    .background(Color.clear) // Ensure no background
-                                }
-                                .buttonStyle(PlainButtonStyle())
-                                
-                                // Show checkboxes when expanded
-                                if showLengthSelector {
-                                    HStack(spacing: 4) {
-                                        MultiCheckboxRow(
-                                            title: "short",
-                                            isSelected: appSettings.isLengthSelected("easy"),
-                                            action: { appSettings.toggleLength("easy") }
-                                        )
-                                        MultiCheckboxRow(
-                                            title: "medium",
-                                            isSelected: appSettings.isLengthSelected("medium"),
-                                            action: { appSettings.toggleLength("medium") }
-                                        )
-                                        MultiCheckboxRow(
-                                            title: "long",
-                                            isSelected: appSettings.isLengthSelected("hard"),
-                                            action: { appSettings.toggleLength("hard") }
-                                        )
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .contentShape(Rectangle())
-                                    .overlay(
-                                        GeometryReader { geometry in
-                                            Color.clear.preference(key: HStackWidthPreferenceKey.self, value: geometry.size.width)
-                                        }
-                                    )
-                                    .frame(maxWidth: .infinity, alignment: .center)
-                                    .transition(.move(edge: .top).combined(with: .opacity))
-                                    .padding(.top, 0)
-                                }
+                                MultiCheckboxRow(
+                                    title: "medium",
+                                    isSelected: appSettings.isLengthSelected("medium"),
+                                    action: { appSettings.toggleLength("medium") }
+                                )
+                                MultiCheckboxRow(
+                                    title: "long",
+                                    isSelected: appSettings.isLengthSelected("hard"),
+                                    action: { appSettings.toggleLength("hard") }
+                                )
+                            }
+                            .frame(maxWidth: .infinity)
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                        }
                     }
                 }
-            }
-            
-            // Appearance Section - only visible when length selector is not shown
-            if !showLengthSelector {
+                .dim(isDimmed(keepVisible: .quoteLength))
+
+                // MARK: - Theme & Layout
                 SettingsSection(title: "theme & layout") {
                     VStack(spacing: 15) {
-                        // Theme selector: sun / moon / color-or-ellipsis
+                        // Theme icons + color picker
                         VStack(spacing: 0) {
                             HStack {
                                 Spacer()
 
-                                // Light mode
                                 IconToggleButton(
                                     iconName: "sun.max",
                                     isSelected: !appSettings.isRandomThemeEnabled && appSettings.themePreset == ThemePreset.light.rawValue,
-                                    action: {
-                                        appSettings.applyPreset(.light)
-                                    },
+                                    action: { appSettings.applyPreset(.light) },
                                     accessibilityLabel: "Light theme"
                                 )
                                 .padding(.trailing, 6)
 
-                                // Dark mode
                                 IconToggleButton(
                                     iconName: "moon.stars",
                                     isSelected: !appSettings.isRandomThemeEnabled && appSettings.themePreset == ThemePreset.dark.rawValue,
-                                    action: {
-                                        appSettings.applyPreset(.dark)
-                                    },
+                                    action: { appSettings.applyPreset(.dark) },
                                     accessibilityLabel: "Dark theme"
                                 )
                                 .padding(.trailing, 6)
 
-                                // Random theme
                                 IconToggleButton(
                                     iconName: "die.face.3",
                                     isSelected: appSettings.isRandomThemeEnabled,
@@ -153,11 +135,8 @@ struct SettingsContentView: View {
                                 )
                                 .padding(.trailing, 6)
 
-                                // Color theme toggle — shows active color dot or ellipsis
                                 Button {
-                                    withAnimation(.easeInOut(duration: 0.3)) {
-                                        showPresetPicker.toggle()
-                                    }
+                                    toggleDropdown(.colorTheme)
                                 } label: {
                                     if !appSettings.isRandomThemeEnabled, let activeColor = ThemePreset(rawValue: appSettings.themePreset), activeColor.isColor {
                                         Circle()
@@ -169,7 +148,7 @@ struct SettingsContentView: View {
                                     } else {
                                         Image(systemName: "ellipsis.circle")
                                             .font(.system(size: 15, weight: .medium))
-                                            .foregroundColor(CryptogramTheme.Colors.text.opacity(showPresetPicker ? 1 : 0.4))
+                                            .foregroundColor(CryptogramTheme.Colors.text.opacity(expandedDropdown == .colorTheme ? 1 : 0.4))
                                     }
                                 }
                                 .buttonStyle(PlainButtonStyle())
@@ -178,9 +157,9 @@ struct SettingsContentView: View {
                                 Spacer()
                             }
                             .padding(.vertical, 15)
+                            .dim(isDimmed(keepVisible: .colorTheme))
 
-                            // Expandable color dot picker
-                            if showPresetPicker {
+                            if expandedDropdown == .colorTheme {
                                 HStack(spacing: 12) {
                                     ForEach(ThemePreset.colorPresets) { preset in
                                         Button {
@@ -201,129 +180,104 @@ struct SettingsContentView: View {
                                 .transition(.move(edge: .top).combined(with: .opacity))
                             }
                         }
-                        
-                        // Text Size Dropdown
-                        VStack(spacing: 8) {
-                            Button {
-                                withAnimation(.easeInOut) { showTextSizeSelector.toggle() }
-                            } label: {
-                                HStack {
-                                    Spacer()
-                                    Text("text size: ")
-                                        .font(typography.footnote)
-                                        .foregroundColor(CryptogramTheme.Colors.text)
-                                    Text(appSettings.textSize.displayName.lowercased())
-                                        .font(typography.footnote)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(CryptogramTheme.Colors.text)
-                                    Image(systemName: showTextSizeSelector ? "chevron.up" : "chevron.down")
-                                        .font(.system(size: 12, weight: .medium, design: typography.fontOption.design))
-                                        .foregroundColor(CryptogramTheme.Colors.text)
-                                        .padding(.leading, 4)
-                                    Spacer()
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 10)
-                                .background(Color.clear) // Ensure no background
-                            }
-                            .buttonStyle(PlainButtonStyle())
 
-                            if showTextSizeSelector {
-                                HStack(spacing: 16) {
-                                    ForEach(TextSizeOption.allCases) { opt in
-                                        Button {
-                                            appSettings.textSize = opt
-                                        } label: {
-                                            VStack(spacing: 4) {
-                                                Text("A")
-                                                    .font(.system(size: opt.inputSize,
-                                                                  weight: appSettings.textSize == opt ? .bold : .regular,
-                                                                  design: typography.fontOption.design))
-                                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(appSettings.textSize == opt ? 1 : 0.4))
-                                                Rectangle()
-                                                    .frame(height: 1)
-                                                    .foregroundColor(CryptogramTheme.Colors.border)
-                                                Text(opt == .small ? "4" : opt == .medium ? "2" : "0")
-                                                    .font(.system(size: opt.encodedSize,
-                                                                  weight: appSettings.textSize == opt ? .bold : .regular,
-                                                                  design: typography.fontOption.design))
-                                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(appSettings.textSize == opt ? 1 : 0.4))
-                                            }
-                                            .frame(width: 28)
+                        // Text Size
+                        dropdownTrigger(
+                            label: "text size",
+                            value: appSettings.textSize.displayName.lowercased(),
+                            dropdown: .textSize
+                        )
+                        .dim(isDimmed(keepVisible: .textSize))
+
+                        if expandedDropdown == .textSize {
+                            HStack(spacing: 16) {
+                                ForEach(TextSizeOption.allCases) { opt in
+                                    Button {
+                                        appSettings.textSize = opt
+                                    } label: {
+                                        VStack(spacing: 4) {
+                                            Text("A")
+                                                .font(.system(size: opt.inputSize,
+                                                              weight: appSettings.textSize == opt ? .bold : .regular,
+                                                              design: typography.fontOption.design))
+                                                .foregroundColor(CryptogramTheme.Colors.text.opacity(appSettings.textSize == opt ? 1 : 0.4))
+                                            Rectangle()
+                                                .frame(height: 1)
+                                                .foregroundColor(CryptogramTheme.Colors.border)
+                                            Text(opt == .small ? "4" : opt == .medium ? "2" : "0")
+                                                .font(.system(size: opt.encodedSize,
+                                                              weight: appSettings.textSize == opt ? .bold : .regular,
+                                                              design: typography.fontOption.design))
+                                                .foregroundColor(CryptogramTheme.Colors.text.opacity(appSettings.textSize == opt ? 1 : 0.4))
                                         }
-                                        .buttonStyle(PlainButtonStyle())
+                                        .frame(width: 28)
                                     }
+                                    .buttonStyle(PlainButtonStyle())
                                 }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .transition(.move(edge: .top).combined(with: .opacity))
                             }
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 8)
+                            .transition(.move(edge: .top).combined(with: .opacity))
                         }
-                        
-                        // Font selection
-                        VStack(spacing: 0) {
-                            Button {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    showFontSelector.toggle()
-                                }
-                            } label: {
-                                HStack {
-                                    Spacer()
-                                    Text("font: ")
-                                        .font(typography.footnote)
-                                        .foregroundColor(CryptogramTheme.Colors.text) +
-                                    Text(appSettings.fontFamily.rawValue.lowercased())
-                                        .font(typography.footnote)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(CryptogramTheme.Colors.text)
-                                    
-                                    Image(systemName: showFontSelector ? "chevron.up" : "chevron.down")
-                                        .font(.system(size: 12, weight: .medium, design: typography.fontOption.design))
-                                        .foregroundColor(CryptogramTheme.Colors.text)
-                                        .padding(.leading, 4)
-                                    
-                                    Spacer()
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 10)
-                                .background(Color.clear)
-                            }
-                            .buttonStyle(PlainButtonStyle())
-                            
-                            if showFontSelector {
-                                VStack(spacing: 0) {
-                                    ForEach(FontOption.allCases, id: \.self) { font in
-                                        Button {
-                                            appSettings.fontFamily = font
-                                            withAnimation(.easeInOut(duration: 0.2)) {
-                                                showFontSelector = false
-                                            }
-                                        } label: {
-                                            Text(font.rawValue.lowercased())
-                                                .font(.system(.footnote, design: font.design))
-                                                .fontWeight(appSettings.fontFamily == font ? .bold : .regular)
-                                                .foregroundColor(CryptogramTheme.Colors.text.opacity(appSettings.fontFamily == font ? 1 : 0.6))
-                                                .frame(maxWidth: .infinity)
-                                                .padding(.vertical, 8)
+
+                        // Font
+                        dropdownTrigger(
+                            label: "font",
+                            value: appSettings.fontFamily.rawValue.lowercased(),
+                            dropdown: .font
+                        )
+                        .dim(isDimmed(keepVisible: .font))
+
+                        if expandedDropdown == .font {
+                            VStack(spacing: 0) {
+                                ForEach(FontOption.allCases, id: \.self) { font in
+                                    Button {
+                                        appSettings.fontFamily = font
+                                        withAnimation(.easeInOut(duration: 0.2)) {
+                                            expandedDropdown = nil
                                         }
-                                        .buttonStyle(PlainButtonStyle())
+                                    } label: {
+                                        Text(font.rawValue.lowercased())
+                                            .font(.system(.footnote, design: font.design))
+                                            .fontWeight(appSettings.fontFamily == font ? .bold : .regular)
+                                            .foregroundColor(CryptogramTheme.Colors.text.opacity(appSettings.fontFamily == font ? 1 : 0.6))
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, 8)
                                     }
+                                    .buttonStyle(PlainButtonStyle())
                                 }
-                                .transition(.move(edge: .top).combined(with: .opacity))
                             }
+                            .transition(.move(edge: .top).combined(with: .opacity))
                         }
-                        .zIndex(showFontSelector ? 1 : 0)
-                        
-                        // Layout selection with visual previews
-                        NavBarLayoutSelector(selection: $settings.navigationBarLayout)
-                        
+
+                        // Button Layout
+                        dropdownTrigger(
+                            label: "button layout",
+                            value: settings.navigationBarLayout.displayName,
+                            dropdown: .buttonLayout
+                        )
+                        .dim(isDimmed(keepVisible: .buttonLayout))
+
+                        if expandedDropdown == .buttonLayout {
+                            VStack(spacing: 10) {
+                                MultiOptionRow(
+                                    options: NavigationBarLayout.allCases.sorted { $0.rawValue < $1.rawValue },
+                                    selection: $settings.navigationBarLayout,
+                                    labelProvider: { $0.displayName }
+                                )
+
+                                NavBarLayoutPreview(layout: settings.navigationBarLayout)
+                                    .padding(.horizontal, 10)
+                                    .padding(.bottom, 5)
+                            }
+                            .padding(.top, 8)
+                            .transition(.move(edge: .top).combined(with: .opacity))
+                        }
                     }
                 }
-                .transition(.opacity)
-            }
-            
-            // AI Assistant Section
-            if !showLengthSelector {
+                .dim(isDimmed(keepVisibleAny: SettingsDropdown.themeDropdowns))
+
+                // MARK: - AI Assistant
                 SettingsSection(title: "ai assistant") {
                     VStack(spacing: 12) {
                         // App toggles
@@ -337,9 +291,17 @@ struct SettingsContentView: View {
                             }
                         }
                         .frame(maxWidth: .infinity)
+                        .dim(isDimmed())
 
                         // Prompt previews
-                        if showPromptPreview {
+                        dropdownTrigger(
+                            label: expandedDropdown == .prompts ? "hide prompts" : "view prompts",
+                            value: nil,
+                            dropdown: .prompts
+                        )
+                        .dim(isDimmed(keepVisible: .prompts))
+
+                        if expandedDropdown == .prompts {
                             VStack(alignment: .leading, spacing: 8) {
                                 ForEach(LLMPrompt.builtIn) { prompt in
                                     VStack(alignment: .leading, spacing: 2) {
@@ -356,39 +318,64 @@ struct SettingsContentView: View {
                             .padding(.horizontal, 10)
                             .transition(.move(edge: .top).combined(with: .opacity))
                         }
-
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                showPromptPreview.toggle()
-                            }
-                        } label: {
-                            HStack {
-                                Spacer()
-                                Text(showPromptPreview ? "hide prompts" : "view prompts")
-                                    .font(typography.caption)
-                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(0.5))
-                                Image(systemName: showPromptPreview ? "chevron.up" : "chevron.down")
-                                    .font(.system(size: 10))
-                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(0.5))
-                                Spacer()
-                            }
-                        }
-                        .buttonStyle(PlainButtonStyle())
                     }
                     .padding(.vertical, 8)
                 }
-                .transition(.opacity)
+                .dim(isDimmed(keepVisible: .prompts))
+
+                // MARK: - Reset
+                ResetAccountSection(viewModel: puzzleViewModel)
+                    .dim(isDimmed())
+
+                Spacer().frame(height: 40)
             }
-
-            Spacer() // Fill remaining space
-
-            // Reset account section at the bottom, no header
-            ResetAccountSection(viewModel: puzzleViewModel)
         }
-        .animation(.easeInOut(duration: 0.3), value: showLengthSelector)
-        .animation(.easeInOut(duration: 0.3), value: showTextSizeSelector)
-        .animation(.easeInOut(duration: 0.3), value: showFontSelector)
-        .animation(.easeInOut(duration: 0.3), value: showPresetPicker)
+        .animation(.easeInOut(duration: 0.3), value: expandedDropdown)
+    }
+
+    // MARK: - Unified Dropdown Trigger
+
+    @ViewBuilder
+    private func dropdownTrigger(label: String, value: String?, dropdown: SettingsDropdown) -> some View {
+        Button {
+            toggleDropdown(dropdown)
+        } label: {
+            HStack {
+                Spacer()
+                if let value {
+                    Text("\(label): ")
+                        .font(typography.footnote)
+                        .foregroundColor(CryptogramTheme.Colors.text) +
+                    Text(value)
+                        .font(typography.footnote)
+                        .fontWeight(.bold)
+                        .foregroundColor(CryptogramTheme.Colors.text)
+                } else {
+                    Text(label)
+                        .font(typography.footnote)
+                        .foregroundColor(CryptogramTheme.Colors.text)
+                }
+                Image(systemName: expandedDropdown == dropdown ? "chevron.up" : "chevron.down")
+                    .font(.system(size: 12, weight: .medium, design: typography.fontOption.design))
+                    .foregroundColor(CryptogramTheme.Colors.text)
+                    .padding(.leading, 4)
+                Spacer()
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+        }
+        .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Dim Modifier
+
+private extension View {
+    /// Fades to invisible and disables interaction. Content stays in layout.
+    func dim(_ shouldDim: Bool) -> some View {
+        self
+            .opacity(shouldDim ? 0 : 1)
+            .allowsHitTesting(!shouldDim)
     }
 }
 
@@ -399,13 +386,3 @@ struct HStackWidthPreferenceKey: PreferenceKey {
         value = nextValue()
     }
 }
-
-// Replace #Preview with @Preview if using the standard SwiftUI preview provider, or comment/remove if ambiguous or unsupported.
-// #Preview {
-//     SettingsContentView()
-//         .padding()
-//         .background(Color(hex: "#f8f8f8"))
-//         .environmentObject(PuzzleViewModel())
-//         .environmentObject(ThemeManager())
-//         .environmentObject(SettingsViewModel())
-// }
