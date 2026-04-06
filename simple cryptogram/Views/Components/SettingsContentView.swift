@@ -8,6 +8,7 @@ struct SettingsContentView: View {
 
     // Dropdown state — only one can be open at a time
     @State private var expandedDropdown: SettingsDropdown?
+    @State private var showPromptEditor = false
 
     private enum SettingsDropdown: Equatable {
         case quoteLength
@@ -15,7 +16,6 @@ struct SettingsContentView: View {
         case font
         case colorTheme
         case buttonLayout
-        case prompts
 
         static let themeDropdowns: Set<SettingsDropdown> = [.textSize, .font, .colorTheme, .buttonLayout]
     }
@@ -293,35 +293,30 @@ struct SettingsContentView: View {
                         .frame(maxWidth: .infinity)
                         .dim(isDimmed())
 
-                        // Prompt previews
-                        dropdownTrigger(
-                            label: expandedDropdown == .prompts ? "hide prompts" : "view prompts",
-                            value: nil,
-                            dropdown: .prompts
-                        )
-                        .dim(isDimmed(keepVisible: .prompts))
-
-                        if expandedDropdown == .prompts {
-                            VStack(alignment: .leading, spacing: 8) {
-                                ForEach(LLMPrompt.builtIn) { prompt in
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Label(prompt.label, systemImage: prompt.icon)
-                                            .font(typography.caption)
-                                            .foregroundColor(CryptogramTheme.Colors.text)
-                                        Text(prompt.buildPrompt("\"The unexamined life...\"", "Socrates"))
-                                            .font(typography.caption)
-                                            .foregroundColor(CryptogramTheme.Colors.text.opacity(0.5))
-                                            .lineLimit(2)
-                                    }
-                                }
+                        // Prompt editor trigger
+                        Button {
+                            showPromptEditor = true
+                        } label: {
+                            HStack {
+                                Spacer()
+                                Text("edit prompts")
+                                    .font(typography.footnote)
+                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 12, weight: .medium, design: typography.fontOption.design))
+                                    .foregroundColor(CryptogramTheme.Colors.text)
+                                    .padding(.leading, 4)
+                                Spacer()
                             }
-                            .padding(.horizontal, 10)
-                            .transition(.move(edge: .top).combined(with: .opacity))
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
                         }
+                        .buttonStyle(PlainButtonStyle())
+                        .dim(isDimmed())
                     }
                     .padding(.vertical, 8)
                 }
-                .dim(isDimmed(keepVisible: .prompts))
+                .dim(isDimmed())
 
                 // MARK: - Reset
                 ResetAccountSection(viewModel: puzzleViewModel)
@@ -331,6 +326,10 @@ struct SettingsContentView: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: expandedDropdown)
+        .sheet(isPresented: $showPromptEditor) {
+            PromptEditorSheet()
+                .environment(appSettings)
+        }
     }
 
     // MARK: - Unified Dropdown Trigger
