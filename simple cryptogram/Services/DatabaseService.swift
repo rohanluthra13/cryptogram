@@ -247,6 +247,44 @@ class DatabaseService {
         return nil
     }
 
+    /// Fetch all authors that have birth dates (for timeline display)
+    func fetchAllAuthors() throws -> [Author] {
+        guard let db = _db else {
+            if let error = initializationError { throw error }
+            throw DatabaseError.connectionFailed
+        }
+        do {
+            let authorsTable = Table("authors")
+            let idExpr = Expression<Int>("id")
+            let nameExpr = Expression<String>("name")
+            let fullNameExpr = Expression<String?>("full_name")
+            let birthDateExpr = Expression<String?>("birth_date")
+            let deathDateExpr = Expression<String?>("death_date")
+            let pobExpr = Expression<String?>("place_of_birth")
+            let podExpr = Expression<String?>("place_of_death")
+            let summaryExpr = Expression<String?>("summary")
+
+            let query = authorsTable
+                .filter(birthDateExpr != nil)
+                .order(birthDateExpr)
+
+            return try db.prepare(query).map { row in
+                Author(
+                    id: row[idExpr],
+                    name: row[nameExpr],
+                    fullName: row[fullNameExpr],
+                    birthDate: row[birthDateExpr],
+                    deathDate: row[deathDateExpr],
+                    placeOfBirth: row[pobExpr],
+                    placeOfDeath: row[podExpr],
+                    summary: row[summaryExpr]
+                )
+            }
+        } catch {
+            throw DatabaseError.queryFailed("Failed to fetch all authors: \(error.localizedDescription)")
+        }
+    }
+
     func fetchAllQuotes() throws -> [QuoteMetadata] {
         guard let db = _db else {
             if let error = initializationError { throw error }
