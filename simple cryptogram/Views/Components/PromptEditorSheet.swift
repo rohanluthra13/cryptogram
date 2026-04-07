@@ -9,6 +9,7 @@ struct PromptEditorSheet: View {
     @State private var showInfo = false
     @State private var editingPromptId: String?
     @State private var editBuffer: String = ""
+    @State private var labelBuffer: String = ""
     @FocusState private var isEditFocused: Bool
 
     private let exampleQuote = "Know thyself"
@@ -57,6 +58,20 @@ struct PromptEditorSheet: View {
                     ForEach(appSettings.activePrompts) { prompt in
                         promptRow(prompt: prompt)
                     }
+
+                    // Add button — left aligned, below the bottom-most prompt
+                    Button {
+                        addNewPrompt()
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 11, weight: .medium))
+                            Text("add prompt")
+                                .font(typography.caption)
+                        }
+                        .foregroundColor(CryptogramTheme.Colors.text.opacity(0.5))
+                    }
+                    .buttonStyle(PlainButtonStyle())
                 }
                 .padding(.horizontal, 20)
                 .padding(.top, 24)
@@ -85,14 +100,26 @@ struct PromptEditorSheet: View {
     @ViewBuilder
     private func promptRow(prompt: LLMPrompt) -> some View {
         let isEditing = editingPromptId == prompt.id
+        let isBuiltIn = LLMPrompt.defaultPrompt(id: prompt.id) != nil
 
         VStack(alignment: .leading, spacing: 12) {
             // Title row: label + action buttons
             HStack {
-                Label(prompt.label, systemImage: prompt.icon)
-                    .font(typography.footnote)
-                    .fontWeight(.bold)
-                    .foregroundColor(CryptogramTheme.Colors.text)
+                if isEditing {
+                    Image(systemName: prompt.icon)
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(CryptogramTheme.Colors.text)
+                    TextField("prompt name", text: $labelBuffer)
+                        .font(typography.footnote)
+                        .fontWeight(.bold)
+                        .foregroundColor(CryptogramTheme.Colors.text)
+                        .textInputAutocapitalization(.never)
+                } else {
+                    Label(prompt.label, systemImage: prompt.icon)
+                        .font(typography.footnote)
+                        .fontWeight(.bold)
+                        .foregroundColor(CryptogramTheme.Colors.text)
+                }
 
                 Spacer()
 
@@ -108,11 +135,15 @@ struct PromptEditorSheet: View {
                     }
                     .buttonStyle(PlainButtonStyle())
 
-                    // Revert
+                    // Revert (built-in) or Delete (user-added)
                     Button {
-                        revertPrompt(id: prompt.id)
+                        if isBuiltIn {
+                            revertPrompt(id: prompt.id)
+                        } else {
+                            deletePrompt(id: prompt.id)
+                        }
                     } label: {
-                        Text("revert")
+                        Text(isBuiltIn ? "revert" : "delete")
                             .font(typography.caption)
                             .foregroundColor(CryptogramTheme.Colors.text.opacity(0.5))
                     }
@@ -166,6 +197,7 @@ struct PromptEditorSheet: View {
 
     private func beginEditing(prompt: LLMPrompt) {
         editBuffer = prompt.template
+        labelBuffer = prompt.label
         editingPromptId = prompt.id
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             isEditFocused = true
@@ -175,6 +207,8 @@ struct PromptEditorSheet: View {
     private func savePrompt(original: LLMPrompt) {
         var updated = original
         updated.template = editBuffer
+        let trimmedLabel = labelBuffer.trimmingCharacters(in: .whitespaces)
+        updated.label = trimmedLabel.isEmpty ? original.label : trimmedLabel
         appSettings.updatePrompt(updated)
         editingPromptId = nil
         isEditFocused = false
@@ -184,6 +218,23 @@ struct PromptEditorSheet: View {
         appSettings.revertPrompt(id: id)
         editingPromptId = nil
         isEditFocused = false
+    }
+
+    private func deletePrompt(id: String) {
+        appSettings.deletePrompt(id: id)
+        editingPromptId = nil
+        isEditFocused = false
+    }
+
+    private func addNewPrompt() {
+        let newPrompt = LLMPrompt(
+            id: UUID().uuidString,
+            label: "new prompt",
+            icon: "text.bubble",
+            template: "[quote] — [author]"
+        )
+        appSettings.updatePrompt(newPrompt)
+        beginEditing(prompt: newPrompt)
     }
 
     /// Render a template string, highlighting `[quote]` and `[author]` placeholders
