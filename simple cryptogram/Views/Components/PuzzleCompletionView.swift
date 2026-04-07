@@ -490,38 +490,43 @@ struct PuzzleCompletionView: View {
                     }
 
                     // Prompt options
-                    VStack(spacing: 0) {
-                        ForEach(Array(appSettings.activePrompts.enumerated()), id: \.element.id) { index, prompt in
-                            if index > 0 {
-                                Divider()
-                                    .foregroundColor(CryptogramTheme.Colors.text.opacity(0.1))
-                            }
-                            Button {
-                                let text = prompt.buildPrompt(quote: quote, author: author)
-                                let copied = app.open(with: text)
-                                if copied { showCopiedToastBriefly(app: app) }
-                                withAnimation(.easeInOut(duration: 0.2)) { expandedLLMApp = nil }
-                            } label: {
-                                HStack {
-                                    Image(systemName: prompt.icon)
-                                        .font(.system(size: 14))
-                                        .foregroundColor(CryptogramTheme.Colors.text.opacity(0.5))
-                                        .frame(width: 20)
-                                    Text(prompt.label)
-                                        .font(typography.caption)
-                                        .foregroundColor(CryptogramTheme.Colors.text)
-                                    Spacer()
-                                    Image(systemName: "arrow.up.right")
-                                        .font(.system(size: 10))
-                                        .foregroundColor(CryptogramTheme.Colors.text.opacity(0.3))
+                    ScrollView {
+                        VStack(spacing: 0) {
+                            ForEach(Array(appSettings.activePrompts.enumerated()), id: \.element.id) { index, prompt in
+                                if index > 0 {
+                                    Divider()
+                                        .foregroundColor(CryptogramTheme.Colors.text.opacity(0.1))
                                 }
-                                .padding(.vertical, 12)
-                                .padding(.horizontal, 4)
-                                .contentShape(Rectangle())
+                                Button {
+                                    let text = prompt.buildPrompt(quote: quote, author: author)
+                                    let copied = app.open(with: text)
+                                    if copied { showCopiedToastBriefly(app: app) }
+                                    withAnimation(.easeInOut(duration: 0.2)) { expandedLLMApp = nil }
+                                } label: {
+                                    HStack {
+                                        Image(systemName: prompt.icon)
+                                            .font(.system(size: 14))
+                                            .foregroundColor(CryptogramTheme.Colors.text.opacity(0.5))
+                                            .frame(width: 20)
+                                        Text(prompt.label)
+                                            .font(typography.caption)
+                                            .foregroundColor(CryptogramTheme.Colors.text)
+                                            .lineLimit(1)
+                                            .truncationMode(.tail)
+                                        Spacer()
+                                        Image(systemName: "arrow.up.right")
+                                            .font(.system(size: 10))
+                                            .foregroundColor(CryptogramTheme.Colors.text.opacity(0.3))
+                                    }
+                                    .padding(.vertical, 12)
+                                    .padding(.horizontal, 4)
+                                    .contentShape(Rectangle())
+                                }
+                                .buttonStyle(PlainButtonStyle())
                             }
-                            .buttonStyle(PlainButtonStyle())
                         }
                     }
+                    .frame(maxHeight: 280)
                 }
                 .padding(20)
                 .background(
