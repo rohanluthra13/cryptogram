@@ -499,9 +499,16 @@ struct PuzzleCompletionView: View {
                                 }
                                 Button {
                                     let text = prompt.buildPrompt(quote: quote, author: author)
-                                    let copied = app.open(with: text)
-                                    if copied { showCopiedToastBriefly(app: app) }
+                                    let copied = app.copyPrompt(text)
                                     withAnimation(.easeInOut(duration: 0.2)) { expandedLLMApp = nil }
+                                    if copied {
+                                        showCopiedToastBriefly(app: app)
+                                    }
+                                    // Delay app open so user sees the toast
+                                    Task {
+                                        try? await Task.sleep(for: .seconds(copied ? 1.0 : 0.0))
+                                        app.openApp(with: text)
+                                    }
                                 } label: {
                                     HStack {
                                         Image(systemName: prompt.icon)

@@ -58,48 +58,58 @@ enum LLMApp: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Opens the app with a prompt if supported, otherwise copies prompt and opens app.
-    /// Returns true if the prompt was copied to clipboard (so caller can show a toast).
+    /// Copies prompt to clipboard if needed and returns whether it was copied.
+    /// Does NOT open the app — call `openApp()` separately after showing feedback.
     @MainActor
-    func open(with prompt: String) -> Bool {
+    func copyPrompt(_ prompt: String) -> Bool {
         let encoded = prompt.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
 
         switch self {
         case .chatgpt:
-            // ChatGPT supports prompt parameter via custom URL scheme
+            // ChatGPT supports prompt parameter via custom URL scheme — no copy needed
+            if let url = URL(string: "chatgpt://chat?prompt=\(encoded)"),
+               UIApplication.shared.canOpenURL(url) {
+                return false
+            }
+            // Fallback: copy for web
+            UIPasteboard.general.string = prompt
+            return true
+
+        case .claude, .gemini:
+            UIPasteboard.general.string = prompt
+            return true
+        }
+    }
+
+    /// Opens the app (or web fallback). Call after showing copy feedback.
+    @MainActor
+    func openApp(with prompt: String) {
+        let encoded = prompt.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? ""
+
+        switch self {
+        case .chatgpt:
             if let url = URL(string: "chatgpt://chat?prompt=\(encoded)"),
                UIApplication.shared.canOpenURL(url) {
                 UIApplication.shared.open(url)
-                return false
-            }
-            // Fallback to web
-            UIPasteboard.general.string = prompt
-            if let url = URL(string: "https://chat.openai.com") {
+            } else if let url = URL(string: "https://chat.openai.com") {
                 UIApplication.shared.open(url)
             }
-            return true
 
         case .claude:
-            // Claude app doesn't support prompt parameter — copy and open
-            UIPasteboard.general.string = prompt
             if let url = URL(string: "claude://"),
                UIApplication.shared.canOpenURL(url) {
                 UIApplication.shared.open(url)
             } else if let url = URL(string: "https://claude.ai/new") {
                 UIApplication.shared.open(url)
             }
-            return true
 
         case .gemini:
-            // Gemini app — copy and open
-            UIPasteboard.general.string = prompt
             if let url = URL(string: "googlegemini://"),
                UIApplication.shared.canOpenURL(url) {
                 UIApplication.shared.open(url)
             } else if let url = URL(string: "https://gemini.google.com") {
                 UIApplication.shared.open(url)
             }
-            return true
         }
     }
 }
