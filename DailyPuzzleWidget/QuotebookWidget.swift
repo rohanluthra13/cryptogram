@@ -27,7 +27,7 @@ struct QuoteEntity: AppEntity {
 }
 
 struct QuoteEntityQuery: EntityQuery {
-    private let sharedDefaults = UserDefaults(suiteName: "group.twRL.simple-cryptogram")!
+    private var sharedDefaults: UserDefaults { UserDefaults(suiteName: "group.twRL.simple-cryptogram")! }
 
     func entities(for identifiers: [String]) async throws -> [QuoteEntity] {
         let quotes = loadQuotes()
@@ -80,7 +80,7 @@ struct QuotebookEntry: TimelineEntry {
 }
 
 struct QuotebookProvider: AppIntentTimelineProvider {
-    private let sharedDefaults = UserDefaults(suiteName: "group.twRL.simple-cryptogram")!
+    private var sharedDefaults: UserDefaults { UserDefaults(suiteName: "group.twRL.simple-cryptogram")! }
 
     func placeholder(in context: Context) -> QuotebookEntry {
         QuotebookEntry(date: .now, solution: "The only way to do great work is to love what you do.",

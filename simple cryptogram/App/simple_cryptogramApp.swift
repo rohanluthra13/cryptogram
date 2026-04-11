@@ -30,7 +30,7 @@ struct simple_cryptogramApp: App {
                 .environment(themeManager)
                 .preferredColorScheme(appSettings.isDarkMode ? .dark : .light)
         }
-        .onChange(of: scenePhase) { newPhase in
+        .onChange(of: scenePhase) { _, newPhase in
             switch newPhase {
             case .active:
                 viewModel.resume()

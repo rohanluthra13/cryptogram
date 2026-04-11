@@ -17,12 +17,12 @@ struct ContentView: View {
         }
         .environment(navigationCoordinator)
         .injectTypography()
-        .onChange(of: viewModel.currentError) { newError in
+        .onChange(of: viewModel.currentError) { _, newError in
             if newError != nil {
                 showError = true
             }
         }
-        .onChange(of: scenePhase) { newPhase in
+        .onChange(of: scenePhase) { _, newPhase in
             if newPhase == .background || newPhase == .inactive {
                 viewModel.flushPendingDailySave()
             }

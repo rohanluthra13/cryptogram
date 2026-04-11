@@ -138,7 +138,7 @@ struct DailyPuzzleEntry: TimelineEntry {
 }
 
 struct Provider: AppIntentTimelineProvider {
-    private let sharedDefaults = UserDefaults(suiteName: "group.twRL.simple-cryptogram")!
+    private var sharedDefaults: UserDefaults { UserDefaults(suiteName: "group.twRL.simple-cryptogram")! }
 
     func placeholder(in context: Context) -> DailyPuzzleEntry {
         DailyPuzzleEntry(date: .now, isCompleted: false, solutionText: nil, author: nil, theme: .light, font: .system, showAuthor: true, incompleteMessage: incompleteMessages[0])
