@@ -15,7 +15,6 @@ struct HomeView: View {
     @State private var showCalendar = false
     @State private var showQuotebook = false
     @State private var showInfoOverlay = false
-    @State private var showTimeline = false
 
     enum PuzzleMode {
         case random
@@ -81,7 +80,7 @@ struct HomeView: View {
             }
 
             // Floating info button
-            if !showInfoOverlay && !showSettings && !showStats && !showCalendar && !showQuotebook && !showTimeline {
+            if !showInfoOverlay && !showSettings && !showStats && !showCalendar && !showQuotebook {
                 VStack {
                     HStack {
                         Spacer()
@@ -154,14 +153,6 @@ struct HomeView: View {
                 FullScreenOverlay(isPresented: $showQuotebook) {
                     QuotebookView()
                         .environment(appSettings)
-                }
-                .zIndex(150)
-            }
-
-            if showTimeline {
-                FullScreenOverlay(isPresented: $showTimeline) {
-                    TimelineView()
-                        .padding(.top, 40)
                 }
                 .zIndex(150)
             }
@@ -289,14 +280,6 @@ struct HomeView: View {
                 }
                 .buttonStyle(PlainButtonStyle())
 
-                Button(action: {
-                    showTimeline = true
-                }) {
-                    Image(systemName: "timeline.selection")
-                        .font(.system(size: 24))
-                        .foregroundColor(CryptogramTheme.Colors.text.opacity(0.8))
-                }
-                .buttonStyle(PlainButtonStyle())
             }
         }
     }
